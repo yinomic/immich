@@ -182,3 +182,8 @@
 - 验证：`tsc` 绿；单测 105 文件 / 2331 用例全绿；eslint 绿
 
 **下一步（Round 3+）**：删 `machine-learning.repository.ts` 及其消费者（`ocr.service`、`person.service`、`duplicate.service` 的向量部分）、12 张表与新迁移、`QueueName/JobName` 对应项与装饰器、`SystemConfig.machineLearning` 与 admin UI；随后进入 P3 云存储。
+
+### 环境限制（影响验证方式）
+- 本机 Docker 只能访问 `ccr.ccs.tencentyun.com` 私有镜像源，`registry-1.docker.io` / `ghcr.io` 拉取超时 → 无法直接起官方 `immich-postgres`（含 vectorchord）容器做运行时冒烟。
+- 可用的本地 `postgres:16` 镜像**不含 pgvector/vectorchord** → 只要向量还在 Postgres 里，本地就跑不起来。
+- **结论（也印证了目标方向）**：把向量搬到云向量桶（VikingDB/VDB）后，Postgres 可用 stock 镜像，本地冒烟与部署都更简单。因此 P2 的"向量库抽象 + VikingDB 适配器"优先级提到 P3（云存储）之前。
