@@ -58,16 +58,18 @@
 
 ## 4. 分阶段实施计划
 
-每阶段结束必须：`pnpm --filter immich-server typecheck` 绿 + 相关单测绿 + 手工冒烟（docker compose 起 server+pg+redis，上传/浏览/搜索）。
+每阶段结束必须：`pnpm --filter immich check`（tsc，需先 `pnpm --filter @immich/sdk build && pnpm --filter @immich/plugin-sdk build`）+ 相关单测绿 + 手工冒烟（docker compose 起 server+pg+redis，上传/浏览/搜索）。
 
-### P0 基线与骨架（本轮）
+### P0 基线与骨架（✅ 已完成）
 - [x] 建分支 `family-album`
-- [x] 依赖安装（`pnpm install --frozen-lockfile`）
-- [ ] 基线验证：server typecheck / web build（改动前必须绿）
+- [x] 依赖安装（`pnpm install --frozen-lockfile`，17 分钟，npmmirror 源）
+- [x] 基线验证：`@immich/sdk`/`@immich/plugin-sdk` 需先 build，否则 tsc 报 `Cannot find module '@immich/plugin-sdk'`
 - [x] 本方案文档
-- 交付：可编译基线 + 计划
+- 交付：可编译基线（`pnpm --filter immich check` 绿）+ 计划
 
-### P1 删除 ML（G3）
+### P1 删除 ML（G3）— 进行中
+**已完成（基础设施层）**：删除 `machine-learning/` 目录；4 个 compose 文件移除 ML 服务与 `model-cache` 卷（`docker compose config` 全部校验通过）；`docker/hwaccel.ml.yml`、devcontainer 覆盖、CI（`test.yml` 去掉 `ml-unit-tests`/`e2e-tests-ml`，`docker.yml` 去掉 `machine-learning`/`retag_ml`/`success-check-ml` 并修复锚点与 `needs`）、`renovate.json`、`.github/labeler.yml`、`CODEOWNERS`、`.dockerignore`、`mise.toml`、ML 相关文档页与 `_redirects` 均已清理。
+
 服务端（按依赖顺序）：
 1. `services/smart-info.service.ts` → 改为调用新的 `EmbeddingProvider`（P2 落地，先用接口占位）
 2. `services/search.service.ts`：语义分支改为 `VectorStore` 查询
@@ -79,8 +81,17 @@
 8. 客户端：web 人脸/人物/OCR 相关页面与组件（245 文件引用需甄别）、i18n key、`packages/sdk` + `open-api` 重新生成；mobile 后置
 验证：typecheck + `pnpm --filter immich-server test`（相关 spec 一并删/改）+ 启动不报 job handler 错
 
-### P2 云搜索（G2）
-1. `server/src/repositories/embedding/` 新增：
+### P2 云搜索（G2）— 进行中
+**已完成（配置与 provider 层）**：
+1. `server/src/repositories/embedding/`：`embedding.provider.ts`（接口 + 容错响应解析）、`ark-embedding.provider.ts`（方舟 `/embeddings/multimodal`，Bearer key、超时、429/5xx 退避重试、维度校验）、`tencent-embedding.provider.ts`（TokenHub `/embeddings`，OpenAI 兼容）、`mock-embedding.provider.ts`（离线跑通全链路，无 key 也能开发）
+2. 环境变量（不经 SystemConfig，避免动 DB 配置与 SDK 生成）：`IMMICH_CLOUD_SEARCH_ENABLED / _PROVIDER(ark|tencent|mock) / _API_KEY / _MODEL / _BASE_URL / _DIM / _TIMEOUT_MS`，落在 `EnvData.search`
+3. `embedding.repository.ts` 统一入口（`enabled` / `modelName` / `dimSize` / `embedImage` / `embedText`），已注册进 DI（`repositories/index.ts`）
+4. `scripts/verify-cloud-search.mjs`：用真 key 打印状态码、维度、延迟、原始响应头与相似度矩阵，用来确认"图文同空间"与维度
+
+**已完成（基础设施层，同 P1）**
+
+待做：
+
    - `embedding.provider.ts`（接口：`embedImages(keys)`, `embedText(q)`；维度/模型版本写入 `system_metadata`）
    - `ark-embedding.provider.ts`（火山方舟多模态向量化，Bearer AK；支持 image URL / base64）
    - `tencent-embedding.provider.ts`（TokenHub `/v1/embeddings` 风格）

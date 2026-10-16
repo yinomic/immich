@@ -12,6 +12,12 @@ enum DatabaseSslMode {
 }
 
 const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mode').meta({ id: 'DatabaseSslMode' });
+
+/**
+ * Cloud search replaces the local machine-learning service: images and text are
+ * embedded by a cloud API and the vectors are stored in a vector store.
+ */
+const CloudSearchProviderSchema = z.enum(['ark', 'tencent', 'mock']).describe('Cloud search provider');
 const absolutePath = z.string().regex(/^\//, 'Must be an absolute path').optional();
 /**
  * Treat certain strings as booleans and coerce them to boolean
@@ -43,6 +49,13 @@ export const EnvSchema = z
     IMMICH_BUILD_IMAGE: z.string().optional(),
     IMMICH_BUILD_IMAGE_URL: z.string().optional(),
     IMMICH_CONFIG_FILE: z.string().optional(),
+    IMMICH_CLOUD_SEARCH_API_KEY: z.string().optional(),
+    IMMICH_CLOUD_SEARCH_BASE_URL: z.string().optional(),
+    IMMICH_CLOUD_SEARCH_DIM: z.coerce.number().int().positive().optional(),
+    IMMICH_CLOUD_SEARCH_ENABLED: stringBool.optional(),
+    IMMICH_CLOUD_SEARCH_MODEL: z.string().optional(),
+    IMMICH_CLOUD_SEARCH_PROVIDER: CloudSearchProviderSchema.optional(),
+    IMMICH_CLOUD_SEARCH_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
     IMMICH_HELMET_FILE: z.string().optional(),
     IMMICH_ENV: ImmichEnvironmentSchema.optional(),
     IMMICH_HOST: z.string().optional(),

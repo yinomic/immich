@@ -16,6 +16,7 @@ import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
+import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -73,6 +74,7 @@ export const repositories = [
   DownloadRepository,
   DuplicateRepository,
   EmailRepository,
+  EmbeddingRepository,
   EventRepository,
   IntegrityRepository,
   JobRepository,

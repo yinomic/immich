@@ -116,6 +116,16 @@ export interface EnvData {
     mediaLocation?: string;
   };
 
+  search: {
+    enabled: boolean;
+    provider: 'ark' | 'tencent' | 'mock';
+    apiKey?: string;
+    baseUrl?: string;
+    model?: string;
+    dimSize?: number;
+    timeoutMs: number;
+  };
+
   workers: ImmichWorker[];
 
   plugins: {
@@ -355,6 +365,16 @@ const getEnv = (): EnvData => {
     storage: {
       ignoreMountCheckErrors: !!dto.IMMICH_IGNORE_MOUNT_CHECK_ERRORS,
       mediaLocation: dto.IMMICH_MEDIA_LOCATION,
+    },
+
+    search: {
+      enabled: dto.IMMICH_CLOUD_SEARCH_ENABLED ?? false,
+      provider: dto.IMMICH_CLOUD_SEARCH_PROVIDER ?? 'ark',
+      apiKey: dto.IMMICH_CLOUD_SEARCH_API_KEY,
+      baseUrl: dto.IMMICH_CLOUD_SEARCH_BASE_URL,
+      model: dto.IMMICH_CLOUD_SEARCH_MODEL,
+      dimSize: dto.IMMICH_CLOUD_SEARCH_DIM,
+      timeoutMs: dto.IMMICH_CLOUD_SEARCH_TIMEOUT_MS ?? 30_000,
     },
 
     telemetry: {

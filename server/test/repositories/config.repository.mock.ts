@@ -88,6 +88,16 @@ export const envData: EnvData = {
     ignoreMountCheckErrors: false,
   },
 
+  search: {
+    enabled: false,
+    provider: 'mock',
+    apiKey: undefined,
+    baseUrl: undefined,
+    model: 'mock-embedding',
+    dimSize: 512,
+    timeoutMs: 30_000,
+  },
+
   telemetry: {
     apiPort: 8081,
     microservicesPort: 8082,
