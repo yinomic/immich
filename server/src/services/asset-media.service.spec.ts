@@ -578,7 +578,7 @@ describe(AssetMediaService.name, () => {
 
   describe('viewThumbnail', () => {
     beforeEach(() => {
-      mocks.storage.checkFileExists.mockResolvedValue(true);
+      mocks.storage.checkLocalFileExists.mockResolvedValue(true);
     });
 
     it('should require asset.view permissions', async () => {
@@ -593,7 +593,7 @@ describe(AssetMediaService.name, () => {
       const asset = AssetFactory.from().file({ type: AssetFileType.Thumbnail }).build();
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
       mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
-      mocks.storage.checkFileExists.mockResolvedValue(false);
+      mocks.storage.checkLocalFileExists.mockResolvedValue(false);
 
       await expect(sut.viewThumbnail(authStub.admin, asset.id, { size: AssetMediaSize.THUMBNAIL })).resolves.toEqual({
         targetSize: 'original',

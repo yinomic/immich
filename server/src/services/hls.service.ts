@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { constants } from 'node:fs';
 import { join } from 'node:path';
 import type { ArgOf } from 'src/repositories/event.repository.js';
 import type { VideoPacketInfo, VideoStreamInfo } from 'src/types.js';
@@ -110,7 +109,7 @@ export class HlsService extends BaseService {
     const segmentIndex = this.getSegmentIndex(apiSession, filename, initSegment);
     this.websocketRepository.serverSend('HlsHeartbeat', { sessionId, variantIndex, segmentIndex });
 
-    if (await this.storageRepository.checkFileExists(path, constants.R_OK)) {
+    if (await this.storageRepository.checkLocalFileExists(path)) {
       return response;
     }
 

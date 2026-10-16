@@ -72,7 +72,8 @@ export class ObjectStorageRepository implements ObjectStorage {
     options?: { uploadBack?: boolean; contentType?: string },
   ): Promise<T> {
     if (!this.isRemote()) {
-      return callback(this.localPath(key));
+      // local backend: the argument already is a usable path
+      return callback(key);
     }
 
     const folder = await mkdtemp(join(tmpdir(), 'immich-object-'));

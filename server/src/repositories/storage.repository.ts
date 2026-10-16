@@ -134,9 +134,14 @@ export class StorageRepository {
     return fs.utimes(filepath, atime, mtime);
   }
 
-  /** presigned URL (remote) or absolute path (local) for serving a file */
-  getServeTarget(key: string, options?: { contentType?: string; fileName?: string }): Promise<string> {
-    return this.objectStorage.presign(key, options);
+  /** presigned URL for serving a file straight from the bucket (remote only) */
+  buildServeTarget(key: string, options?: { contentType?: string; fileName?: string }): Promise<string | undefined> {
+    return this.isRemote() ? this.objectStorage.presign(key, options) : Promise.resolve(undefined);
+  }
+
+  /** remove a file that only exists locally (staged uploads, temp copies) */
+  async removeLocalFile(filepath: string): Promise<void> {
+    await fs.rm(filepath, { force: true });
   }
 
   /** run a callback against a real local file, downloading remote objects first */
@@ -221,6 +226,16 @@ export class StorageRepository {
     }
     try {
       await fs.access(filepath, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** local-only existence check (derived files always live in the local cache) */
+  async checkLocalFileExists(filepath: string): Promise<boolean> {
+    try {
+      await fs.access(filepath, constants.F_OK);
       return true;
     } catch {
       return false;

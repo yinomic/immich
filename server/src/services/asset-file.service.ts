@@ -30,6 +30,7 @@ export class AssetFileService extends BaseService {
       fileName: getFileNameWithoutExtension(file.path) + getFilenameExtension(file.path),
       contentType: mimeTypes.lookup(file.path),
       cacheControl: CacheControl.PrivateWithCache,
+      serveTarget: await this.storageRepository.buildServeTarget(file.path),
     });
   }
 

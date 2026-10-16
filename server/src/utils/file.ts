@@ -29,6 +29,8 @@ export class ImmichFileResponse {
   public readonly contentType!: string;
   public readonly cacheControl!: CacheControl;
   public readonly fileName?: string;
+  /** presigned URL (object storage): when set the client is redirected to it */
+  public readonly serveTarget?: string;
 
   constructor(response: ImmichFileResponse) {
     Object.assign(this, response);
@@ -56,6 +58,18 @@ export const sendFile = async (
 
   try {
     const file = await handler();
+
+    // NOTE (family fork): with object storage the file is served straight from
+    // the bucket with a presigned URL, so the server never proxies the bytes.
+    if (file.serveTarget) {
+      const cacheControlHeader = cacheControlHeaders[file.cacheControl];
+      if (cacheControlHeader) {
+        res.header('Cache-Control', cacheControlHeader);
+      }
+
+      res.redirect(302, file.serveTarget);
+      return;
+    }
 
     await access(file.path, constants.R_OK);
 

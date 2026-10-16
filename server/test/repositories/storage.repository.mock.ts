@@ -48,7 +48,9 @@ export const newStorageRepositoryMock = (): Mocked<RepositoryInterface<StorageRe
 
   return {
     isRemote: vitest.fn().mockReturnValue(false),
-    getServeTarget: vitest.fn(),
+    buildServeTarget: vitest.fn(),
+    removeLocalFile: vitest.fn(),
+    checkLocalFileExists: vitest.fn(),
     withLocalCopy: vitest
       .fn()
       .mockImplementation((_key: string, callback: (path: string) => Promise<unknown>) => callback('/tmp/object')),

@@ -256,3 +256,26 @@
   - 清空缓存后再请求 → `302 → /assets/:id/original`，随后后台任务自动把缓存补齐，再次请求回到 `200 image/webp`
   - `IMMICH_THUMBNAILS=off`：即使缓存里有文件也一律 `302` 到原图
 - 检查：`tsc` 绿、eslint（max-warnings 0）绿、95 文件 / 1700 用例全绿
+
+### Round 8（S3/TOS/COS 对象存储接线完成并端到端验证）
+**接线**
+- 上传：文件先由 multer 落到本地暂存目录（遥测缓存），随后 `stageUpload()` 推入桶并把 DB 的 `originalPath` 改为对象 key（`upload/<user>/xx/yy/<uuid>.<ext>`），暂存文件删除
+- 读取：`ImmichFileResponse` 新增 `serveTarget`；原件/边车/头像通过 **302 预签名 URL** 直连桶（服务器不代理字节流），派生文件（缩略图、转码）仍由服务器从本地缓存流出
+- 需要真实路径的工具：`MetadataRepository`（exiftool 读/写）与 `MediaService`（sharp/ffmpeg 生成缩略图）改用 `withLocalCopy()` 临时落地原件，用完即删
+- 删除：`FileDelete` 作业走对象删除（实测对象从桶中消失）
+- 备份与派生文件固定在本地缓存目录（远端模式下 `Backups`/`Thumbnails`/`EncodedVideo` 都解析到缓存）
+- 修复：派生文件的存在性检查必须用**本地**检查（`checkLocalFileExists`），否则远端模式下会把缓存文件当成对象去查桶
+
+**端到端验证**（stock `postgres:16` + `redis:7-alpine` + 进程内 S3 服务 `s3rver`，无任何云凭证）
+| 步骤 | 结果 |
+|---|---|
+| 启动 | 日志出现 `Using S3 object storage (http://127.0.0.1:4568, bucket immich)` |
+| 上传 | `201`；桶中出现对象；DB 里 `originalPath` = `upload/<user>/xx/yy/<uuid>.png`（对象 key） |
+| 元数据抽取 / 缩略图 | 作业 0 报错；缩略图落在本地缓存 |
+| `GET /assets/:id/original` | `302` → 预签名 URL → 直接取回 `200 image/png` 3446 字节（PNG 96x96） |
+| `GET /assets/:id/thumbnail` | `200 image/webp` 2584 字节（本地缓存流式返回） |
+| `POST /search/smart` | 命中 3 张（embedding 从桶中读原件） |
+| 时间线 | `[{"timeBucket":"2026-02-01","count":2},...]` |
+| 删除资产 | `204`；对象从桶中移除；作业 0 报错 |
+
+检查：`tsc` 绿、eslint（max-warnings 0）绿、95 文件 / 1700 用例全绿。

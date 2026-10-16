@@ -164,6 +164,16 @@ export class MediaService extends BaseService {
     return JobStatus.Success;
   }
 
+  /**
+   * With object storage the original lives in the bucket; sharp/ffmpeg need a
+   * real file, so it is materialised for the duration of the work.
+   */
+  private withLocalOriginal<T>(asset: ThumbnailAsset, callback: (asset: ThumbnailAsset) => Promise<T>): Promise<T> {
+    return this.storageRepository.withLocalCopy(asset.originalPath, (localPath) =>
+      callback({ ...asset, originalPath: localPath }),
+    );
+  }
+
   @OnJob({ name: JobName.AssetGenerateThumbnails, queue: QueueName.ThumbnailGeneration })
   async handleGenerateThumbnails({ id }: JobOf<JobName.AssetGenerateThumbnails>): Promise<JobStatus> {
     const asset = await this.assetJobRepository.getForGenerateThumbnailJob(id);
@@ -179,19 +189,22 @@ export class MediaService extends BaseService {
       return JobStatus.Skipped;
     }
 
-    let generated: Awaited<ReturnType<MediaService['generateImageThumbnails']>>;
-    if (asset.type === AssetType.Video || asset.originalFileName.toLowerCase().endsWith('.gif')) {
-      this.logger.verbose(`Thumbnail generation for video ${id} ${asset.originalPath}`);
-      generated = await this.generateVideoThumbnails(asset, config);
-    } else if (asset.type === AssetType.Image) {
-      this.logger.verbose(`Thumbnail generation for image ${id} ${asset.originalPath}`);
-      generated = await this.generateImageThumbnails(asset, config);
-    } else {
+    const isVideoLike = asset.type === AssetType.Video || asset.originalFileName.toLowerCase().endsWith('.gif');
+    if (asset.type !== AssetType.Image && !isVideoLike) {
       this.logger.warn(`Skipping thumbnail generation for asset ${id}: ${asset.type} is not an image or video`);
       return JobStatus.Skipped;
     }
 
-    const editedGenerated = await this.generateEditedThumbnails(asset, config);
+    const generated = await this.withLocalOriginal(asset, (localAsset) => {
+      this.logger.verbose(`Thumbnail generation for ${localAsset.type} ${id} ${asset.originalPath}`);
+      return isVideoLike
+        ? this.generateVideoThumbnails(localAsset, config)
+        : this.generateImageThumbnails(localAsset, config);
+    });
+
+    const editedGenerated = await this.withLocalOriginal(asset, (localAsset) =>
+      this.generateEditedThumbnails(localAsset, config),
+    );
     if (editedGenerated) {
       generated.files.push(...editedGenerated.files);
     }

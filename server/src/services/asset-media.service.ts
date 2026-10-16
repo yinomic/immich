@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { readFile } from 'node:fs/promises';
 import sanitize from 'sanitize-filename';
 import type { UploadFile, UploadRequest } from 'src/types.js';
 import { StorageCore } from 'src/cores/storage.core.js';
@@ -120,17 +121,43 @@ export class AssetMediaService extends BaseService {
     const uploadFolder = this.getUploadFolder(asUploadRequest(request, file));
     const uploadPath = `${uploadFolder}/${uploadFilename}`;
 
+    if (this.objectStorageRepository.isRemote()) {
+      await this.storageRepository.removeLocalFile(uploadPath);
+      return;
+    }
+
     await this.jobRepository.queue({ name: JobName.FileDelete, data: { files: [uploadPath] } });
+  }
+
+  /**
+   * With object storage the file interceptor writes to a local staging folder;
+   * move it into the bucket and hand back the object key.
+   */
+  private async stageUpload<T extends UploadFile>(upload: T): Promise<T> {
+    if (!this.objectStorageRepository.isRemote()) {
+      return upload;
+    }
+
+    const key = StorageCore.toObjectKey(upload.originalPath);
+    const data = await readFile(upload.originalPath);
+    await this.objectStorageRepository.put(key, data, mimeTypes.lookup(upload.originalPath));
+    await this.storageRepository.removeLocalFile(upload.originalPath);
+
+    return { ...upload, originalPath: key };
   }
 
   async uploadAsset(
     auth: AuthDto,
     dto: AssetMediaCreateDto,
-    file: UploadFile,
-    sidecarFile?: UploadFile,
+    upload: UploadFile,
+    uploadSidecar?: UploadFile,
   ): Promise<AssetMediaResponseDto> {
     let asset: Asset | undefined;
+    let file = upload;
+    let sidecarFile = uploadSidecar;
     try {
+      file = await this.stageUpload(upload);
+      sidecarFile = uploadSidecar ? await this.stageUpload(uploadSidecar) : undefined;
       await this.requireAccess({
         auth,
         permission: Permission.AssetUpload,
@@ -241,10 +268,12 @@ export class AssetMediaService extends BaseService {
 
     const path = editedPath ?? originalPath!;
 
+    const contentType = mimeTypes.lookup(path);
     return new ImmichFileResponse({
       path,
       fileName: getFileNameWithoutExtension(originalFileName) + getFilenameExtension(path),
-      contentType: mimeTypes.lookup(path),
+      contentType,
+      serveTarget: await this.storageRepository.buildServeTarget(path, { contentType }),
       cacheControl: CacheControl.PrivateWithCache,
     });
   }
@@ -287,7 +316,7 @@ export class AssetMediaService extends BaseService {
     // generated yet, serve the original instead of failing, and let the
     // background job fill the cache for the next request.
     const { storage } = this.configRepository.getEnv();
-    const isCached = !!path && (await this.storageRepository.checkFileExists(path));
+    const isCached = !!path && (await this.storageRepository.checkLocalFileExists(path));
     if (!isCached || storage.thumbnails === 'off') {
       await this.jobRepository.queue({ name: JobName.AssetGenerateThumbnails, data: { id } });
 
@@ -303,10 +332,11 @@ export class AssetMediaService extends BaseService {
       auth.sharedLink && !auth.sharedLink.showExif ? id : getFileNameWithoutExtension(originalFileName);
     const fileName = `${fileNameBase}_${size}${getFilenameExtension(path)}`;
 
+    const contentType = mimeTypes.lookup(path);
     return new ImmichFileResponse({
       fileName,
       path,
-      contentType: mimeTypes.lookup(path),
+      contentType,
       cacheControl: CacheControl.PrivateWithCache,
     });
   }

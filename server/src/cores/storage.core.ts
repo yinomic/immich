@@ -145,6 +145,11 @@ export class StorageCore {
       return join(StorageCore.getCacheLocation(), 'incoming', folder);
     }
 
+    // database backups are produced by pg_dump on the server, so they stay local
+    if (remoteStorage && folder === StorageFolder.Backups) {
+      return join(StorageCore.getCacheLocation(), folder);
+    }
+
     return join(StorageCore.getMediaLocation(), folder);
   }
 

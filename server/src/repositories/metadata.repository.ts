@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BinaryField, DefaultReadTaskOptions, ExifTool, ReadTaskOptions, Tags } from 'exiftool-vendored';
 import geotz from 'geo-tz';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
 
 interface ExifDuration {
@@ -114,7 +115,10 @@ export class MetadataRepository {
     taskTimeoutMillis: 2 * 60 * 1000,
   });
 
-  constructor(private logger: LoggingRepository) {
+  constructor(
+    private logger: LoggingRepository,
+    private objectStorage: ObjectStorageRepository,
+  ) {
     this.logger.setContext(MetadataRepository.name);
   }
 
@@ -126,17 +130,26 @@ export class MetadataRepository {
     await this.exiftool.end();
   }
 
+  private withLocal<T>(path: string, callback: (local: string) => Promise<T>): Promise<T> {
+    return this.objectStorage.withLocalCopy(path, callback);
+  }
+
   readTags(path: string): Promise<ImmichTags> {
     const options: ReadTaskOptions | undefined = mimeTypes.isVideo(path) ? { readArgs: ['-ee'] } : undefined;
 
-    return this.exiftool.read(path, options).catch((error) => {
-      this.logger.warn(`Error reading exif data (${path}): ${error}\n${error?.stack}`);
-      return {};
-    }) as Promise<ImmichTags>;
+    return this.withLocal(path, (local) =>
+      this.exiftool
+        .read(local, options)
+        .catch((error) => {
+          this.logger.warn(`Error reading exif data (${path}): ${error}\n${error?.stack}`);
+          return {};
+        })
+        .then((tags) => tags as ImmichTags),
+    );
   }
 
   extractBinaryTag(path: string, tagName: string): Promise<Buffer> {
-    return this.exiftool.extractBinaryTagToBuffer(tagName, path);
+    return this.withLocal(path, (local) => this.exiftool.extractBinaryTagToBuffer(tagName, local));
   }
 
   async writeTags(path: string, tags: Partial<Tags>): Promise<void> {

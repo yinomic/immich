@@ -481,9 +481,18 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
       return new key(LoggingRepository.create()) as InstanceType<T>;
     }
 
-    case MediaRepository:
-    case MetadataRepository: {
+    case MediaRepository: {
       return new key(LoggingRepository.create()) as InstanceType<T>;
+    }
+
+    case MetadataRepository: {
+      return new key(
+        LoggingRepository.create(),
+        automock(ObjectStorageRepository, {
+          args: [automock(ConfigRepository), automock(LoggingRepository)],
+          strict: false,
+        }),
+      ) as InstanceType<T>;
     }
 
     case PluginRepository: {
