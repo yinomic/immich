@@ -26,6 +26,15 @@ describe(StorageService.name, () => {
             ignoreMountCheckErrors: false,
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'cache',
+            backend: 'local',
+            s3: {
+              endpoint: '',
+              region: 'auto',
+              bucket: '',
+              accessKeyId: '',
+              secretAccessKey: '',
+              forcePathStyle: true,
+            },
             mediaLocation: '/data',
           },
         }),
@@ -93,6 +102,15 @@ describe(StorageService.name, () => {
             ignoreMountCheckErrors: false,
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'cache',
+            backend: 'local',
+            s3: {
+              endpoint: '',
+              region: 'auto',
+              bucket: '',
+              accessKeyId: '',
+              secretAccessKey: '',
+              forcePathStyle: true,
+            },
             mediaLocation: '/data',
           },
         }),
@@ -169,7 +187,20 @@ describe(StorageService.name, () => {
       mocks.systemMetadata.get.mockResolvedValue({ mountChecks: { upload: true } });
       mocks.config.getEnv.mockReturnValue(
         mockEnvData({
-          storage: { ignoreMountCheckErrors: true, cacheLocation: '/tmp/immich-cache', thumbnails: 'cache' },
+          storage: {
+            ignoreMountCheckErrors: true,
+            cacheLocation: '/tmp/immich-cache',
+            thumbnails: 'cache',
+            backend: 'local',
+            s3: {
+              endpoint: '',
+              region: 'auto',
+              bucket: '',
+              accessKeyId: '',
+              secretAccessKey: '',
+              forcePathStyle: true,
+            },
+          },
         }),
       );
       mocks.asset.getFileSamples.mockResolvedValue([]);

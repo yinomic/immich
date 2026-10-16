@@ -45,6 +45,7 @@ let instance: StorageCore | null;
 
 let mediaLocation: string | undefined;
 let cacheLocation: string | undefined;
+let remoteStorage = false;
 
 export class StorageCore {
   private constructor(
@@ -115,12 +116,33 @@ export class StorageCore {
     cacheLocation = location;
   }
 
+  static setRemoteStorage(remote: boolean) {
+    remoteStorage = remote;
+  }
+
+  static get isRemoteStorage(): boolean {
+    return remoteStorage;
+  }
+
+  /** object key for a locally staged upload */
+  static toObjectKey(localPath: string): string {
+    const incoming = join(StorageCore.getCacheLocation(), 'incoming') + '/';
+    const normalized = localPath.replaceAll('\\', '/');
+    return (normalized.startsWith(incoming) ? normalized.slice(incoming.length) : normalized).replace(/^\/+/, '');
+  }
+
   static getBaseFolder(folder: StorageFolder) {
     // NOTE (family fork): derived files never live next to the originals (and
     // therefore never in the cloud bucket) — they go to a disposable local
     // cache directory that can be deleted at any time.
     if (folder === StorageFolder.Thumbnails || folder === StorageFolder.EncodedVideo) {
       return join(StorageCore.getCacheLocation(), folder);
+    }
+
+    // uploads are staged locally and pushed to the bucket afterwards, so the
+    // file interceptor always has a real path to write to
+    if (remoteStorage && folder === StorageFolder.Upload) {
+      return join(StorageCore.getCacheLocation(), 'incoming', folder);
     }
 
     return join(StorageCore.getMediaLocation(), folder);

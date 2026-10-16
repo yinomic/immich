@@ -47,6 +47,11 @@ export const newStorageRepositoryMock = (): Mocked<RepositoryInterface<StorageRe
   StorageCore.setMediaLocation('/data');
 
   return {
+    isRemote: vitest.fn().mockReturnValue(false),
+    getServeTarget: vitest.fn(),
+    withLocalCopy: vitest
+      .fn()
+      .mockImplementation((_key: string, callback: (path: string) => Promise<unknown>) => callback('/tmp/object')),
     createZipStream: vitest.fn(),
     createPlainReadStream: vitest.fn(),
     createReadStream: vitest.fn(),

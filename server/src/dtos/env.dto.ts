@@ -19,6 +19,9 @@ const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mod
  */
 const CloudSearchProviderSchema = z.enum(['ark', 'tencent', 'mock']).describe('Cloud search provider');
 
+/** Where the library is stored. */
+const StorageBackendSchema = z.enum(['local', 's3']).describe('Storage backend');
+
 /** Whether derived images (thumbnails, previews) are cached locally at all. */
 const ThumbnailModeSchema = z.enum(['cache', 'off']).describe('Thumbnail handling');
 
@@ -82,6 +85,7 @@ export const EnvSchema = z
     IMMICH_LOG_LEVEL: LogLevelSchema.optional(),
     IMMICH_LOG_FORMAT: LogFormatSchema.optional(),
     IMMICH_CACHE_LOCATION: absolutePath,
+    IMMICH_STORAGE_BACKEND: StorageBackendSchema.optional(),
     IMMICH_MEDIA_LOCATION: absolutePath,
     IMMICH_THUMBNAILS: ThumbnailModeSchema.optional(),
     IMMICH_MICROSERVICES_METRICS_PORT: z.coerce.number().int().optional(),
@@ -113,6 +117,14 @@ export const EnvSchema = z
     DB_USERNAME: z.string().optional(),
     NO_COLOR: z.string().optional(),
     REDIS_HOSTNAME: z.string().optional(),
+    S3_ACCESS_KEY_ID: z.string().optional(),
+    S3_BUCKET: z.string().optional(),
+    S3_ENDPOINT: z.string().optional(),
+    S3_FORCE_PATH_STYLE: stringBool.optional(),
+    S3_PREFIX: z.string().optional(),
+    S3_PRESIGN_TTL: z.coerce.number().int().positive().optional(),
+    S3_REGION: z.string().optional(),
+    S3_SECRET_ACCESS_KEY: z.string().optional(),
     REDIS_PORT: z.coerce.number().int().optional(),
     REDIS_DBINDEX: z.coerce.number().int().optional(),
     REDIS_USERNAME: z.string().optional(),

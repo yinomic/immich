@@ -87,6 +87,15 @@ export const envData: EnvData = {
     ignoreMountCheckErrors: false,
     cacheLocation: '/tmp/immich-cache',
     thumbnails: 'cache',
+    backend: 'local',
+    s3: {
+      endpoint: 'http://localhost:9000',
+      region: 'auto',
+      bucket: 'immich',
+      accessKeyId: 'key',
+      secretAccessKey: 'secret',
+      forcePathStyle: true,
+    },
   },
 
   search: {

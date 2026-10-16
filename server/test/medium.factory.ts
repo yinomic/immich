@@ -42,6 +42,7 @@ import { MediaRepository } from 'src/repositories/media.repository.js';
 import { MemoryRepository } from 'src/repositories/memory.repository.js';
 import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
@@ -490,7 +491,13 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     }
 
     case StorageRepository: {
-      return new key(LoggingRepository.create()) as InstanceType<T>;
+      return new key(
+        LoggingRepository.create(),
+        automock(ObjectStorageRepository, {
+          args: [automock(ConfigRepository), automock(LoggingRepository)],
+          strict: false,
+        }),
+      ) as InstanceType<T>;
     }
 
     case TagRepository: {

@@ -608,7 +608,20 @@ describe(AssetMediaService.name, () => {
       mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
       mocks.config.getEnv.mockReturnValue(
         mockEnvData({
-          storage: { ignoreMountCheckErrors: false, cacheLocation: '/tmp/immich-cache', thumbnails: 'off' },
+          storage: {
+            ignoreMountCheckErrors: false,
+            cacheLocation: '/tmp/immich-cache',
+            thumbnails: 'off',
+            backend: 'local',
+            s3: {
+              endpoint: '',
+              region: 'auto',
+              bucket: '',
+              accessKeyId: '',
+              secretAccessKey: '',
+              forcePathStyle: true,
+            },
+          },
         }),
       );
 

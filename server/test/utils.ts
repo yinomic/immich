@@ -48,6 +48,7 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
@@ -260,6 +261,7 @@ export type ServiceOverrides = {
   move: MoveRepository;
   notification: NotificationRepository;
   oauth: OAuthRepository;
+  objectStorage: ObjectStorageRepository;
   partner: PartnerRepository;
   plugin: PluginRepository;
   process: ProcessRepository;
@@ -343,6 +345,7 @@ export const getMocks = () => {
     move: automock(MoveRepository, { strict: false }),
     notification: automock(NotificationRepository),
     oauth: automock(OAuthRepository, { args: [loggerMock] }),
+    objectStorage: automock(ObjectStorageRepository, { args: [configMock, loggerMock], strict: false }),
     partner: automock(PartnerRepository, { strict: false }),
     plugin: automock(PluginRepository, { strict: true, args: [databaseMock, loggerMock] }),
     process: automock(ProcessRepository),
@@ -411,6 +414,7 @@ export const newTestService = <T extends BaseService>(
     overrides.move || (mocks.move as As<MoveRepository>),
     overrides.notification || (mocks.notification as As<NotificationRepository>),
     overrides.oauth || (mocks.oauth as As<OAuthRepository>),
+    overrides.objectStorage || (mocks.objectStorage as As<ObjectStorageRepository>),
     overrides.partner || (mocks.partner as As<PartnerRepository>),
     overrides.plugin || (mocks.plugin as As<PluginRepository>),
     overrides.process || (mocks.process as As<ProcessRepository>),

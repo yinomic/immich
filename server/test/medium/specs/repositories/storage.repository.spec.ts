@@ -1,7 +1,9 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { StorageRepository, type WatchOptions } from 'src/repositories/storage.repository.js';
 import { automock } from 'test/utils.js';
 
@@ -13,8 +15,14 @@ describe(StorageRepository.name, () => {
   let excludedFile: string;
 
   beforeEach(async () => {
-    // eslint-disable-next-line no-sparse-arrays
-    sut = new StorageRepository(automock(LoggingRepository, { args: [, { getEnv: () => ({}) }], strict: false }));
+    sut = new StorageRepository(
+      // eslint-disable-next-line no-sparse-arrays
+      automock(LoggingRepository, { args: [, { getEnv: () => ({}) }], strict: false }),
+      automock(ObjectStorageRepository, {
+        args: [automock(ConfigRepository), automock(LoggingRepository)],
+        strict: false,
+      }),
+    );
     tempDir = await mkdtemp(join(tmpdir(), 'immich-storage-watch-'));
     includedFile = join(tempDir, 'included/photo.jpg');
     excludedFile = join(tempDir, 'excluded/photo.jpg');

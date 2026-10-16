@@ -116,6 +116,17 @@ export interface EnvData {
     cacheLocation: string;
     /** `off` serves originals instead of cached thumbnails */
     thumbnails: 'cache' | 'off';
+    backend: 'local' | 's3';
+    s3: {
+      endpoint: string;
+      region: string;
+      bucket: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+      forcePathStyle: boolean;
+      prefix?: string;
+      presignTtlSeconds?: number;
+    };
   };
 
   search: {
@@ -369,6 +380,17 @@ const getEnv = (): EnvData => {
       mediaLocation: dto.IMMICH_MEDIA_LOCATION,
       cacheLocation: dto.IMMICH_CACHE_LOCATION ?? join(tmpdir(), 'immich-cache'),
       thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
+      backend: dto.IMMICH_STORAGE_BACKEND ?? 'local',
+      s3: {
+        endpoint: dto.S3_ENDPOINT ?? '',
+        region: dto.S3_REGION ?? 'auto',
+        bucket: dto.S3_BUCKET ?? '',
+        accessKeyId: dto.S3_ACCESS_KEY_ID ?? '',
+        secretAccessKey: dto.S3_SECRET_ACCESS_KEY ?? '',
+        forcePathStyle: dto.S3_FORCE_PATH_STYLE ?? true,
+        prefix: dto.S3_PREFIX,
+        presignTtlSeconds: dto.S3_PRESIGN_TTL,
+      },
     },
 
     search: {

@@ -45,8 +45,18 @@ export class StorageService extends BaseService {
 
   @OnEvent({ name: 'AppBootstrap', priority: BootstrapEventPriority.StorageService })
   async onBootstrap() {
-    StorageCore.setMediaLocation(this.detectMediaLocation());
-    StorageCore.setCacheLocation(this.configRepository.getEnv().storage.cacheLocation);
+    const { storage } = this.configRepository.getEnv();
+    const remote = storage.backend === 's3';
+    StorageCore.setRemoteStorage(remote);
+    // with object storage the media location is empty on purpose: every media
+    // path is a relative object key
+    StorageCore.setMediaLocation(remote ? '' : this.detectMediaLocation());
+    StorageCore.setCacheLocation(storage.cacheLocation);
+
+    if (remote) {
+      this.logger.log(`Using object storage bucket "${storage.s3.bucket}" at ${storage.s3.endpoint}`);
+      return;
+    }
 
     await this.databaseRepository.withLock(DatabaseLock.SystemFileMounts, async () => {
       const flags =

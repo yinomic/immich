@@ -209,7 +209,12 @@ describe(StorageRepository.name, () => {
 
   beforeEach(() => {
     // eslint-disable-next-line no-sparse-arrays
-    sut = new StorageRepository(automock(LoggingRepository, { args: [, { getEnv: () => ({}) }], strict: false }));
+    const logger = automock(LoggingRepository, { args: [, { getEnv: () => ({}) }], strict: false });
+    sut = new StorageRepository(logger, {
+      isRemote: () => false,
+      presign: (key: string) => Promise.resolve(key),
+      withLocalCopy: (_key: string, cb: (path: string) => unknown) => Promise.resolve(cb('/tmp/object')),
+    } as any);
     mocks.watch.mockReset().mockReturnValue(mocks.watcher);
     mocks.watcher.on.mockReset().mockReturnValue(mocks.watcher);
     mocks.watcher.close.mockReset().mockResolvedValue(undefined);

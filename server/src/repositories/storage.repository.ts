@@ -5,6 +5,7 @@ import fastGlob from 'fast-glob';
 import {
   Dirent,
   ReadOptionsWithBuffer,
+  Stats,
   constants,
   createReadStream,
   createWriteStream,
@@ -19,6 +20,7 @@ import { createGunzip, createGzip } from 'node:zlib';
 import picomatch from 'picomatch';
 import { CrawlOptionsDto, WalkOptionsDto } from 'src/dtos/library.dto.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
 
 export interface WatchEvents {
@@ -51,8 +53,16 @@ export interface DiskUsage {
 
 @Injectable()
 export class StorageRepository {
-  constructor(private logger: LoggingRepository) {
+  constructor(
+    private logger: LoggingRepository,
+    private objectStorage: ObjectStorageRepository,
+  ) {
     this.logger.setContext(StorageRepository.name);
+  }
+
+  /** true when media lives in an object bucket (paths are then object keys) */
+  isRemote(): boolean {
+    return this.objectStorage.isRemote();
   }
 
   realpath(filepath: string) {
@@ -71,7 +81,25 @@ export class StorageRepository {
     return fs.copyFile(source, target);
   }
 
-  stat(filepath: string) {
+  async stat(filepath: string): Promise<Stats> {
+    if (this.isRemote()) {
+      const size = await this.objectStorage.size(filepath);
+      if (size === undefined) {
+        throw new Error(`Object not found: ${filepath}`);
+      }
+
+      const timestamp = new Date();
+      return {
+        size,
+        atime: timestamp,
+        mtime: timestamp,
+        ctime: timestamp,
+        birthtime: timestamp,
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      } as Stats;
+    }
     return fs.stat(filepath);
   }
 
@@ -83,7 +111,10 @@ export class StorageRepository {
     return createWriteStream(filepath, { flags: 'w', flush: true });
   }
 
-  createOrOverwriteFile(filepath: string, buffer: Buffer) {
+  createOrOverwriteFile(filepath: string, buffer: Buffer, contentType?: string) {
+    if (this.isRemote()) {
+      return this.objectStorage.put(filepath, buffer, contentType);
+    }
     return fs.writeFile(filepath, buffer, { flag: 'w' });
   }
 
@@ -96,7 +127,25 @@ export class StorageRepository {
   }
 
   utimes(filepath: string, atime: Date, mtime: Date) {
+    if (this.isRemote()) {
+      // object storage has no timestamps; the DB keeps the dates instead
+      return Promise.resolve();
+    }
     return fs.utimes(filepath, atime, mtime);
+  }
+
+  /** presigned URL (remote) or absolute path (local) for serving a file */
+  getServeTarget(key: string, options?: { contentType?: string; fileName?: string }): Promise<string> {
+    return this.objectStorage.presign(key, options);
+  }
+
+  /** run a callback against a real local file, downloading remote objects first */
+  withLocalCopy<T>(
+    key: string,
+    callback: (path: string) => Promise<T>,
+    options?: { uploadBack?: boolean; contentType?: string },
+  ): Promise<T> {
+    return this.objectStorage.withLocalCopy(key, callback, options);
   }
 
   createZipStream(): ImmichZipStream {
@@ -124,6 +173,14 @@ export class StorageRepository {
   }
 
   async createReadStream(filepath: string, mimeType?: string | null): Promise<ImmichReadStream> {
+    if (this.isRemote()) {
+      const size = await this.objectStorage.size(filepath);
+      if (size === undefined) {
+        throw new Error(`Object not found: ${filepath}`);
+      }
+      return { stream: await this.objectStorage.stream(filepath), length: size, type: mimeType || undefined };
+    }
+
     const { size } = await fs.stat(filepath);
     await fs.access(filepath, constants.R_OK);
     return {
@@ -134,6 +191,10 @@ export class StorageRepository {
   }
 
   async readFile(filepath: string, options?: ReadOptionsWithBuffer<Buffer>): Promise<Buffer> {
+    if (this.isRemote() && !options) {
+      return this.objectStorage.get(filepath);
+    }
+
     // read a slice
     if (options) {
       const file = await fs.open(filepath);
@@ -155,6 +216,9 @@ export class StorageRepository {
   }
 
   async checkFileExists(filepath: string, mode = constants.F_OK): Promise<boolean> {
+    if (this.isRemote()) {
+      return this.objectStorage.exists(filepath);
+    }
     try {
       await fs.access(filepath, mode);
       return true;
@@ -164,6 +228,10 @@ export class StorageRepository {
   }
 
   async unlink(file: string) {
+    if (this.isRemote()) {
+      await this.objectStorage.delete([file]);
+      return;
+    }
     try {
       await fs.unlink(file);
     } catch (error) {

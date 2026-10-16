@@ -35,6 +35,7 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
@@ -92,6 +93,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   MoveRepository,
   NotificationRepository,
   OAuthRepository,
+  ObjectStorageRepository,
   PartnerRepository,
   PluginRepository,
   ProcessRepository,
@@ -151,6 +153,7 @@ export class BaseService {
     protected moveRepository: MoveRepository,
     protected notificationRepository: NotificationRepository,
     protected oauthRepository: OAuthRepository,
+    protected objectStorageRepository: ObjectStorageRepository,
     protected partnerRepository: PartnerRepository,
     protected pluginRepository: PluginRepository,
     protected processRepository: ProcessRepository,
@@ -218,6 +221,7 @@ export class BaseService {
       ctx.moveRepository,
       ctx.notificationRepository,
       ctx.oauthRepository,
+      ctx.objectStorageRepository,
       ctx.partnerRepository,
       ctx.pluginRepository,
       ctx.processRepository,

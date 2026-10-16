@@ -27,6 +27,7 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
+import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
@@ -81,6 +82,7 @@ export const repositories = [
   MoveRepository,
   NotificationRepository,
   OAuthRepository,
+  ObjectStorageRepository,
   PartnerRepository,
   PluginRepository,
   ProcessRepository,
