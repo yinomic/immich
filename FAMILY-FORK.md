@@ -324,3 +324,62 @@
 - `explore` 页里指向人物页的卡片链接改为指向「照片」
 - 保留（暂时）：`lib/services/shared-link.service.ts` 与其若干组件（`SharedLinkCreateModal`、`AlbumSharedLink`、`RemoveFromSharedLinkAction`）以及 `lib/route.ts` 里的路由字符串助手 —— 它们引用了 `$lib/services/shared-link.service`，直接删会级联；这些入口已不可达，待与 SDK 重新生成一起清
 - 验证：`pnpm --filter immich-web check:typescript` 0 错、`check:svelte`（`--fail-on-warnings`）**0 错 0 警告**
+
+---
+
+## 9. 部署说明（当前形态）
+
+### 9.1 依赖
+- **PostgreSQL 16**（stock 镜像即可，**不需要** vectorchord/pgvector —— 向量已移到云/本地向量库）
+- **Redis / Valkey**（任务队列 + 多实例事件）
+- **不需要** machine-learning 容器
+- 对象存储：火山 TOS / 腾讯 COS / MinIO（S3 兼容）；本地文件系统也仍可用（默认）
+
+### 9.2 compose（推荐写法）
+```yaml
+services:
+  immich-server:
+    image: <你的构建或本地构建>
+    env_file: [.env]
+    environment:
+      IMMICH_CACHE_LOCATION: /cache        # 派生文件（缩略图/转码）本地缓存，不进桶
+      IMMICH_THUMBNAILS: cache             # 或 off：完全不生成缩略图
+      IMMICH_STORAGE_BACKEND: s3
+    volumes:
+      - immich-cache:/cache
+  database:
+    image: postgres:16                     # 关键：不需要自定义镜像
+  redis:
+    image: valkey/valkey:9
+volumes:
+  immich-cache:
+```
+（仓库里的 `docker/docker-compose.yml` 已经是这个形态，另加了 `immich-cache:/cache` 卷。）
+
+### 9.3 环境变量清单
+| 变量 | 说明 |
+|---|---|
+| `IMMICH_STORAGE_BACKEND` | `local`（默认）/ `s3` |
+| `S3_ENDPOINT` / `S3_REGION` / `S3_BUCKET` | 桶地址（TOS/COS 都要填自定义 endpoint） |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | 访问密钥 |
+| `S3_FORCE_PATH_STYLE` | TOS/COS 需 `true` |
+| `S3_PREFIX` / `S3_PRESIGN_TTL` | 可选：对象前缀、预签名有效期（默认 3600s） |
+| `IMMICH_CACHE_LOCATION` | 派生文件缓存目录（可随时删除，会自动重建） |
+| `IMMICH_THUMBNAILS` | `cache`（默认）/ `off` |
+| `IMMICH_CLOUD_SEARCH_ENABLED` | 打开云端语义搜索 |
+| `IMMICH_CLOUD_SEARCH_PROVIDER` | `ark`（火山方舟）/ `tencent` / `mock` |
+| `IMMICH_CLOUD_SEARCH_API_KEY` / `_MODEL` / `_BASE_URL` / `_DIM` | 云端 embedding 配置 |
+| `IMMICH_VECTOR_STORE` | `file`（默认，本地）/ `vikingdb`（火山云向量库） |
+| `VIKINGDB_*` | 火山向量库：`HOST/REGION/COLLECTION/INDEX/ACCESS_KEY/SECRET_KEY/API_KEY/...` |
+
+### 9.4 上线前验证步骤
+1. 用真实 key 跑 `node scripts/verify-cloud-search.mjs --image <一张宝宝照片>`：确认返回维度、图文是否同一向量空间、单图延迟与计费口径
+2. 启动服务后确认日志出现 `Using S3 object storage (...)`，上传一张照片，`GET /assets/:id/original` 应返回 **302 到预签名 URL**
+3. 触发一次 `PUT /api/jobs/smartSearch {"command":"start","force":true}`，确认向量库有条目、搜索能命中
+4. 检查桶里**只有** `upload/`（原图/边车）等，没有 `thumbs/`（缩略图在本地 `/cache`）
+
+### 9.5 已知遗留
+- 从 local 切到 s3 **不会自动搬迁**已有文件（需要一次性迁移脚本）
+- `shared_link*`、`album_user` 表仍在（分享功能已停用/删除；彻底删表需先迁移相册归属）
+- `packages/sdk`/`open-api` 工件仍是改造前的版本（web 用旧类型编译通过，但人脸/人物等页面已删除）
+- `mobile/` 未改动（是否保留官方 App 待定）
