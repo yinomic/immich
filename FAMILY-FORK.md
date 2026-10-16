@@ -399,3 +399,20 @@ volumes:
 - 验证：迁移后 `pg_tables` 中 `shared_link%` 数量 **0**；`tsc` 绿、eslint 绿、87 文件 / 1587 用例全绿；运行时登录/相册/时间线/搜索正常，作业 0 报错
 
 **注意**：迁移源码放在 `src/schema/migrations/`，但 `sql-tools migrations run` 默认读 `dist/`，所以改完迁移必须 `pnpm --filter immich build` 再跑。
+
+### Round 17（需求变更：**不要搜索**）
+用户最新需求改为「不要搜索（向量桶和语义搜索有点贵，作用不大）」，对象存储保留。因此本轮开始**拆除云端语义搜索/向量库**：
+
+已删除：
+- `repositories/embedding/**`（ark/tencent/mock provider + 接口）与 `repositories/embedding.repository.ts`
+- `repositories/vector/**`（file/vikingdb 向量库 + volcengine V4 签名）与 `repositories/vector-store.repository.ts`
+- `services/smart-info.service.ts`（云端索引作业）与 `scripts/verify-cloud-search.mjs`
+- `SearchService` 的 `searchSmart` / `searchSmartV3` / `getVectorCandidates` / `resolveEmbedding` / `embeddingCache`，以及 `POST /search/smart` 端点
+- `ConfigRepository` 的 `search` 配置块与全部 `IMMICH_CLOUD_SEARCH_*` / `IMMICH_VECTOR_STORE*` / `VIKINGDB_*` 环境变量
+- `ServerFeaturesDto.smartSearch` 特性开关
+- 相应的单测与 mock
+
+保留（下一轮继续拆）：`JobName.SmartSearch` / `SmartSearchQueueAll`、`QueueName.SmartSearch`、`asset_job_status.embeddedAt`、`SystemMetadataKey.CloudSearchIndex`、`SmartSearchDto`、`searchSmartByIds` 等残留（本轮尝试一并删除时 enum 变更引发了 ~136 处类型级联，已回滚，留待下一轮单独处理）
+
+验证：`tsc` 绿、eslint（max-warnings 0）绿、83 文件 / 1548 用例全绿。
+**注意**：Redis 里若残留 `SmartSearchQueueAll` 作业，microservices 启动会因找不到 handler 而退出（`Failed to find job handler`），需要清理队列或先删掉该枚举与队列映射。

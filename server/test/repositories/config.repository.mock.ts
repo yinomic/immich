@@ -98,23 +98,6 @@ export const envData: EnvData = {
     },
   },
 
-  search: {
-    enabled: false,
-    provider: 'mock',
-    apiKey: undefined,
-    baseUrl: undefined,
-    model: 'mock-embedding',
-    dimSize: 512,
-    timeoutMs: 30_000,
-    vectorStore: 'file',
-    vectorStorePath: undefined,
-    vikingdb: {
-      host: 'api-vikingdb.volces.com',
-      region: 'cn-north-1',
-      scheme: 'https',
-    },
-  },
-
   telemetry: {
     apiPort: 8081,
     microservicesPort: 8082,

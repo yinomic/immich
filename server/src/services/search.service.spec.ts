@@ -200,27 +200,6 @@ describe(SearchService.name, () => {
       expect(mocks.search.searchMetadata).toHaveBeenCalled();
     });
 
-    it('should route statistics, random, and smart filter requests to their V3 search', async () => {
-      const auth = AuthFactory.create();
-
-      mocks.search.searchStatisticsV3.mockResolvedValue({ total: 0 });
-      await expect(sut.searchStatistics(auth, { filter: {} })).resolves.toEqual({ total: 0 });
-
-      mocks.search.searchRandomV3.mockResolvedValue([]);
-      await expect(sut.searchRandom(auth, { size: 250, filter: {} })).resolves.toEqual([]);
-
-      mocks.search.searchSmartV3ByIds.mockResolvedValue([]);
-      mocks.embedding.isEnabled.mockReturnValue(true);
-      mocks.embedding.embedText.mockResolvedValue([1, 2, 3]);
-      mocks.vectorStore.search.mockResolvedValue([]);
-      await sut.searchSmart(auth, { size: 100, filter: {}, query: 'test' });
-      expect(mocks.search.searchSmartV3ByIds).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ lockedOwnerId: expect.any(String) }),
-        [],
-      );
-    });
-
     it('should reject an invalid cursor', async () => {
       await expect(sut.searchMetadata(AuthFactory.create(), { size: 250, cursor: '???' })).rejects.toThrowError(
         new BadRequestException('Invalid cursor'),
@@ -231,94 +210,6 @@ describe(SearchService.name, () => {
       const filter = { visibility: { in: [AssetVisibility.Locked, AssetVisibility.Timeline] } };
       await expect(sut.searchMetadata(AuthFactory.create(), { size: 250, filter })).rejects.toBeInstanceOf(
         UnauthorizedException,
-      );
-    });
-  });
-
-  describe('searchSmart', () => {
-    beforeEach(() => {
-      mocks.embedding.isEnabled.mockReturnValue(true);
-      mocks.embedding.getModelName.mockReturnValue('mock-embedding');
-      mocks.embedding.embedText.mockResolvedValue([1, 2, 3]);
-    });
-
-    it('should raise a BadRequestException if cloud search is disabled', async () => {
-      mocks.embedding.isEnabled.mockReturnValue(false);
-
-      await expect(sut.searchSmart(authStub.user1, { size: 100, query: 'test' })).rejects.toThrowError(
-        new BadRequestException('Smart search is not enabled'),
-      );
-
-      expect(mocks.embedding.embedText).not.toHaveBeenCalled();
-    });
-
-    it('should rank the candidates returned by the vector store', async () => {
-      mocks.vectorStore.search.mockResolvedValue([
-        { assetId: 'asset-b', distance: 0.1 },
-        { assetId: 'asset-a', distance: 0.2 },
-      ]);
-      mocks.search.searchSmartByIds.mockResolvedValue([
-        AssetFactory.create({ id: 'asset-a' }),
-        AssetFactory.create({ id: 'asset-b' }),
-      ] as never);
-
-      const response = await sut.searchSmart(authStub.user1, { size: 100, query: 'test' });
-
-      expect(mocks.embedding.embedText).toHaveBeenCalledWith('test');
-      expect(mocks.search.searchSmartByIds).toHaveBeenCalledWith(
-        expect.objectContaining({ assetIds: ['asset-b', 'asset-a'], userIds: [authStub.user1.user.id] }),
-      );
-      expect(response.assets.items.map((asset: { id: string }) => asset.id)).toEqual(['asset-b', 'asset-a']);
-    });
-
-    it('should cache text embeddings for repeated queries', async () => {
-      mocks.vectorStore.search.mockResolvedValue([]);
-      mocks.search.searchSmartByIds.mockResolvedValue([]);
-
-      await sut.searchSmart(authStub.user1, { size: 100, query: 'baby' });
-      await sut.searchSmart(authStub.user1, { size: 100, query: 'baby' });
-
-      expect(mocks.embedding.embedText).toHaveBeenCalledTimes(1);
-    });
-
-    it('should reuse the stored vector when searching by asset', async () => {
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
-      mocks.vectorStore.get.mockResolvedValue([9, 9, 9]);
-      mocks.vectorStore.search.mockResolvedValue([]);
-      mocks.search.searchSmartByIds.mockResolvedValue([]);
-
-      await sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' });
-
-      expect(mocks.embedding.embedText).not.toHaveBeenCalled();
-      expect(mocks.vectorStore.get).toHaveBeenCalledWith('asset-id');
-      expect(mocks.vectorStore.search).toHaveBeenCalledWith([9, 9, 9], expect.objectContaining({ topK: 400 }));
-    });
-
-    it('should re-embed the original when the store cannot return a vector', async () => {
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
-      mocks.vectorStore.get.mockResolvedValue(undefined);
-      mocks.assetJob.getForClipEncoding.mockResolvedValue(AssetFactory.create({ id: 'asset-id' }));
-      mocks.storage.readFile.mockResolvedValue(Buffer.from('original'));
-      mocks.embedding.embedImage.mockResolvedValue([7, 7, 7]);
-      mocks.vectorStore.search.mockResolvedValue([]);
-      mocks.search.searchSmartByIds.mockResolvedValue([]);
-
-      await sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' });
-
-      expect(mocks.embedding.embedImage).toHaveBeenCalledWith({
-        data: Buffer.from('original'),
-        mimeType: 'image/jpeg',
-      });
-      expect(mocks.vectorStore.search).toHaveBeenCalledWith([7, 7, 7], expect.anything());
-    });
-
-    it('should reject an asset without a stored vector', async () => {
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
-      mocks.vectorStore.get.mockResolvedValue(undefined);
-      mocks.assetJob.getForClipEncoding.mockResolvedValue(void 0);
-
-      await expect(sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' })).rejects.toThrowError(
-        new BadRequestException('Asset asset-id has no embedding'),
       );
     });
   });

@@ -13,7 +13,6 @@ import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
-import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -41,7 +40,6 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
-import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -64,7 +62,6 @@ export const repositories = [
   DatabaseRepository,
   DownloadRepository,
   EmailRepository,
-  EmbeddingRepository,
   EventRepository,
   IntegrityRepository,
   JobRepository,
@@ -92,7 +89,6 @@ export const repositories = [
   TelemetryRepository,
   TrashRepository,
   UserRepository,
-  VectorStoreRepository,
   ViewRepository,
   VersionHistoryRepository,
   VideoStreamRepository,

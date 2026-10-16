@@ -13,7 +13,6 @@ import {
   SearchResponseDto,
   SearchStatisticsResponseDto,
   SearchSuggestionRequestDto,
-  SmartSearchDto,
   StatisticsSearchDto,
 } from 'src/dtos/search.dto.js';
 import { ApiTag, Permission } from 'src/enum.js';
@@ -80,15 +79,6 @@ export class SearchController {
   @Post('smart')
   @Authenticated({ permission: Permission.AssetRead })
   @HttpCode(HttpStatus.OK)
-  @Endpoint({
-    summary: 'Smart asset search',
-    description: 'Perform a smart search for assets by using cloud embedding vectors to determine relevance.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  searchSmart(@Auth() auth: AuthDto, @Body() dto: SmartSearchDto): Promise<SearchResponseDto> {
-    return this.service.searchSmart(auth, dto);
-  }
-
   @Get('explore')
   @Authenticated({ permission: Permission.AssetRead })
   @Endpoint({

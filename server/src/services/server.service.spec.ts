@@ -9,8 +9,6 @@ describe(ServerService.name, () => {
 
   beforeEach(() => {
     ({ sut, mocks } = newTestService(ServerService));
-
-    mocks.embedding.isEnabled.mockReturnValue(false);
   });
 
   it('should work', () => {
@@ -136,7 +134,6 @@ describe(ServerService.name, () => {
   describe('getFeatures', () => {
     it('should respond the server features', async () => {
       await expect(sut.getFeatures()).resolves.toEqual({
-        smartSearch: false,
         duplicateDetection: false,
         facialRecognition: false,
         importFaces: false,

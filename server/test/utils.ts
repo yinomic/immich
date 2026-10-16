@@ -34,7 +34,6 @@ import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
-import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -62,7 +61,6 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
-import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -243,7 +241,6 @@ export type ServiceOverrides = {
   database: DatabaseRepository;
   downloadRepository: DownloadRepository;
   email: EmailRepository;
-  embedding: EmbeddingRepository;
   event: EventRepository;
   integrityReport: IntegrityRepository;
   job: JobRepository;
@@ -271,7 +268,6 @@ export type ServiceOverrides = {
   telemetry: TelemetryRepository;
   trash: TrashRepository;
   user: UserRepository;
-  vectorStore: VectorStoreRepository;
   versionHistory: VersionHistoryRepository;
   videoStream: VideoStreamRepository;
   view: ViewRepository;
@@ -322,7 +318,6 @@ export const getMocks = () => {
     database: databaseMock,
     downloadRepository: automock(DownloadRepository, { strict: false }),
     email: automock(EmailRepository, { args: [loggerMock] }),
-    embedding: automock(EmbeddingRepository, { args: [configMock, loggerMock], strict: false }),
     // eslint-disable-next-line no-sparse-arrays
     event: automock(EventRepository, { args: [, , loggerMock], strict: false }),
     integrityReport: automock(IntegrityRepository, { strict: false }),
@@ -354,7 +349,6 @@ export const getMocks = () => {
     telemetry: newTelemetryRepositoryMock(),
     trash: automock(TrashRepository),
     user: automock(UserRepository, { strict: false }),
-    vectorStore: automock(VectorStoreRepository, { args: [configMock, loggerMock], strict: false }),
     versionHistory: automock(VersionHistoryRepository),
     videoStream: automock(VideoStreamRepository, { strict: false }),
     view: automock(ViewRepository),
@@ -389,7 +383,6 @@ export const newTestService = <T extends BaseService>(
     overrides.database || (mocks.database as As<DatabaseRepository>),
     overrides.downloadRepository || (mocks.downloadRepository as As<DownloadRepository>),
     overrides.email || (mocks.email as As<EmailRepository>),
-    overrides.embedding || (mocks.embedding as As<EmbeddingRepository>),
     overrides.event || (mocks.event as As<EventRepository>),
     overrides.integrityReport || (mocks.integrityReport as As<IntegrityRepository>),
     overrides.job || (mocks.job as As<JobRepository>),
@@ -416,7 +409,6 @@ export const newTestService = <T extends BaseService>(
     overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
     overrides.trash || (mocks.trash as As<TrashRepository>),
     overrides.user || (mocks.user as As<UserRepository>),
-    overrides.vectorStore || (mocks.vectorStore as As<VectorStoreRepository>),
     overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
     overrides.videoStream || (mocks.videoStream as As<VideoStreamRepository>),
     overrides.view || (mocks.view as As<ViewRepository>),

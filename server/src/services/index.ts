@@ -26,7 +26,6 @@ import { QueueService } from 'src/services/queue.service.js';
 import { SearchService } from 'src/services/search.service.js';
 import { ServerService } from 'src/services/server.service.js';
 import { SessionService } from 'src/services/session.service.js';
-import { SmartInfoService } from 'src/services/smart-info.service.js';
 import { StackService } from 'src/services/stack.service.js';
 import { StorageTemplateService } from 'src/services/storage-template.service.js';
 import { StorageService } from 'src/services/storage.service.js';
@@ -74,7 +73,6 @@ export const services = [
   SearchService,
   ServerService,
   SessionService,
-  SmartInfoService,
   StackService,
   StorageService,
   StorageTemplateService,

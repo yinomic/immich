@@ -136,7 +136,6 @@ const ServerConfigSchema = z
 
 const ServerFeaturesSchema = z
   .object({
-    smartSearch: z.boolean().describe('Whether smart search is enabled'),
     duplicateDetection: z.boolean().describe('Whether duplicate detection is enabled'),
     configFile: z.boolean().describe('Whether config file is available'),
     facialRecognition: z.boolean().describe('Whether facial recognition is enabled'),

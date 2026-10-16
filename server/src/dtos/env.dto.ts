@@ -17,7 +17,6 @@ const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mod
  * Cloud search replaces the local machine-learning service: images and text are
  * embedded by a cloud API and the vectors are stored in a vector store.
  */
-const CloudSearchProviderSchema = z.enum(['ark', 'tencent', 'mock']).describe('Cloud search provider');
 
 /** Where the library is stored. */
 const StorageBackendSchema = z.enum(['local', 's3']).describe('Storage backend');
@@ -26,7 +25,6 @@ const StorageBackendSchema = z.enum(['local', 's3']).describe('Storage backend')
 const ThumbnailModeSchema = z.enum(['cache', 'off']).describe('Thumbnail handling');
 
 /** Where embedding vectors are stored. */
-const VectorStoreKindSchema = z.enum(['file', 'vikingdb']).describe('Vector store backend');
 const absolutePath = z.string().regex(/^\//, 'Must be an absolute path').optional();
 /**
  * Treat certain strings as booleans and coerce them to boolean
@@ -58,26 +56,6 @@ export const EnvSchema = z
     IMMICH_BUILD_IMAGE: z.string().optional(),
     IMMICH_BUILD_IMAGE_URL: z.string().optional(),
     IMMICH_CONFIG_FILE: z.string().optional(),
-    IMMICH_CLOUD_SEARCH_API_KEY: z.string().optional(),
-    IMMICH_CLOUD_SEARCH_BASE_URL: z.string().optional(),
-    IMMICH_CLOUD_SEARCH_DIM: z.coerce.number().int().positive().optional(),
-    IMMICH_CLOUD_SEARCH_ENABLED: stringBool.optional(),
-    IMMICH_CLOUD_SEARCH_MODEL: z.string().optional(),
-    IMMICH_CLOUD_SEARCH_PROVIDER: CloudSearchProviderSchema.optional(),
-    IMMICH_CLOUD_SEARCH_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
-    IMMICH_VECTOR_STORE: VectorStoreKindSchema.optional(),
-    IMMICH_VECTOR_STORE_PATH: absolutePath,
-    VIKINGDB_ACCESS_KEY: z.string().optional(),
-    VIKINGDB_API_KEY: z.string().optional(),
-    VIKINGDB_COLLECTION: z.string().optional(),
-    VIKINGDB_HOST: z.string().optional(),
-    VIKINGDB_INDEX: z.string().optional(),
-    VIKINGDB_PRIMARY_KEY: z.string().optional(),
-    VIKINGDB_REGION: z.string().optional(),
-    VIKINGDB_SCHEME: z.enum(['http', 'https']).optional(),
-    VIKINGDB_SECRET_KEY: z.string().optional(),
-    VIKINGDB_SESSION_TOKEN: z.string().optional(),
-    VIKINGDB_VECTOR_FIELD: z.string().optional(),
     IMMICH_HELMET_FILE: z.string().optional(),
     IMMICH_ENV: ImmichEnvironmentSchema.optional(),
     IMMICH_HOST: z.string().optional(),

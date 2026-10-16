@@ -21,7 +21,6 @@ import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
-import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -49,7 +48,6 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
-import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -76,7 +74,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   DatabaseRepository,
   DownloadRepository,
   EmailRepository,
-  EmbeddingRepository,
   EventRepository,
   IntegrityRepository,
   JobRepository,
@@ -103,7 +100,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   TelemetryRepository,
   TrashRepository,
   UserRepository,
-  VectorStoreRepository,
   VersionHistoryRepository,
   VideoStreamRepository,
   ViewRepository,
@@ -132,7 +128,6 @@ export class BaseService {
     protected databaseRepository: DatabaseRepository,
     protected downloadRepository: DownloadRepository,
     protected emailRepository: EmailRepository,
-    protected embeddingRepository: EmbeddingRepository,
     protected eventRepository: EventRepository,
     protected integrityRepository: IntegrityRepository,
     protected jobRepository: JobRepository,
@@ -159,7 +154,6 @@ export class BaseService {
     protected telemetryRepository: TelemetryRepository,
     protected trashRepository: TrashRepository,
     protected userRepository: UserRepository,
-    protected vectorStoreRepository: VectorStoreRepository,
     protected versionRepository: VersionHistoryRepository,
     protected videoStreamRepository: VideoStreamRepository,
     protected viewRepository: ViewRepository,
@@ -196,7 +190,6 @@ export class BaseService {
       ctx.databaseRepository,
       ctx.downloadRepository,
       ctx.emailRepository,
-      ctx.embeddingRepository,
       ctx.eventRepository,
       ctx.integrityRepository,
       ctx.jobRepository,
@@ -223,7 +216,6 @@ export class BaseService {
       ctx.telemetryRepository,
       ctx.trashRepository,
       ctx.userRepository,
-      ctx.vectorStoreRepository,
       ctx.versionRepository,
       ctx.videoStreamRepository,
       ctx.viewRepository,

@@ -9,6 +9,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`DROP TABLE IF EXISTS "shared_link";`.execute(db);
 }
 
-export async function down(db: Kysely<any>): Promise<void> {
+export async function down(_db: Kysely<any>): Promise<void> {
   // the feature is gone; there is nothing to restore
 }

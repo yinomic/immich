@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { LRUMap } from 'mnemonist';
 import { AssetMapOptions, AssetResponseDto, MapAsset, mapAsset } from 'src/dtos/asset-response.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
@@ -13,7 +12,6 @@ import {
   SearchStatisticsResponseDto,
   SearchSuggestionRequestDto,
   SearchSuggestionType,
-  SmartSearchDto,
   StatisticsSearchDto,
   isFullyAlbumConfined,
   isNewShapeRequest,
@@ -23,36 +21,11 @@ import { AssetOrder, AssetVisibility, Permission } from 'src/enum.js';
 import { AssetSearchScope } from 'src/repositories/search.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { requireElevatedPermission } from 'src/utils/access.js';
-import { mimeTypes } from 'src/utils/mime-types.js';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor.js';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter.js';
 
-/**
- * The vector store returns a ranked id list; the relational query returns rows in
- * arbitrary order. Re-apply the ranking, then page over it.
- */
-const pageByRank = <T extends { id: string }>(rows: T[], rankedIds: string[], page: number, size: number) => {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const ranked = rankedIds.map((id) => byId.get(id)).filter((row): row is T => row !== undefined);
-  const start = (page - 1) * size;
-
-  return {
-    items: ranked.slice(start, start + size),
-    hasNextPage: ranked.length > start + size,
-  };
-};
-
-/**
- * How many vector hits to ask for per requested result. The relational filters
- * run afterwards, so we need slack; the cap keeps the SQL `in (...)` sane.
- */
-const VECTOR_OVERFETCH = 4;
-const MAX_VECTOR_CANDIDATES = 1000;
-
 @Injectable()
 export class SearchService extends BaseService {
-  private embeddingCache = new LRUMap<string, number[]>(100);
-
   async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
     const places = await this.searchRepository.searchPlaces(dto.name);
     return places.map((place) => mapPlaces(place));
@@ -178,36 +151,6 @@ export class SearchService extends BaseService {
     return items.map((item) => mapAsset(item, { auth }));
   }
 
-  async searchSmart(auth: AuthDto, dto: SmartSearchDto): Promise<SearchResponseDto> {
-    if (isNewShapeRequest(dto)) {
-      return this.searchSmartV3(auth, dto);
-    }
-
-    if (dto.visibility === AssetVisibility.Locked) {
-      requireElevatedPermission(auth);
-    }
-
-    if (!this.embeddingRepository.isEnabled()) {
-      throw new BadRequestException('Smart search is not enabled');
-    }
-
-    const userIds = this.getUserIdsToSearch(auth);
-    const page = dto.page ?? 1;
-    const size = dto.size;
-    const candidates = await this.getVectorCandidates(auth, dto, page, size);
-
-    const rows = await this.searchRepository.searchSmartByIds({
-      ...dto,
-      assetIds: candidates.ids,
-      userIds,
-      viewingUserId: auth.user.id,
-      visibility: dto.visibility ?? (auth.session?.hasElevatedPermission ? undefined : 'not-locked'),
-    });
-
-    const { items, hasNextPage } = pageByRank(rows, candidates.ids, page, size);
-    return this.mapResponse(items, { auth }, { nextPage: hasNextPage ? (page + 1).toString() : null });
-  }
-
   async getAssetsByCity(auth: AuthDto): Promise<AssetResponseDto[]> {
     const userIds = this.getUserIdsToSearch(auth);
     const assets = await this.searchRepository.getAssetsByCity(userIds);
@@ -289,27 +232,6 @@ export class SearchService extends BaseService {
     return items.map((item) => mapAsset(item, { auth }));
   }
 
-  private async searchSmartV3(auth: AuthDto, dto: SmartSearchDto): Promise<SearchResponseDto> {
-    if (!this.embeddingRepository.isEnabled()) {
-      throw new BadRequestException('Smart search is not enabled');
-    }
-
-    const [{ filter, scope }, candidates] = await Promise.all([
-      this.resolveSearchScopeV3(auth, dto),
-      this.getVectorCandidates(auth, dto, 1, dto.size),
-    ]);
-
-    const rows = await this.searchRepository.searchSmartV3ByIds(
-      { filter, withExif: dto.withExif },
-      scope,
-      candidates.ids,
-    );
-
-    // no cursor until a rank-aware pagination strategy for smart search is decided
-    const { items } = pageByRank(rows, candidates.ids, 1, dto.size);
-    return this.mapResponse(items, { auth });
-  }
-
   private async resolveSearchScopeV3(
     auth: AuthDto,
     dto: { filter?: SearchFilter },
@@ -337,50 +259,6 @@ export class SearchService extends BaseService {
    * acceptable because the relational filters (visibility, trash, dates...) are
    * applied afterwards in SQL and may drop some candidates.
    */
-  private async getVectorCandidates(
-    auth: AuthDto,
-    dto: SmartSearchDto,
-    page: number,
-    size: number,
-  ): Promise<{ ids: string[] }> {
-    const embedding = await this.resolveEmbedding(auth, dto);
-    const topK = Math.min(page * size * VECTOR_OVERFETCH, MAX_VECTOR_CANDIDATES);
-    const matches = await this.vectorStoreRepository.search(embedding, { topK });
-    return { ids: matches.map((match) => match.assetId) };
-  }
-
-  private async resolveEmbedding(auth: AuthDto, dto: SmartSearchDto): Promise<number[]> {
-    if (dto.query) {
-      const key = this.embeddingRepository.getModelName() + dto.query;
-      let embedding = this.embeddingCache.get(key);
-      if (!embedding) {
-        embedding = await this.embeddingRepository.embedText(dto.query);
-        this.embeddingCache.set(key, embedding);
-      }
-      return embedding;
-    }
-
-    if (dto.queryAssetId) {
-      await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [dto.queryAssetId] });
-      const stored = await this.vectorStoreRepository.get(dto.queryAssetId);
-      if (stored) {
-        return stored;
-      }
-
-      // cloud stores (e.g. VikingDB) cannot hand back a stored vector, so
-      // re-embed the original image instead
-      const asset = await this.assetJobRepository.getForClipEncoding(dto.queryAssetId);
-      if (!asset) {
-        throw new BadRequestException(`Asset ${dto.queryAssetId} has no embedding`);
-      }
-
-      const data = await this.storageRepository.readFile(asset.originalPath);
-      return this.embeddingRepository.embedImage({ data, mimeType: mimeTypes.lookup(asset.originalPath) });
-    }
-
-    throw new BadRequestException('Either `query` or `queryAssetId` must be set');
-  }
-
   private getUserIdsToSearch(auth: AuthDto): string[] {
     // single account: there are no partners to include
     return [auth.user.id];

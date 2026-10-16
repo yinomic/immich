@@ -85,7 +85,6 @@ export class ServerService extends BaseService {
     const { configFile } = this.configRepository.getEnv();
 
     return {
-      smartSearch: this.embeddingRepository.isEnabled(),
       facialRecognition: false,
       duplicateDetection: false,
       map: map.enabled,
