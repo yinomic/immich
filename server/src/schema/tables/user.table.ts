@@ -3,7 +3,6 @@ import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
-  ForeignKeyColumn,
   type Generated,
   Index,
   PrimaryGeneratedColumn,
@@ -83,5 +82,4 @@ export class UserTable {
 
   @UpdateIdColumn({ index: true })
   updateId!: Generated<string>;
-
 }

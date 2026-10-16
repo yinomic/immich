@@ -185,11 +185,7 @@ export class CliService extends BaseService {
       this.userRepository.getFileSamples(),
     ]);
 
-    const paths: string[] = [];
-
-    for (const user of users) {
-      paths.push(user.profileImagePath);
-    }
+    const paths: string[] = Array.from(users, (user) => user.profileImagePath);
 
     for (const asset of assets) {
       paths.push(asset.path);

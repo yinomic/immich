@@ -14,7 +14,6 @@ const asJobItem = (dto: JobCreateDto): JobItem => {
       return { name: JobName.TagCleanup };
     }
 
-
     case ManualJobName.UserCleanup: {
       return { name: JobName.UserDeleteCheck };
     }
@@ -119,7 +118,6 @@ export class JobService extends BaseService {
         }
         break;
       }
-
 
       case JobName.AssetEditThumbnailGeneration: {
         const asset = await this.assetRepository.getById(item.data.id);
@@ -236,12 +234,6 @@ export class JobService extends BaseService {
           }
         }
 
-        break;
-      }
-
-      case JobName.SmartSearch: {
-        if (item.data.source === 'upload') {
-        }
         break;
       }
 

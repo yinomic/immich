@@ -6,14 +6,8 @@ import { FileMigrationProvider, Migrator } from 'kysely/migration';
 import { InjectKysely } from 'nestjs-kysely';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { diff } from 'semver';
-import z from 'zod';
 import type { ExtensionVersion } from 'src/types.js';
-import {
-  EXTENSION_NAMES,
-  POSTGRES_VERSION_RANGE,
-  serverVersion,
-} from 'src/constants.js';
+import { EXTENSION_NAMES, POSTGRES_VERSION_RANGE, serverVersion } from 'src/constants.js';
 import { GenerateSql } from 'src/decorators.js';
 import { DatabaseExtension, DatabaseLock } from 'src/enum.js';
 import { ConfigRepository } from 'src/repositories/config.repository.js';

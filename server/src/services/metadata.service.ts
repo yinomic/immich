@@ -22,7 +22,6 @@ import {
   JobName,
   JobStatus,
   QueueName,
-  SourceType,
 } from 'src/enum.js';
 import { ReverseGeocodeResult } from 'src/repositories/map.repository.js';
 import { ImmichTags } from 'src/repositories/metadata.repository.js';
@@ -126,7 +125,6 @@ const getLensModel = (exifTags: ImmichTags): string | null => {
   return lensModel || null;
 };
 
-
 type Dates = {
   dateTimeOriginal: Date;
   localDateTime: Date;
@@ -225,7 +223,7 @@ export class MetadataService extends BaseService {
 
   @OnJob({ name: JobName.AssetExtractMetadata, queue: QueueName.MetadataExtraction })
   async handleMetadataExtraction(data: JobOf<JobName.AssetExtractMetadata>) {
-    const [{ metadata, reverseGeocoding }, asset] = await Promise.all([
+    const [{ reverseGeocoding }, asset] = await Promise.all([
       this.getConfig({ withCache: true }),
       this.assetJobRepository.getForMetadataExtraction(data.id),
     ]);
@@ -811,7 +809,6 @@ export class MetadataService extends BaseService {
     }
   }
 
-
   private orientRegionInfo(
     regionInfo: NonNullable<ImmichTags['RegionInfo']>,
     orientation: ExifOrientation | undefined,
@@ -887,7 +884,6 @@ export class MetadataService extends BaseService {
       RegionList: adjustedRegionList,
     };
   }
-
 
   private getDates(
     asset: { id: string; originalPath: string; fileCreatedAt: Date },

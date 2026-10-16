@@ -1,7 +1,6 @@
 import { ShallowDehydrateObject } from 'kysely';
 import { Mocked } from 'vitest';
 import { AssetFile } from 'src/database.js';
-import { DatabaseExtension } from 'src/enum.js';
 import { UploadFieldName } from 'src/dtos/asset-media.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { SystemConfig } from 'src/dtos/config.dto.js';
@@ -15,6 +14,7 @@ import {
   ColorMatrix,
   ColorPrimaries,
   ColorTransfer,
+  DatabaseExtension,
   DvProfile,
   DvSignalCompatibility,
   ExifOrientation,
@@ -206,11 +206,7 @@ export interface VideoInterfaces {
   mali: boolean;
 }
 
-export type ConcurrentQueueName = Exclude<
-  QueueName,
-  | QueueName.StorageTemplateMigration
-  | QueueName.BackupDatabase
->;
+export type ConcurrentQueueName = Exclude<QueueName, QueueName.StorageTemplateMigration | QueueName.BackupDatabase>;
 
 export type Jobs = { [K in JobItem['name']]: (JobItem & { name: K })['data'] };
 export type JobOf<T extends JobName> = Jobs[T];
@@ -440,7 +436,6 @@ export type JobItem =
 
   // Editor
   | { name: JobName.AssetEditThumbnailGeneration; data: IEntityJob };
-
 
 export interface ExtensionVersion {
   name: DatabaseExtension;

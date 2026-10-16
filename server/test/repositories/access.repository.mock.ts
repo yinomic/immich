@@ -16,16 +16,6 @@ export const newAccessRepositoryMock = (): IAccessRepositoryMock => {
       checkCreateAccess: vitest.fn().mockResolvedValue(new Set()),
     },
 
-    clusterGroup: {
-      checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-      checkInviteAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
-    clusterGroupRequest: {
-      checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-      checkGroupAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
     asset: {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
       checkAlbumAccess: vitest.fn().mockResolvedValue(new Set()),
@@ -57,11 +47,6 @@ export const newAccessRepositoryMock = (): IAccessRepositoryMock => {
 
     notification: {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
-    person: {
-      checkFaceOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-      checkAccess: vitest.fn().mockResolvedValue(new Set()),
     },
 
     partner: {

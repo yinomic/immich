@@ -511,7 +511,7 @@ export class AssetRepository {
 
   @GenerateSql({ params: [[DummyValue.UUID]] })
   @ChunkedArray({ paramIndex: 0 })
-  getByIdsWithAllRelationsButStacks(ids: string[], viewingUserId?: string) {
+  getByIdsWithAllRelationsButStacks(ids: string[], _viewingUserId?: string) {
     return this.db
       .selectFrom('asset')
       .selectAll('asset')
@@ -564,10 +564,7 @@ export class AssetRepository {
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })
-  getById(
-    id: string,
-    { exifInfo, files, library, owner, stack, tags, edits }: GetByIdsRelations = {},
-  ) {
+  getById(id: string, { exifInfo, files, library, owner, stack, tags, edits }: GetByIdsRelations = {}) {
     return this.db
       .selectFrom('asset')
       .selectAll('asset')

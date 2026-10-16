@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { AssetOcrResponseDto } from 'src/dtos/ocr.dto.js';
-import { SourceType } from 'src/enum.js';
 import { boundingBoxOverlap, checkOcrVisibility } from 'src/utils/editor.js';
 
 describe('boundingBoxOverlap', () => {

@@ -13,7 +13,6 @@ import { IWorker, citiesFile } from 'src/constants.js';
 import { Telemetry } from 'src/decorators.js';
 import { EnvSchema } from 'src/dtos/env.dto.js';
 import {
-  DatabaseExtension,
   ImmichEnvironment,
   ImmichHeader,
   ImmichTelemetry,

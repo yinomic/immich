@@ -44,7 +44,6 @@ export const requireAccess = async (access: AccessRepository, request: AccessReq
   }
 };
 
-
 export const checkAccess = async (
   access: AccessRepository,
   { ids, auth, permission }: AccessRequest,
@@ -267,9 +266,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
       return await access.authDevice.checkOwnerAccess(auth.user.id, ids);
     }
 
-    case Permission.FaceDelete: {
-    }
-
     case Permission.NotificationRead:
     case Permission.NotificationUpdate:
     case Permission.NotificationDelete: {
@@ -304,12 +300,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
     case Permission.MemoryDelete: {
       return access.memory.checkOwnerAccess(auth.user.id, ids);
     }
-
-
-
-
-
-
 
     case Permission.PartnerUpdate: {
       return access.partner.checkUpdateAccess(auth.user.id, ids);

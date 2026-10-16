@@ -244,10 +244,7 @@ export class QueueService extends BaseService {
   }
 
   private isConcurrentQueue(name: QueueName): name is ConcurrentQueueName {
-    return ![
-      QueueName.StorageTemplateMigration,
-      QueueName.BackupDatabase,
-    ].includes(name);
+    return ![QueueName.StorageTemplateMigration, QueueName.BackupDatabase].includes(name);
   }
 
   async handleNightlyJobs() {

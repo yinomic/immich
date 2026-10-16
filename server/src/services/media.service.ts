@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import type {
   AudioStreamInfo,
   DecodeToBufferOptions,
-  GenerateThumbnailOptions,
   ImageDimensions,
   JobItem,
   JobOf,
@@ -10,7 +9,6 @@ import type {
   VideoInterfaces,
   VideoStreamInfo,
 } from 'src/types.js';
-import { FACE_THUMBNAIL_SIZE } from 'src/constants.js';
 import { ImagePathOptions, StorageCore, ThumbnailPathEntity } from 'src/cores/storage.core.js';
 import { AssetFile } from 'src/database.js';
 import { OnEvent, OnJob } from 'src/decorators.js';
@@ -359,7 +357,6 @@ export class MediaService extends BaseService {
       fullsizeDimensions,
     };
   }
-
 
   private getCrop(
     dims: { old: ImageDimensions; new: ImageDimensions },

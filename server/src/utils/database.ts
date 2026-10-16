@@ -36,7 +36,6 @@ import {
   AssetOrder,
   AssetOrderBy,
   AssetVisibility,
-  DatabaseExtension,
   ExifOrientation,
   SearchOrderField,
 } from 'src/enum.js';
@@ -1000,7 +999,6 @@ export const searchStatisticsV3Examples: GenerateSqlQueries[] = [
     ],
   },
 ];
-
 
 export const updateLockedColumns = <T extends Record<string, unknown> & { lockedProperties?: LockableProperty[] }>(
   exif: T,

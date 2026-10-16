@@ -1,9 +1,5 @@
 import { Database, Extensions, Generated, Int8 } from '@immich/sql-tools';
-import {
-  album_user_role_enum,
-  asset_visibility_enum,
-  assets_status_enum,
-} from 'src/schema/enums.js';
+import { album_user_role_enum, asset_visibility_enum, assets_status_enum } from 'src/schema/enums.js';
 import {
   album_user_after_insert,
   album_user_delete,
@@ -156,17 +152,13 @@ export class ImmichDatabase {
     memory_delete_audit,
     memory_asset_delete_audit,
     stack_delete_audit,
-        user_metadata_audit,
+    user_metadata_audit,
     asset_metadata_audit,
-      asset_ocr_delete_audit,
+    asset_ocr_delete_audit,
     album_user_delete,
   ];
 
-  enum = [
-    album_user_role_enum,
-    assets_status_enum,
-    asset_visibility_enum,
-  ];
+  enum = [album_user_role_enum, assets_status_enum, asset_visibility_enum];
 }
 
 export interface Migrations {
@@ -205,7 +197,6 @@ export interface DB {
   asset_keyframe: AssetKeyframeTable;
   ocr_search: OcrSearchTable;
 
-
   geodata_places: GeodataPlacesTable;
 
   integrity_report: IntegrityReportTable;
@@ -228,14 +219,11 @@ export interface DB {
   partner: PartnerTable;
   partner_audit: PartnerAuditTable;
 
-
-
   session: SessionTable;
   session_sync_checkpoint: SessionSyncCheckpointTable;
 
   shared_link: SharedLinkTable;
   shared_link_asset: SharedLinkAssetTable;
-
 
   stack: StackTable;
   stack_audit: StackAuditTable;

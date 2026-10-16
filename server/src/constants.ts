@@ -29,7 +29,6 @@ export const EXTENSION_NAMES: Record<DatabaseExtension, string> = {
   earthdistance: 'earthdistance',
 } as const;
 
-
 export const SALT_ROUNDS = 10;
 // Syntactically valid bcrypt hash used in login() preventing timing-based user enumeration.
 export const LOGIN_DUMMY_HASH = '$2b$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZabcde';

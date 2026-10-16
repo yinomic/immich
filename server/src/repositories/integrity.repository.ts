@@ -86,7 +86,6 @@ export class IntegrityRepository {
   }
 
   @GenerateSql({ params: [DummyValue.STRING] })
-
   @GenerateSql({ params: [DummyValue.STRING] })
   getTrackedPaths(paths: string[]) {
     return this.db

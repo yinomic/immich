@@ -26,23 +26,6 @@ describe(SearchService.name, () => {
     expect(sut).toBeDefined();
   });
 
-  describe('searchPerson', () => {
-    it('should pass options to search', async () => {
-      const auth = AuthFactory.create();
-      const name = 'foo';
-
-      mocks.person.getByName.mockResolvedValue([]);
-
-      await sut.searchPerson(auth, { name, withHidden: false });
-
-      expect(mocks.person.getByName).toHaveBeenCalledWith(auth.user.id, name, { withHidden: false });
-
-      await sut.searchPerson(auth, { name, withHidden: true });
-
-      expect(mocks.person.getByName).toHaveBeenCalledWith(auth.user.id, name, { withHidden: true });
-    });
-  });
-
   describe('searchPlaces', () => {
     it('should search places', async () => {
       mocks.search.searchPlaces.mockResolvedValue([

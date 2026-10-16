@@ -6,18 +6,15 @@ import { resolve } from 'node:path';
 import { Writable } from 'node:stream';
 import { Mocked } from 'vitest';
 import type { ClassConstructor, ClassConstructorsToInstances, UploadFile } from 'src/types.js';
-import { AssetFace } from 'src/database.js';
 import { AuthDto, LoginResponseDto } from 'src/dtos/auth.dto.js';
 import { SystemConfig } from 'src/dtos/config.dto.js';
 import { AssetEditActionItem, AssetEditsCreateDto } from 'src/dtos/editing.dto.js';
-import { PersonUserRole } from 'src/dtos/person.dto.js';
 import {
   AlbumUserRole,
   AssetType,
   AssetVisibility,
   ChecksumAlgorithm,
   MemoryType,
-  SourceType,
   SyncEntityType,
   SyncRequestType,
 } from 'src/enum.js';
@@ -30,12 +27,10 @@ import { AssetEditRepository } from 'src/repositories/asset-edit.repository.js';
 import { AssetFileRepository } from 'src/repositories/asset-file.repository.js';
 import { AssetJobRepository } from 'src/repositories/asset-job.repository.js';
 import { AssetRepository } from 'src/repositories/asset.repository.js';
-import { ClusterGroupRepository } from 'src/repositories/cluster-group.repository.js';
 import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { CronRepository } from 'src/repositories/cron.repository.js';
 import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
-import { DuplicateRepository } from 'src/repositories/duplicate.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
@@ -50,8 +45,6 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OcrRepository } from 'src/repositories/ocr.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
-import { PersonUserRepository } from 'src/repositories/person-user.repository.js';
-import { PersonRepository } from 'src/repositories/person.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
 import { SessionRepository } from 'src/repositories/session.repository.js';
@@ -75,10 +68,7 @@ import { AssetFileTable } from 'src/schema/tables/asset-file.table.js';
 import { AssetJobStatusTable } from 'src/schema/tables/asset-job-status.table.js';
 import { AssetMetadataTable } from 'src/schema/tables/asset-metadata.table.js';
 import { AssetTable } from 'src/schema/tables/asset.table.js';
-import { FaceSearchTable } from 'src/schema/tables/face-search.table.js';
 import { MemoryTable } from 'src/schema/tables/memory.table.js';
-import { PersonUserTable } from 'src/schema/tables/person-user.table.js';
-import { PersonTable } from 'src/schema/tables/person.table.js';
 import { SessionTable } from 'src/schema/tables/session.table.js';
 import { StackTable } from 'src/schema/tables/stack.table.js';
 import { TagAssetTable } from 'src/schema/tables/tag-asset.table.js';
@@ -90,7 +80,7 @@ import { SyncService } from 'src/services/sync.service.js';
 import { getConfig, updateConfig } from 'src/utils/config.js';
 import { mockEnvData } from 'test/repositories/config.repository.mock.js';
 import { newTelemetryRepositoryMock } from 'test/repositories/telemetry.repository.mock.js';
-import { factory, newDate, newEmbedding, newUuid } from 'test/small.factory.js';
+import { factory, newDate, newUuid } from 'test/small.factory.js';
 import { automock, wait } from 'test/utils.js';
 
 export const testAssetsDir = resolve(import.meta.dirname, '../../e2e/test-assets');
@@ -171,8 +161,7 @@ export class MediumTestContext<S extends ClassConstructor<typeof BaseService> = 
   }
 
   async newUser(dto: Partial<Insertable<UserTable>> = {}) {
-    const clusterGroup = dto.clusterGroupId ? undefined : await this.get(ClusterGroupRepository).create();
-    const user = mediumFactory.userInsert({ ...dto, clusterGroupId: dto.clusterGroupId ?? clusterGroup!.id });
+    const user = mediumFactory.userInsert({ ...dto });
     const result = await this.get(UserRepository).create(user);
     return { user, result };
   }
@@ -211,12 +200,6 @@ export class MediumTestContext<S extends ClassConstructor<typeof BaseService> = 
   async newAssetFile(dto: Insertable<AssetFileTable>) {
     const result = await this.get(AssetRepository).upsertFile(dto);
     return { result };
-  }
-
-  async newAssetFace(dto: Partial<Insertable<AssetFace>> & { assetId: string }) {
-    const assetFace = mediumFactory.assetFaceInsert(dto);
-    const result = await this.get(PersonRepository).createAssetFace(assetFace);
-    return { assetFace, result };
   }
 
   async newMemory(dto: Partial<Insertable<MemoryTable>> = {}) {
@@ -280,26 +263,6 @@ export class MediumTestContext<S extends ClassConstructor<typeof BaseService> = 
     const jobStatus = mediumFactory.assetJobStatusInsert({ assetId: dto.assetId });
     const result = await this.get(AssetRepository).upsertJobStatus(jobStatus);
     return { jobStatus, result };
-  }
-
-  async newPerson(dto: Partial<Insertable<PersonTable>> & { ownerId: string }) {
-    const repository = this.get(PersonRepository);
-    let personGroupId = dto.personGroupId;
-    if (!personGroupId) {
-      const group = await repository.createGroup(dto.ownerId);
-      personGroupId = group.id;
-    }
-    const person = mediumFactory.personInsert({ ...dto, personGroupId });
-    const result = await repository.create(person);
-    return { person, result };
-  }
-
-  async newPersonUser(
-    dto: Partial<Insertable<PersonUserTable>> & { personGroupId: string; sharedById: string; sharedWithId: string },
-  ) {
-    const personUser = mediumFactory.personUserInsert(dto);
-    const [result] = await this.get(PersonUserRepository).createAll([personUser]);
-    return { personUser, result };
   }
 
   async newSession(dto: Partial<Insertable<SessionTable>> & { userId: string }) {
@@ -487,16 +450,12 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case AssetEditRepository:
     case AssetFileRepository:
     case AssetJobRepository:
-    case ClusterGroupRepository:
-    case DuplicateRepository:
     case IntegrityRepository:
     case MemoryRepository:
     case LibraryRepository:
     case NotificationRepository:
     case OcrRepository:
     case PartnerRepository:
-    case PersonRepository:
-    case PersonUserRepository:
     case SearchRepository:
     case SessionRepository:
     case SharedLinkRepository:
@@ -565,7 +524,6 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case NotificationRepository:
     case OcrRepository:
     case PartnerRepository:
-    case PersonRepository:
     case SessionRepository:
     case SyncRepository:
     case SyncCheckpointRepository:
@@ -677,39 +635,6 @@ const albumInsert = (album: Partial<Insertable<AlbumTable>>) => {
   };
 };
 
-const faceInsert = (face: Partial<Insertable<FaceSearchTable>> & { faceId: string }) => {
-  const defaults = {
-    faceId: face.faceId,
-    embedding: face.embedding || newEmbedding(),
-  };
-  return {
-    ...defaults,
-    ...face,
-  };
-};
-
-const assetFaceInsert = (assetFace: Partial<AssetFace> & { assetId: string }) => {
-  const defaults = {
-    assetId: assetFace.assetId ?? newUuid(),
-    boundingBoxX1: assetFace.boundingBoxX1 ?? 0,
-    boundingBoxX2: assetFace.boundingBoxX2 ?? 1,
-    boundingBoxY1: assetFace.boundingBoxY1 ?? 0,
-    boundingBoxY2: assetFace.boundingBoxY2 ?? 1,
-    deletedAt: assetFace.deletedAt ?? null,
-    id: assetFace.id ?? newUuid(),
-    imageHeight: assetFace.imageHeight ?? 10,
-    imageWidth: assetFace.imageWidth ?? 10,
-    personGroupId: assetFace.personGroupId ?? null,
-    sourceType: assetFace.sourceType ?? SourceType.MachineLearning,
-    isVisible: assetFace.isVisible ?? true,
-  };
-
-  return {
-    ...defaults,
-    ...assetFace,
-  };
-};
-
 const assetJobStatusInsert = (
   job: Partial<Insertable<AssetJobStatusTable>> & { assetId: string },
 ): Insertable<AssetJobStatusTable> => {
@@ -724,38 +649,6 @@ const assetJobStatusInsert = (
     ...defaults,
     ...job,
   };
-};
-
-const personInsert = (person: Partial<Insertable<PersonTable>> & { ownerId: string; personGroupId: string }) => {
-  const defaults = {
-    birthDate: person.birthDate || null,
-    color: person.color || null,
-    createdAt: person.createdAt || newDate(),
-    faceAssetId: person.faceAssetId || null,
-    isFavorite: person.isFavorite || false,
-    isHidden: person.isHidden || false,
-    name: person.name || 'Test Name',
-    ownerId: person.ownerId || newUuid(),
-    thumbnailPath: person.thumbnailPath || '/path/to/thumbnail.jpg',
-  };
-  return {
-    ...defaults,
-    ...person,
-  };
-};
-
-const personUserInsert = (
-  personUser: Partial<Insertable<PersonUserTable>> & {
-    personGroupId: string;
-    sharedById: string;
-    sharedWithId: string;
-  },
-) => {
-  const defaults = {
-    role: personUser.role ?? PersonUserRole.Write,
-  };
-
-  return { ...defaults, ...personUser };
 };
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest();
@@ -779,7 +672,7 @@ const sessionInsert = ({
   };
 };
 
-const userInsert = (user: Partial<Insertable<UserTable>> & { clusterGroupId: string }) => {
+const userInsert = (user: Partial<Insertable<UserTable>> = {}) => {
   const id = user.id || newUuid();
 
   const defaults = {
@@ -867,7 +760,7 @@ const loginDetails = () => {
 };
 
 const loginResponse = (): LoginResponseDto => {
-  const user = userInsert({ clusterGroupId: newUuid() });
+  const user = userInsert();
   return {
     accessToken: 'access-token',
     userId: user.id,
@@ -893,12 +786,8 @@ const uploadFile = (file: Partial<UploadFile> = {}) => {
 
 export const mediumFactory = {
   assetInsert,
-  assetFaceInsert,
   assetJobStatusInsert,
   albumInsert,
-  faceInsert,
-  personInsert,
-  personUserInsert,
   sessionInsert,
   syncStream,
   userInsert,

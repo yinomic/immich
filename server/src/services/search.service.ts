@@ -8,7 +8,6 @@ import {
   PlacesResponseDto,
   RandomSearchDto,
   SearchFilter,
-  SearchPeopleDto,
   SearchPlacesDto,
   SearchResponseDto,
   SearchStatisticsResponseDto,
@@ -54,7 +53,6 @@ const MAX_VECTOR_CANDIDATES = 1000;
 @Injectable()
 export class SearchService extends BaseService {
   private embeddingCache = new LRUMap<string, number[]>(100);
-
 
   async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
     const places = await this.searchRepository.searchPlaces(dto.name);

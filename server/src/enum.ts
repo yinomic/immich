@@ -487,15 +487,11 @@ export enum AssetPathType {
   EncodedVideo = 'encoded_video',
 }
 
-export enum PersonPathType {
-  Face = 'face',
-}
-
 export enum UserPathType {
   Profile = 'profile',
 }
 
-export type PathType = AssetFileType | AssetPathType | PersonPathType | UserPathType;
+export type PathType = AssetFileType | AssetPathType | UserPathType;
 
 export enum TranscodePolicy {
   All = 'all',
@@ -887,7 +883,6 @@ export enum JobName {
 
   DatabaseBackup = 'DatabaseBackup',
 
-
   FileDelete = 'FileDelete',
   FileMigrationQueueAll = 'FileMigrationQueueAll',
 
@@ -914,7 +909,6 @@ export enum JobName {
   UserDelete = 'UserDelete',
   UserDeleteCheck = 'UserDeleteCheck',
   UserSyncUsage = 'UserSyncUsage',
-
 
   SessionCleanup = 'SessionCleanup',
 

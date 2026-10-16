@@ -1,6 +1,6 @@
 import { Mocked, vitest } from 'vitest';
 import type { RepositoryInterface } from 'src/types.js';
-import { DatabaseExtension, ImmichEnvironment, ImmichWorker, LogFormat } from 'src/enum.js';
+import { ImmichEnvironment, ImmichWorker, LogFormat } from 'src/enum.js';
 import { ConfigRepository, EnvData } from 'src/repositories/config.repository.js';
 
 export const envData: EnvData = {
@@ -31,7 +31,6 @@ export const envData: EnvData = {
       password: 'postgres',
     },
     skipMigrations: false,
-    vectorExtension: DatabaseExtension.VectorChord,
   },
 
   helmet: {

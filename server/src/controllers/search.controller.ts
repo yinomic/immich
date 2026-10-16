@@ -9,7 +9,6 @@ import {
   PlacesResponseDto,
   RandomSearchDto,
   SearchExploreResponseDto,
-  SearchPeopleDto,
   SearchPlacesDto,
   SearchResponseDto,
   SearchStatisticsResponseDto,

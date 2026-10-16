@@ -181,16 +181,6 @@ describe(SearchController.name, () => {
       });
     });
 
-    describe('POST /search/person', () => {
-      it('should require a name', async () => {
-        const { status, body } = await request(ctx.getHttpServer()).get('/search/person').send({});
-        expect(status).toBe(400);
-        expect(body).toEqual(
-          errorDto.validationError([{ path: ['name'], message: 'Invalid input: expected string, received undefined' }]),
-        );
-      });
-    });
-
     describe('GET /search/places', () => {
       it('should require a name', async () => {
         const { status, body } = await request(ctx.getHttpServer()).get('/search/places').send({});

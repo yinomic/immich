@@ -10,7 +10,6 @@ import {
   MemoryType,
   Permission,
   SharedLinkType,
-  SourceType,
   UserAvatarColor,
   UserStatus,
 } from 'src/enum.js';

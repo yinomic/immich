@@ -99,6 +99,10 @@ const throwSessionRequired = () => {
   throw new ForbiddenException('Sync endpoints cannot be used with API keys');
 };
 
+const removedSyncType = () => {
+  throw new BadRequestException('This sync type was removed in this build (no faces/people).');
+};
+
 @Injectable()
 export class SyncService extends BaseService {
   getAcks(auth: AuthDto) {
@@ -186,16 +190,12 @@ export class SyncService extends BaseService {
     const { nowId } = await this.syncCheckpointRepository.getNow();
     const options: SyncQueryOptions = { nowId, userId: auth.user.id };
 
-    const removed = () => {
-      throw new BadRequestException('This sync type was removed in this build (no faces/people).');
-    };
-
     const handlers: Record<SyncRequestType, () => Promise<void>> = {
       // faces and people are not part of this build
-      [SyncRequestType.AssetFacesV1]: removed,
-      [SyncRequestType.AssetFacesV2]: removed,
-      [SyncRequestType.AssetFacesV3]: removed,
-      [SyncRequestType.PeopleV1]: removed,
+      [SyncRequestType.AssetFacesV1]: removedSyncType,
+      [SyncRequestType.AssetFacesV2]: removedSyncType,
+      [SyncRequestType.AssetFacesV3]: removedSyncType,
+      [SyncRequestType.PeopleV1]: removedSyncType,
 
       // deprecated handlers
       [SyncRequestType.AssetsV1]: () => this.syncAssetsV1(),
@@ -915,10 +915,7 @@ export class SyncService extends BaseService {
     }
   }
 
-
-
   // TODO(v5) drop when AssetFacesV2 is removed
-
 
   private async syncUserMetadataV1(options: SyncQueryOptions, response: Writable, checkpointMap: CheckpointMap) {
     const deleteType = SyncEntityType.UserMetadataDeleteV1;

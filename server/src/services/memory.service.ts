@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { shuffle } from 'lodash-es';
 import { DateTime } from 'luxon';
 import { Memory } from 'src/database.js';
 import { OnJob } from 'src/decorators.js';
@@ -13,15 +12,11 @@ import {
   mapMemory,
 } from 'src/dtos/memory.dto.js';
 import { DatabaseLock, JobName, MemoryType, Permission, QueueName, SystemMetadataKey } from 'src/enum.js';
-import { type YearMonthDay } from 'src/repositories/asset.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { addAssets, removeAssets } from 'src/utils/asset.util.js';
 import { findOrFail } from 'src/utils/misc.js';
 
 const DAYS = 3;
-const DAYS_UNTIL_BIRTHDAY = 3;
-const BIRTHDAY_MEMORY_ASSETS_PER_YEAR = 5;
-const MEMORY_ASSET_LIMIT = 25;
 
 @Injectable()
 export class MemoryService extends BaseService {
@@ -43,11 +38,7 @@ export class MemoryService extends BaseService {
 
         this.logger.log(`Creating memories for ${target.toISO()}`);
         try {
-          await Promise.all(
-            users.map((owner) =>
-              this.createOnThisDayMemories(owner.id, target),
-            ),
-          );
+          await Promise.all(users.map((owner) => this.createOnThisDayMemories(owner.id, target)));
         } catch (error) {
           this.logger.error(`Failed to create memories for ${target.toISO()}: ${error}`);
         }
@@ -80,8 +71,6 @@ export class MemoryService extends BaseService {
       ),
     );
   }
-
-
 
   @OnJob({ name: JobName.MemoryCleanup, queue: QueueName.BackgroundTask })
   async onMemoriesCleanup() {

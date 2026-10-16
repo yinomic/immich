@@ -296,7 +296,7 @@ export class StorageCore {
     return { dri, mali };
   }
 
-  private savePath(pathType: PathType, id: string, newPath: string, ownerId?: string) {
+  private savePath(pathType: PathType, id: string, newPath: string, _ownerId?: string) {
     switch (pathType) {
       case AssetPathType.Original: {
         return this.assetRepository.update({ id, originalPath: newPath });
@@ -310,7 +310,6 @@ export class StorageCore {
       case AssetPathType.EncodedVideo: {
         return this.assetRepository.upsertFile({ assetId: id, type: pathType as AssetFileType, path: newPath });
       }
-
 
       case UserPathType.Profile: {
         this.logger.warn('Unexpected path type:', pathType);
