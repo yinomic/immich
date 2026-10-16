@@ -239,3 +239,20 @@
 - 测试夹具与用例全部跟上：`tsc` 0 错、eslint `--max-warnings 0` 通过、单测 95 文件 / 1699 用例全绿
 - 迁移再次重生成：`1792179586372-FamilyAlbumInitialSchema.ts`，58 张表（比上轮少 3 张）、无 OCR/向量相关对象；在 stock `postgres:16` 上 `migrations run` 成功且 `migrations generate` 再次返回 **No changes detected**
 - 运行时冒烟复测（stock PG + Redis，无 ML 容器，mock 云端向量）：`smartSearch:true / ocr:false / facialRecognition:false`；上传 → SmartSearch 作业 0 报错 → 向量落库 → `embeddedAt` 写入 → 文本搜索命中 1 张
+
+### Round 6（缩略图移出媒体存储：本地可丢弃缓存 + `off` 模式）
+**需求落地方式**：用户的目标是"不把缩略图存进云桶"（存储成本），因此把**派生文件（缩略图/预览、转码视频）从媒体目录挪到本地可丢弃缓存**，媒体位置（未来的对象桶）只保留原图/边车/头像/备份。这样既满足"桶里没有缩略图"，也不至于让时间线网格去拉 5MB 原图（否则弱网体验会很差）。另提供彻底关闭模式。
+
+- 新环境变量：
+  - `IMMICH_CACHE_LOCATION`（默认 `$TMPDIR/immich-cache`）：缩略图/预览/encoded-video 的落地位置，随时可删
+  - `IMMICH_THUMBNAILS=cache|off`：`off` 时完全不生成任何派生图，缩略图接口直接 302 到原图
+- `StorageCore`：`Thumbnails` / `EncodedVideo` 两个目录改由缓存目录解析（`getBaseFolder`），媒体目录不再出现 `thumbs/`、`encoded-video/`
+- `AssetMediaService.viewThumbnail`：缓存文件不存在（或被清空）时不再 404 —— 图片改为 **302 到原图** 并自动重排缩略图任务；视频返回 404（避免把 mp4 当图片返回），待任务生成后再取
+- `MediaService.handleQueueGenerateThumbnails`：`off` 模式直接跳过，不产生任何 CPU/存储开销
+- compose（yml/prod/rootless）新增 `immich-cache:/cache` 卷与两个环境变量；`docker/example.env` 补充注释
+- 验证（stock PG + Redis + 本机 server）：
+  - 媒体目录只剩 `upload/ library/ profile/ backups/`（无 `thumbs/`）
+  - 缩略图生成后落在 `/tmp/immich-cache/thumbs/...`；请求 `GET /assets/:id/thumbnail?size=thumbnail` → `200 image/webp`（3.9KB）
+  - 清空缓存后再请求 → `302 → /assets/:id/original`，随后后台任务自动把缓存补齐，再次请求回到 `200 image/webp`
+  - `IMMICH_THUMBNAILS=off`：即使缓存里有文件也一律 `302` 到原图
+- 检查：`tsc` 绿、eslint（max-warnings 0）绿、95 文件 / 1700 用例全绿

@@ -24,6 +24,8 @@ describe(StorageService.name, () => {
         mockEnvData({
           storage: {
             ignoreMountCheckErrors: false,
+            cacheLocation: '/tmp/immich-cache',
+            thumbnails: 'cache',
             mediaLocation: '/data',
           },
         }),
@@ -41,14 +43,14 @@ describe(StorageService.name, () => {
           upload: true,
         },
       });
-      expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/encoded-video'));
+      expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/tmp/immich-cache/encoded-video'));
       expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/library'));
       expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/profile'));
-      expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/thumbs'));
+      expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/tmp/immich-cache/thumbs'));
       expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/upload'));
       expect(mocks.storage.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('/data/backups'));
       expect(mocks.storage.createFile).toHaveBeenCalledWith(
-        expect.stringContaining('/data/encoded-video/.immich'),
+        expect.stringContaining('/tmp/immich-cache/encoded-video/.immich'),
         expect.any(Buffer),
       );
       expect(mocks.storage.createFile).toHaveBeenCalledWith(
@@ -60,7 +62,7 @@ describe(StorageService.name, () => {
         expect.any(Buffer),
       );
       expect(mocks.storage.createFile).toHaveBeenCalledWith(
-        expect.stringContaining('/data/thumbs/.immich'),
+        expect.stringContaining('/tmp/immich-cache/thumbs/.immich'),
         expect.any(Buffer),
       );
       expect(mocks.storage.createFile).toHaveBeenCalledWith(
@@ -89,6 +91,8 @@ describe(StorageService.name, () => {
         mockEnvData({
           storage: {
             ignoreMountCheckErrors: false,
+            cacheLocation: '/tmp/immich-cache',
+            thumbnails: 'cache',
             mediaLocation: '/data',
           },
         }),
@@ -165,7 +169,7 @@ describe(StorageService.name, () => {
       mocks.systemMetadata.get.mockResolvedValue({ mountChecks: { upload: true } });
       mocks.config.getEnv.mockReturnValue(
         mockEnvData({
-          storage: { ignoreMountCheckErrors: true },
+          storage: { ignoreMountCheckErrors: true, cacheLocation: '/tmp/immich-cache', thumbnails: 'cache' },
         }),
       );
       mocks.asset.getFileSamples.mockResolvedValue([]);

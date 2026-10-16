@@ -44,6 +44,7 @@ export type ImagePathOptions = { fileType: AssetFileType; format: ImageFormat | 
 let instance: StorageCore | null;
 
 let mediaLocation: string | undefined;
+let cacheLocation: string | undefined;
 
 export class StorageCore {
   private constructor(
@@ -106,7 +107,22 @@ export class StorageCore {
     return join(StorageCore.getBaseFolder(StorageFolder.Library), user.storageLabel || user.id);
   }
 
+  static getCacheLocation(): string {
+    return cacheLocation ?? StorageCore.getMediaLocation();
+  }
+
+  static setCacheLocation(location: string) {
+    cacheLocation = location;
+  }
+
   static getBaseFolder(folder: StorageFolder) {
+    // NOTE (family fork): derived files never live next to the originals (and
+    // therefore never in the cloud bucket) — they go to a disposable local
+    // cache directory that can be deleted at any time.
+    if (folder === StorageFolder.Thumbnails || folder === StorageFolder.EncodedVideo) {
+      return join(StorageCore.getCacheLocation(), folder);
+    }
+
     return join(StorageCore.getMediaLocation(), folder);
   }
 

@@ -67,6 +67,12 @@ export class MediaService extends BaseService {
   async handleQueueGenerateThumbnails({ force }: JobOf<JobName.AssetGenerateThumbnailsQueueAll>): Promise<JobStatus> {
     const config = await this.getConfig({ withCache: true });
 
+    // NOTE (family fork): with IMMICH_THUMBNAILS=off nothing derived is produced
+    // at all — the clients then read the originals.
+    if (this.configRepository.getEnv().storage.thumbnails === 'off') {
+      return JobStatus.Skipped;
+    }
+
     const isFullsizeEnabled = config.image.fullsize.enabled;
     for await (const assets of batched(
       this.assetJobRepository.streamForThumbnailJob({ force, fullsizeEnabled: isFullsizeEnabled }),

@@ -8,6 +8,7 @@ import { RedisOptions } from 'ioredis';
 import { CLS_ID, ClsModuleOptions } from 'nestjs-cls';
 import { OpenTelemetryModuleOptions } from 'nestjs-otel/lib/interfaces/index.js';
 import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { IWorker, citiesFile } from 'src/constants.js';
 import { Telemetry } from 'src/decorators.js';
@@ -111,6 +112,10 @@ export interface EnvData {
   storage: {
     ignoreMountCheckErrors: boolean;
     mediaLocation?: string;
+    /** local, disposable location for derived files (thumbnails, encoded video) */
+    cacheLocation: string;
+    /** `off` serves originals instead of cached thumbnails */
+    thumbnails: 'cache' | 'off';
   };
 
   search: {
@@ -362,6 +367,8 @@ const getEnv = (): EnvData => {
     storage: {
       ignoreMountCheckErrors: !!dto.IMMICH_IGNORE_MOUNT_CHECK_ERRORS,
       mediaLocation: dto.IMMICH_MEDIA_LOCATION,
+      cacheLocation: dto.IMMICH_CACHE_LOCATION ?? join(tmpdir(), 'immich-cache'),
+      thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
     },
 
     search: {

@@ -22,6 +22,7 @@ import { authStub } from 'test/fixtures/auth.stub.js';
 import { fileStub } from 'test/fixtures/file.stub.js';
 import { userStub } from 'test/fixtures/user.stub.js';
 import { getForAsset } from 'test/mappers.js';
+import { mockEnvData } from 'test/repositories/config.repository.mock.js';
 import { ServiceMocks, newTestService } from 'test/utils.js';
 
 const file1 = Buffer.from('d2947b871a706081be194569951b7db246907957', 'hex');
@@ -576,6 +577,10 @@ describe(AssetMediaService.name, () => {
   });
 
   describe('viewThumbnail', () => {
+    beforeEach(() => {
+      mocks.storage.checkFileExists.mockResolvedValue(true);
+    });
+
     it('should require asset.view permissions', async () => {
       await expect(sut.viewThumbnail(authStub.admin, 'id', {})).rejects.toBeInstanceOf(BadRequestException);
 
@@ -584,19 +589,32 @@ describe(AssetMediaService.name, () => {
       expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']));
     });
 
-    it('should fall back to preview if the requested thumbnail file does not exist', async () => {
-      const asset = AssetFactory.from().file({ type: AssetFileType.Preview }).build();
+    it('should serve the original and queue regeneration when the cached file is missing', async () => {
+      const asset = AssetFactory.from().file({ type: AssetFileType.Thumbnail }).build();
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
       mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
+      mocks.storage.checkFileExists.mockResolvedValue(false);
 
-      await expect(sut.viewThumbnail(authStub.admin, asset.id, { size: AssetMediaSize.THUMBNAIL })).resolves.toEqual(
-        new ImmichFileResponse({
-          path: asset.files[0].path,
-          cacheControl: CacheControl.PrivateWithCache,
-          contentType: 'image/jpeg',
-          fileName: `IMG_${asset.id}_thumbnail.jpg`,
+      await expect(sut.viewThumbnail(authStub.admin, asset.id, { size: AssetMediaSize.THUMBNAIL })).resolves.toEqual({
+        targetSize: 'original',
+      });
+
+      expect(mocks.job.queue).toHaveBeenCalledWith({ name: JobName.AssetGenerateThumbnails, data: { id: asset.id } });
+    });
+
+    it('should serve the original when thumbnails are disabled', async () => {
+      const asset = AssetFactory.from().file({ type: AssetFileType.Thumbnail }).build();
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
+      mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
+      mocks.config.getEnv.mockReturnValue(
+        mockEnvData({
+          storage: { ignoreMountCheckErrors: false, cacheLocation: '/tmp/immich-cache', thumbnails: 'off' },
         }),
       );
+
+      await expect(sut.viewThumbnail(authStub.admin, asset.id, { size: AssetMediaSize.THUMBNAIL })).resolves.toEqual({
+        targetSize: 'original',
+      });
     });
 
     it('should get preview file', async () => {

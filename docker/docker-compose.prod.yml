@@ -83,3 +83,4 @@ services:
 volumes:
   prometheus-data:
   grafana-data:
+  immich-cache:

@@ -85,6 +85,8 @@ export const envData: EnvData = {
 
   storage: {
     ignoreMountCheckErrors: false,
+    cacheLocation: '/tmp/immich-cache',
+    thumbnails: 'cache',
   },
 
   search: {

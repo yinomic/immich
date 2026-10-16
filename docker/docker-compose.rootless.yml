@@ -24,9 +24,16 @@ services:
     volumes:
       # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
       - ${UPLOAD_LOCATION}:/data
+      - immich-cache:/cache
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
+    environment:
+      # derived files (thumbnails, transcodes) are a disposable local cache and
+      # are never written to the media location / object store
+      IMMICH_CACHE_LOCATION: /cache
+      # set to `off` to never generate thumbnails at all (clients read originals)
+      IMMICH_THUMBNAILS: cache
     ports:
       - '2283:2283'
     depends_on:
@@ -72,3 +79,6 @@ services:
     restart: always
     healthcheck:
       disable: false
+
+volumes:
+  immich-cache:

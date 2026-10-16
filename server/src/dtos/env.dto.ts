@@ -19,6 +19,9 @@ const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mod
  */
 const CloudSearchProviderSchema = z.enum(['ark', 'tencent', 'mock']).describe('Cloud search provider');
 
+/** Whether derived images (thumbnails, previews) are cached locally at all. */
+const ThumbnailModeSchema = z.enum(['cache', 'off']).describe('Thumbnail handling');
+
 /** Where embedding vectors are stored. */
 const VectorStoreKindSchema = z.enum(['file', 'vikingdb']).describe('Vector store backend');
 const absolutePath = z.string().regex(/^\//, 'Must be an absolute path').optional();
@@ -78,7 +81,9 @@ export const EnvSchema = z
     IMMICH_IGNORE_MOUNT_CHECK_ERRORS: stringBool.optional(),
     IMMICH_LOG_LEVEL: LogLevelSchema.optional(),
     IMMICH_LOG_FORMAT: LogFormatSchema.optional(),
+    IMMICH_CACHE_LOCATION: absolutePath,
     IMMICH_MEDIA_LOCATION: absolutePath,
+    IMMICH_THUMBNAILS: ThumbnailModeSchema.optional(),
     IMMICH_MICROSERVICES_METRICS_PORT: z.coerce.number().int().optional(),
     IMMICH_ALLOW_EXTERNAL_PLUGINS: stringBool.optional(),
     IMMICH_PLUGINS_INSTALL_FOLDER: absolutePath,

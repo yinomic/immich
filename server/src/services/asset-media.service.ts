@@ -21,6 +21,7 @@ import { AssetDownloadOriginalDto } from 'src/dtos/asset.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
   AssetFileType,
+  AssetType,
   AssetVisibility,
   CacheControl,
   ChecksumAlgorithm,
@@ -264,7 +265,7 @@ export class AssetMediaService extends BaseService {
     }
 
     const size = (dto.size ?? AssetMediaSize.THUMBNAIL) as unknown as AssetFileType;
-    const { originalPath, originalFileName, path } = await this.assetRepository.getForThumbnail(
+    const { originalPath, originalFileName, type, path } = await this.assetRepository.getForThumbnail(
       id,
       size,
       dto.edited ?? false,
@@ -281,8 +282,21 @@ export class AssetMediaService extends BaseService {
       return { targetSize: AssetMediaSize.PREVIEW };
     }
 
-    if (!path) {
-      throw new NotFoundException('Asset media not found');
+    // NOTE (family fork): derived images are a disposable local cache, never part
+    // of the stored library. When they are disabled (IMMICH_THUMBNAILS=off) or not
+    // generated yet, serve the original instead of failing, and let the
+    // background job fill the cache for the next request.
+    const { storage } = this.configRepository.getEnv();
+    const isCached = !!path && (await this.storageRepository.checkFileExists(path));
+    if (!isCached || storage.thumbnails === 'off') {
+      await this.jobRepository.queue({ name: JobName.AssetGenerateThumbnails, data: { id } });
+
+      if (type === AssetType.Image) {
+        // the original is an image, so it can stand in for the thumbnail
+        return { targetSize: 'original' };
+      }
+
+      throw new NotFoundException('Asset thumbnail not generated yet');
     }
 
     const fileNameBase =
