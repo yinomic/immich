@@ -95,22 +95,9 @@ export const getPagesProvider = ($t: MessageFormatter) => {
       $if: () => authManager.authenticated && featureFlagsManager.value.map,
     },
     {
-      title: $t('people'),
-      description: $t('people_feature_description'),
-      icon: mdiAccountOutline,
-      onAction: () => goto(Route.people()),
-      $if: () => authManager.authenticated && authManager.preferences.people.enabled,
-    },
-    {
       title: $t('places'),
       icon: mdiMapMarkerOutline,
       onAction: () => goto(Route.places()),
-    },
-    {
-      title: $t('shared_links'),
-      icon: mdiLink,
-      onAction: () => goto(Route.sharedLinks()),
-      $if: () => authManager.authenticated && authManager.preferences.sharedLinks.enabled,
     },
     {
       title: $t('recently_added'),

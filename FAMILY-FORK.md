@@ -317,3 +317,10 @@
 - 验证：`pnpm --filter immich-web check:typescript` 0 错、`check:svelte`（`--fail-on-warnings`）**0 错 0 警告**
 
 **说明**：人脸/人物页面（`(user)/people`、`explore` 等）仍保留——它们引用了大量 API 类型，需要和 `packages/sdk`/`open-api` 一起重新生成后再删，属于下一步。`shared_links` 入口同样留待与 SDK 一起处理。
+
+### Round 13（客户端清理续：删掉「人物」与「共享链接」页面）
+- 删除 `(user)/people/**`（人物列表、人物详情、PeopleCard/PeopleInfiniteScroll 等 11 个文件）与 `(user)/shared-links/**`
+- 清理导航与命令面板：侧边栏「人物」「共享链接」入口、命令面板对应项（`lib/commands.ts`）
+- `explore` 页里指向人物页的卡片链接改为指向「照片」
+- 保留（暂时）：`lib/services/shared-link.service.ts` 与其若干组件（`SharedLinkCreateModal`、`AlbumSharedLink`、`RemoveFromSharedLinkAction`）以及 `lib/route.ts` 里的路由字符串助手 —— 它们引用了 `$lib/services/shared-link.service`，直接删会级联；这些入口已不可达，待与 SDK 重新生成一起清
+- 验证：`pnpm --filter immich-web check:typescript` 0 错、`check:svelte`（`--fail-on-warnings`）**0 错 0 警告**
