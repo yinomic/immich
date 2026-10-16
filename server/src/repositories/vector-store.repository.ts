@@ -4,12 +4,14 @@ import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { FileVectorStore } from 'src/repositories/vector/file-vector-store.js';
 import { VectorMatch, VectorSearchOptions, VectorStore } from 'src/repositories/vector/vector-store.js';
+import { VikingVectorStore } from 'src/repositories/vector/viking-vector-store.js';
 
 /**
  * The vector store used by the app.
  *
- * Default is the local file store, which needs no extra service. Cloud stores
- * (VikingDB / VDB) plug in here behind the same interface.
+ * `file` (default) keeps vectors on local disk: no extra service, no Postgres
+ * extension, ideal for a single family deployment or for development.
+ * `vikingdb` moves them to the Volcengine cloud vector database.
  */
 @Injectable()
 export class VectorStoreRepository implements VectorStore {
@@ -50,6 +52,17 @@ export class VectorStoreRepository implements VectorStore {
     }
 
     const { search, storage } = this.configRepository.getEnv();
+
+    if (search.vectorStore === 'vikingdb') {
+      const { collection, index, ...rest } = search.vikingdb;
+      if (!collection || !index) {
+        throw new Error('VIKINGDB_COLLECTION and VIKINGDB_INDEX are required when IMMICH_VECTOR_STORE=vikingdb');
+      }
+
+      this.store = new VikingVectorStore({ ...rest, collection, index }, this.logger);
+      return this.store;
+    }
+
     const file = search.vectorStorePath ?? join(storage.mediaLocation ?? '/data', 'vectors', 'immich-vectors.jsonl');
 
     this.logger.log(`Using file vector store at ${file}`);

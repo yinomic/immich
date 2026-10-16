@@ -124,7 +124,21 @@ export interface EnvData {
     model?: string;
     dimSize?: number;
     timeoutMs: number;
+    vectorStore: 'file' | 'vikingdb';
     vectorStorePath?: string;
+    vikingdb: {
+      host: string;
+      region: string;
+      scheme: 'http' | 'https';
+      collection?: string;
+      index?: string;
+      primaryKey?: string;
+      vectorField?: string;
+      accessKeyId?: string;
+      secretAccessKey?: string;
+      sessionToken?: string;
+      apiKey?: string;
+    };
   };
 
   workers: ImmichWorker[];
@@ -376,7 +390,21 @@ const getEnv = (): EnvData => {
       model: dto.IMMICH_CLOUD_SEARCH_MODEL,
       dimSize: dto.IMMICH_CLOUD_SEARCH_DIM,
       timeoutMs: dto.IMMICH_CLOUD_SEARCH_TIMEOUT_MS ?? 30_000,
+      vectorStore: dto.IMMICH_VECTOR_STORE ?? 'file',
       vectorStorePath: dto.IMMICH_VECTOR_STORE_PATH,
+      vikingdb: {
+        host: dto.VIKINGDB_HOST ?? 'api-vikingdb.volces.com',
+        region: dto.VIKINGDB_REGION ?? 'cn-north-1',
+        scheme: dto.VIKINGDB_SCHEME ?? 'https',
+        collection: dto.VIKINGDB_COLLECTION,
+        index: dto.VIKINGDB_INDEX,
+        primaryKey: dto.VIKINGDB_PRIMARY_KEY,
+        vectorField: dto.VIKINGDB_VECTOR_FIELD,
+        accessKeyId: dto.VIKINGDB_ACCESS_KEY,
+        secretAccessKey: dto.VIKINGDB_SECRET_KEY,
+        sessionToken: dto.VIKINGDB_SESSION_TOKEN,
+        apiKey: dto.VIKINGDB_API_KEY,
+      },
     },
 
     telemetry: {

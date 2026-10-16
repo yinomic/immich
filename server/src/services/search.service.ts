@@ -26,6 +26,7 @@ import { AssetSearchScope } from 'src/repositories/search.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { requireElevatedPermission } from 'src/utils/access.js';
 import { getMyPartnerIds } from 'src/utils/asset.util.js';
+import { mimeTypes } from 'src/utils/mime-types.js';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor.js';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter.js';
 
@@ -370,11 +371,20 @@ export class SearchService extends BaseService {
 
     if (dto.queryAssetId) {
       await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [dto.queryAssetId] });
-      const assetEmbedding = await this.vectorStoreRepository.get(dto.queryAssetId);
-      if (!assetEmbedding) {
+      const stored = await this.vectorStoreRepository.get(dto.queryAssetId);
+      if (stored) {
+        return stored;
+      }
+
+      // cloud stores (e.g. VikingDB) cannot hand back a stored vector, so
+      // re-embed the original image instead
+      const asset = await this.assetJobRepository.getForClipEncoding(dto.queryAssetId);
+      if (!asset) {
         throw new BadRequestException(`Asset ${dto.queryAssetId} has no embedding`);
       }
-      return assetEmbedding;
+
+      const data = await this.storageRepository.readFile(asset.originalPath);
+      return this.embeddingRepository.embedImage({ data, mimeType: mimeTypes.lookup(asset.originalPath) });
     }
 
     throw new BadRequestException('Either `query` or `queryAssetId` must be set');

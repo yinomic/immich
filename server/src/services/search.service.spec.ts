@@ -356,9 +356,28 @@ describe(SearchService.name, () => {
       expect(mocks.vectorStore.search).toHaveBeenCalledWith([9, 9, 9], expect.objectContaining({ topK: 400 }));
     });
 
+    it('should re-embed the original when the store cannot return a vector', async () => {
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
+      mocks.vectorStore.get.mockResolvedValue(undefined);
+      mocks.assetJob.getForClipEncoding.mockResolvedValue(AssetFactory.create({ id: 'asset-id' }));
+      mocks.storage.readFile.mockResolvedValue(Buffer.from('original'));
+      mocks.embedding.embedImage.mockResolvedValue([7, 7, 7]);
+      mocks.vectorStore.search.mockResolvedValue([]);
+      mocks.search.searchSmartByIds.mockResolvedValue([]);
+
+      await sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' });
+
+      expect(mocks.embedding.embedImage).toHaveBeenCalledWith({
+        data: Buffer.from('original'),
+        mimeType: 'image/jpeg',
+      });
+      expect(mocks.vectorStore.search).toHaveBeenCalledWith([7, 7, 7], expect.anything());
+    });
+
     it('should reject an asset without a stored vector', async () => {
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
       mocks.vectorStore.get.mockResolvedValue(undefined);
+      mocks.assetJob.getForClipEncoding.mockResolvedValue(void 0);
 
       await expect(sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' })).rejects.toThrowError(
         new BadRequestException('Asset asset-id has no embedding'),

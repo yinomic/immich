@@ -197,3 +197,12 @@
 - 验证：`tsc` 绿、eslint 绿、106 文件 / 2337 用例全绿
 
 **遗留（下一轮）**：① `duplicate.service` 仍读 `smart_search`（该表已不再写入 → 重复检测实际处于"empty"状态，随 ML 删除一并处理）；② `search.repository`/`duplicate.repository` 的 `queries/*.sql` 快照已过期，需重新生成；③ 删除 `smart_search`/`face_search` 表与 pgvector 依赖，compose 换 stock Postgres；④ 写 `viking-vector-store.ts`（已从官方 SDK 提取到真实契约：`api-vikingdb.volces.com`、签名 service=`air`、`/api/collection/upsert_data`、`/api/collection/del_data`、`/api/index/search`（body 为 `{collection_name, index_name, search:{order_by_vector:{vectors:[...]}, limit, output_fields, primary_key_in}}`））
+
+### Round 3 续（VikingDB 适配器 + 签名验证）
+- 新增 `volcengine-signer.ts`：从官方 Python SDK 移植的 Volcengine V4 签名（HMAC-SHA256、service=`air`、RFC3986 规范化、`X-Date`/`X-Content-Sha256`/`Authorization`）
+- 新增 `volcengine-signer.spec.ts`：**黄金测试**——用官方 SDK 算法（精简为标准库 Python 脚本）对同一请求生成期望签名，TS 实现输出**逐字节一致**（`Signature=a40119f7...`），并覆盖 session token、空 body 场景
+- 新增 `viking-vector-store.ts`：VikingDB 数据面（`/api/collection/upsert_data`、`/api/collection/del_data`、`/api/index/search`），支持 AK/SK 签名或 Bearer API Key，批量 upsert/delete（100/批），`data: [[hit]]` 嵌套响应容错解析，`score→distance` 转换，本地 `maxDistance` 过滤，`primary_key_in` 预过滤；`clear()` 用 `del_all`
+- `env`：`IMMICH_VECTOR_STORE=file|vikingdb`、`VIKINGDB_{HOST,REGION,SCHEME,COLLECTION,INDEX,PRIMARY_KEY,VECTOR_FIELD,ACCESS_KEY,SECRET_KEY,SESSION_TOKEN,API_KEY}`
+- `search.service`：以图搜图在向量库无法回读向量时（VikingDB）自动回退为「读原图 → 云端重嵌入」
+- 新增 `viking-vector-store.spec.ts`（8 例，mock fetch：签名头、Bearer、排序、批次、错误码、del_all、无回读）
+- 验证：`tsc` 绿、eslint 绿、108 文件 / 2349 用例全绿
