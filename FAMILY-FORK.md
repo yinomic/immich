@@ -383,3 +383,10 @@ volumes:
 - `shared_link*`、`album_user` 表仍在（分享功能已停用/删除；彻底删表需先迁移相册归属）
 - `packages/sdk`/`open-api` 工件仍是改造前的版本（web 用旧类型编译通过，但人脸/人物等页面已删除）
 - `mobile/` 未改动（是否保留官方 App 待定）
+
+### Round 15（服务端清掉分享链接的最后一批代码依赖）
+- `utils/access.ts`：删除 `checkSharedLinkAccess` 分支与 `SharedLinkAccessRequest` 类型，访问检查只剩「本人」与「相册所有者」两条路径
+- `access.repository.ts`：删除两个 `checkSharedLinkAccess` 查询（不再有人查 `shared_link` 表）
+- 清理因此失效的用例与 mock（album/asset/asset-media/search 里的 "shared link" 用例）
+- 验证：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / **1589 用例**全绿
+- 说明：`shared_link*` 两张表目前只剩 `album.repository` 的 3 处引用（`withSharedLink` 与 isShared 判断），把它们一起改掉后即可删表 + 重新生成迁移（下一轮）

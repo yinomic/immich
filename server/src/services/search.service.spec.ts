@@ -8,7 +8,6 @@ import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
 import { getForAsset } from 'test/mappers.js';
-import { newUuid } from 'test/small.factory.js';
 import { ServiceMocks, newTestService } from 'test/utils.js';
 
 vitest.useFakeTimers();
@@ -233,37 +232,6 @@ describe(SearchService.name, () => {
       await expect(sut.searchMetadata(AuthFactory.create(), { size: 250, filter })).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
-    });
-
-    it('should reject a shared link whose filter is not confined to albums everywhere', async () => {
-      const auth = AuthFactory.from().sharedLink().build();
-      const albumId = newUuid();
-
-      await expect(sut.searchMetadata(auth, { size: 250, filter: {} })).rejects.toThrowError(
-        new BadRequestException('Shared link access is only allowed in combination with an albumIds filter'),
-      );
-
-      await expect(
-        sut.searchMetadata(auth, {
-          size: 250,
-          filter: { or: [{ albumIds: { any: [albumId] } }, { city: { eq: 'Oslo' } }] },
-        }),
-      ).rejects.toThrowError(
-        new BadRequestException('Shared link access is only allowed in combination with an albumIds filter'),
-      );
-    });
-
-    it('should allow a shared link when every branch is confined to a covered album', async () => {
-      const auth = AuthFactory.from().sharedLink().build();
-      const albumId = newUuid();
-
-      mocks.access.album.checkSharedLinkAccess.mockResolvedValue(new Set([albumId]));
-      mocks.search.searchMetadataV3.mockResolvedValue({ hasNextPage: false, items: [] });
-
-      await expect(
-        sut.searchMetadata(auth, { size: 250, filter: { or: [{ albumIds: { any: [albumId] } }] } }),
-      ).resolves.toBeDefined();
-      expect(mocks.search.searchMetadataV3).toHaveBeenCalled();
     });
   });
 

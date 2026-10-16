@@ -1,5 +1,4 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { AuthSharedLink } from 'src/database.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { AlbumUserRole, Permission } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
@@ -27,11 +26,10 @@ export type AccessRequest = {
   ids: Set<string> | string[];
 };
 
-type SharedLinkAccessRequest = { sharedLink: AuthSharedLink; permission: Permission; ids: Set<string> };
 type OtherAccessRequest = { auth: AuthDto; permission: Permission; ids: Set<string> };
 
 export const requireUploadAccess = (auth: AuthDto | null): AuthDto => {
-  if (!auth || (auth.sharedLink && !auth.sharedLink.allowUpload)) {
+  if (!auth) {
     throw new UnauthorizedException();
   }
   return auth;
@@ -53,51 +51,8 @@ export const checkAccess = async (
     return new Set<string>();
   }
 
-  return auth.sharedLink
-    ? checkSharedLinkAccess(access, { sharedLink: auth.sharedLink, permission, ids: idSet })
-    : checkOtherAccess(access, { auth, permission, ids: idSet });
-};
-
-const checkSharedLinkAccess = async (
-  access: AccessRepository,
-  request: SharedLinkAccessRequest,
-): Promise<Set<string>> => {
-  const { sharedLink, permission, ids } = request;
-  const sharedLinkId = sharedLink.id;
-
-  switch (permission) {
-    case Permission.AssetRead: {
-      return await access.asset.checkSharedLinkAccess(sharedLinkId, ids);
-    }
-
-    case Permission.AssetView: {
-      return await access.asset.checkSharedLinkAccess(sharedLinkId, ids);
-    }
-
-    case Permission.AssetDownload: {
-      return sharedLink.allowDownload ? await access.asset.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
-    }
-
-    case Permission.AssetUpload: {
-      return sharedLink.allowUpload ? ids : new Set();
-    }
-
-    case Permission.AlbumRead: {
-      return await access.album.checkSharedLinkAccess(sharedLinkId, ids);
-    }
-
-    case Permission.AlbumDownload: {
-      return sharedLink.allowDownload ? await access.album.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
-    }
-
-    case Permission.AlbumAssetCreate: {
-      return sharedLink.allowUpload ? await access.album.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
-    }
-
-    default: {
-      return new Set<string>();
-    }
-  }
+  // NOTE (family fork): shared links are gone, so access is always personal
+  return checkOtherAccess(access, { auth, permission, ids: idSet });
 };
 
 const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRequest): Promise<Set<string>> => {

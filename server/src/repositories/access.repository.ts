@@ -115,27 +115,6 @@ class AlbumAccess {
       .execute()
       .then((albums) => new Set(albums.map((album) => album.id)));
   }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkSharedLinkAccess(sharedLinkId: string, albumIds: Set<string>) {
-    if (albumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('shared_link')
-      .select('shared_link.albumId')
-      .where('shared_link.id', '=', sharedLinkId)
-      .where('shared_link.albumId', 'in', [...albumIds])
-      .execute()
-      .then(
-        (sharedLinks) =>
-          new Set(
-            sharedLinks.filter((sharedLink) => sharedLink.albumId).map((sharedLink) => sharedLink.albumId),
-          ) as Set<string>,
-      );
-  }
 }
 
 class AssetAccess {
@@ -224,67 +203,6 @@ class AssetAccess {
       .where('asset.id', 'in', [...assetIds])
       .execute()
       .then((assets) => new Set(assets.map((asset) => asset.id)));
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkSharedLinkAccess(sharedLinkId: string, assetIds: Set<string>) {
-    if (assetIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .with('target', (qb) => qb.selectNoFrom(sql<string[]>`array[${sql.join([...assetIds])}]::uuid[]`.as('ids')))
-      .with('link', (qb) =>
-        qb
-          .selectFrom('shared_link')
-          .select(['shared_link.id', 'shared_link.albumId'])
-          .where('shared_link.id', '=', sharedLinkId),
-      )
-      .selectFrom('asset')
-      .crossJoin('target')
-      .innerJoinLateral(
-        (eb) =>
-          eb
-            .selectFrom('link')
-            .innerJoin('shared_link_asset', 'shared_link_asset.sharedLinkId', 'link.id')
-            .select(sql.lit(1).as('match'))
-            .whereRef('shared_link_asset.assetId', '=', 'asset.id')
-            .unionAll(
-              eb
-                .selectFrom('link')
-                .innerJoin('album', (join) =>
-                  join.onRef('album.id', '=', 'link.albumId').on('album.deletedAt', 'is', null),
-                )
-                .innerJoin('album_asset', 'album_asset.albumId', 'album.id')
-                .select(sql.lit(1).as('match'))
-                .whereRef('album_asset.assetId', '=', 'asset.id'),
-            )
-            .limit(1)
-            .as('membership'),
-        (join) => join.onTrue(),
-      )
-      .select(['asset.id', 'asset.livePhotoVideoId'])
-      .where('asset.deletedAt', 'is', null)
-      .where((eb) =>
-        eb.or([
-          eb('asset.id', '=', eb.fn.any('target.ids')),
-          eb('asset.livePhotoVideoId', '=', eb.fn.any('target.ids')),
-        ]),
-      )
-      .execute()
-      .then((rows) => {
-        const allowedIds = new Set<string>();
-        for (const row of rows) {
-          if (assetIds.has(row.id)) {
-            allowedIds.add(row.id);
-          }
-          if (row.livePhotoVideoId && assetIds.has(row.livePhotoVideoId)) {
-            allowedIds.add(row.livePhotoVideoId);
-          }
-        }
-        return allowedIds;
-      });
   }
 }
 

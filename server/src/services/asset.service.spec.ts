@@ -92,37 +92,6 @@ describe(AssetService.name, () => {
       );
     });
 
-    it('should allow shared link access', async () => {
-      const asset = AssetFactory.create();
-      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getById.mockResolvedValue(getForAsset(asset));
-
-      await sut.get(authStub.adminSharedLink, asset.id);
-
-      expect(mocks.access.asset.checkSharedLinkAccess).toHaveBeenCalledWith(
-        authStub.adminSharedLink.sharedLink?.id,
-        new Set([asset.id]),
-      );
-    });
-
-    it('should strip metadata for shared link if exif is disabled', async () => {
-      const asset = AssetFactory.from().exif({ description: 'foo' }).build();
-      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getById.mockResolvedValue(getForAsset(asset));
-
-      const result = await sut.get(
-        { ...authStub.adminSharedLink, sharedLink: { ...authStub.adminSharedLink.sharedLink!, showExif: false } },
-        asset.id,
-      );
-
-      expect(result).toEqual(expect.objectContaining({ hasMetadata: false }));
-      expect(result).not.toHaveProperty('exifInfo');
-      expect(mocks.access.asset.checkSharedLinkAccess).toHaveBeenCalledWith(
-        authStub.adminSharedLink.sharedLink?.id,
-        new Set([asset.id]),
-      );
-    });
-
     it('should allow partner sharing access', async () => {
       const asset = AssetFactory.create();
       mocks.access.asset.checkPartnerAccess.mockResolvedValue(new Set([asset.id]));
@@ -146,15 +115,6 @@ describe(AssetService.name, () => {
     it('should throw an error for no access', async () => {
       await expect(sut.get(authStub.admin, AssetFactory.create().id)).rejects.toBeInstanceOf(BadRequestException);
 
-      expect(mocks.asset.getById).not.toHaveBeenCalled();
-    });
-
-    it('should throw an error for an invalid shared link', async () => {
-      await expect(sut.get(authStub.adminSharedLink, AssetFactory.create().id)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
-
-      expect(mocks.access.asset.checkOwnerAccess).not.toHaveBeenCalled();
       expect(mocks.asset.getById).not.toHaveBeenCalled();
     });
 

@@ -9,13 +9,11 @@ import { AssetFile } from 'src/database.js';
 import { AssetMediaStatus, AssetRejectReason, AssetUploadAction } from 'src/dtos/asset-media-response.dto.js';
 import { AssetMediaCreateDto, AssetMediaSize, UploadFieldName } from 'src/dtos/asset-media.dto.js';
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
-import { AssetEditAction } from 'src/dtos/editing.dto.js';
 import { AssetFileType, AssetType, AssetVisibility, CacheControl, JobName } from 'src/enum.js';
 import { AuthRequest } from 'src/middleware/auth.guard.js';
 import { AssetMediaService } from 'src/services/asset-media.service.js';
 import { ASSET_CHECKSUM_CONSTRAINT } from 'src/utils/database.js';
 import { ImmichFileResponse } from 'src/utils/file.js';
-import { AssetFileFactory } from 'test/factories/asset-file.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
@@ -536,25 +534,6 @@ describe(AssetMediaService.name, () => {
       );
     });
 
-    it('should not return the unedited version if requested using a shared link', async () => {
-      const fullsizeEdited = AssetFileFactory.create({ type: AssetFileType.FullSize, isEdited: true });
-      const editedAsset = AssetFactory.from().edit({ action: AssetEditAction.Crop }).file(fullsizeEdited).build();
-
-      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([editedAsset.id]));
-      mocks.asset.getForOriginal.mockResolvedValue({ ...editedAsset, editedPath: fullsizeEdited.path });
-
-      await expect(
-        sut.downloadOriginal(AuthFactory.from().sharedLink().build(), editedAsset.id, { edited: false }),
-      ).resolves.toEqual(
-        new ImmichFileResponse({
-          path: fullsizeEdited.path,
-          fileName: editedAsset.originalFileName,
-          contentType: 'image/jpeg',
-          cacheControl: CacheControl.PrivateWithCache,
-        }),
-      );
-    });
-
     it('should download original file when edited=false', async () => {
       const editedAsset = AssetFactory.from()
         .edit()
@@ -708,44 +687,6 @@ describe(AssetMediaService.name, () => {
         }),
       );
       expect(mocks.asset.getForThumbnail).toHaveBeenCalledWith(asset.id, AssetFileType.Thumbnail, false);
-    });
-
-    it('should not return the unedited version if requested using a shared link', async () => {
-      const asset = AssetFactory.from().file({ type: AssetFileType.Thumbnail }).build();
-      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
-      await expect(
-        sut.viewThumbnail(authStub.adminSharedLink, asset.id, {
-          size: AssetMediaSize.THUMBNAIL,
-          edited: true,
-        }),
-      ).resolves.toEqual(
-        new ImmichFileResponse({
-          path: asset.files[0].path,
-          cacheControl: CacheControl.PrivateWithCache,
-          contentType: 'image/jpeg',
-          fileName: `IMG_${asset.id}_thumbnail.jpg`,
-        }),
-      );
-      expect(mocks.asset.getForThumbnail).toHaveBeenCalledWith(asset.id, AssetFileType.Thumbnail, true);
-    });
-
-    it('should not include original filename if requested using a shared link with showExif false', async () => {
-      const asset = AssetFactory.from().file({ type: AssetFileType.Preview }).build();
-
-      mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForThumbnail.mockResolvedValue({ ...asset, path: asset.files[0].path });
-
-      const auth = AuthFactory.from().sharedLink({ showExif: false }).build();
-
-      await expect(sut.viewThumbnail(auth, asset.id, { size: AssetMediaSize.PREVIEW })).resolves.toEqual(
-        new ImmichFileResponse({
-          path: asset.files[0].path,
-          cacheControl: CacheControl.PrivateWithCache,
-          contentType: 'image/jpeg',
-          fileName: `${asset.id}_preview.jpg`,
-        }),
-      );
     });
   });
 

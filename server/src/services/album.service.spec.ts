@@ -501,27 +501,6 @@ describe(AlbumService.name, () => {
       expect(mocks.access.album.checkOwnerAccess).toHaveBeenCalledWith(owner.id, new Set([album.id]));
     });
 
-    it('should get a shared album via a shared link', async () => {
-      const album = AlbumFactory.from().albumUser().build();
-      mocks.album.getById.mockResolvedValue(getForAlbum(album));
-      mocks.access.album.checkSharedLinkAccess.mockResolvedValue(new Set([album.id]));
-      mocks.album.getMetadataForIds.mockResolvedValue([
-        {
-          albumId: album.id,
-          assetCount: 1,
-          startDate: new Date('1970-01-01'),
-          endDate: new Date('1970-01-01'),
-          lastModifiedAssetTimestamp: new Date('1970-01-01'),
-        },
-      ]);
-
-      const auth = AuthFactory.from().sharedLink().build();
-      await sut.get(auth, album.id);
-
-      expect(mocks.album.getById).toHaveBeenCalledWith(album.id, auth.user.id);
-      expect(mocks.access.album.checkSharedLinkAccess).toHaveBeenCalledWith(auth.sharedLink!.id, new Set([album.id]));
-    });
-
     it('should get a shared album via shared with user', async () => {
       const user = UserFactory.create();
       const album = AlbumFactory.from().albumUser({ userId: user.id }).build();
@@ -743,8 +722,6 @@ describe(AlbumService.name, () => {
       await expect(
         sut.addAssets(AuthFactory.from().sharedLink({ allowUpload: true }).build(), album.id, { ids: [asset.id] }),
       ).rejects.toBeInstanceOf(BadRequestException);
-
-      expect(mocks.access.album.checkSharedLinkAccess).toHaveBeenCalled();
     });
   });
 
@@ -1127,8 +1104,6 @@ describe(AlbumService.name, () => {
         success: false,
         error: BulkIdErrorReason.NO_PERMISSION,
       });
-
-      expect(mocks.access.album.checkSharedLinkAccess).toHaveBeenCalled();
     });
   });
 
