@@ -1,24 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>immich-app/.github:renovate-config"],
+  "extends": [
+    "local>immich-app/.github:renovate-config"
+  ],
   "packageRules": [
-    {
-      "matchFileNames": [
-        "machine-learning/**"
-      ],
-      "groupName": "machine-learning",
-      "rangeStrategy": "in-range-only"
-    },
-    {
-      "matchFileNames": [
-        "machine-learning/**"
-      ],
-      "matchPackageNames": [
-        "onnxruntime*",
-        "rknn-toolkit-lite2"
-      ],
-      "groupName": null
-    },
     {
       "matchFileNames": [
         "mobile/**"
@@ -29,20 +14,28 @@
         "patch"
       ],
       "addLabels": [
-        "📱mobile"
+        "\ud83d\udcf1mobile"
       ]
     },
     {
-      "matchPackageNames": ["ghcr.io/immich-app/postgres"],
-      "matchUpdateTypes": ["major"],
+      "matchPackageNames": [
+        "ghcr.io/immich-app/postgres"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "enabled": false
     },
     {
-      "matchPackageNames": ["ghcr.io/immich-app/base-server-*"],
+      "matchPackageNames": [
+        "ghcr.io/immich-app/base-server-*"
+      ],
       "maxMajorIncrement": 0
     },
     {
-      "matchPackageNames": ["ruby"],
+      "matchPackageNames": [
+        "ruby"
+      ],
       "groupName": "ruby",
       "matchCurrentVersion": "< 3.4",
       "enabled": false
