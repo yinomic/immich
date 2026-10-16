@@ -7,7 +7,6 @@ import { StorageCore } from 'src/cores/storage.core.js';
 import { UserAdmin } from 'src/database.js';
 import { SystemConfig } from 'src/dtos/config.dto.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
-import { ActivityRepository } from 'src/repositories/activity.repository.js';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository.js';
 import { AlbumRepository } from 'src/repositories/album.repository.js';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository.js';
@@ -36,7 +35,6 @@ import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
 import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
@@ -66,7 +64,6 @@ import { getConfig, updateConfig } from 'src/utils/config.js';
 export const BASE_SERVICE_DEPENDENCIES = [
   LoggingRepository,
   AccessRepository,
-  ActivityRepository,
   AlbumRepository,
   AlbumUserRepository,
   ApiKeyRepository,
@@ -94,7 +91,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   NotificationRepository,
   OAuthRepository,
   ObjectStorageRepository,
-  PartnerRepository,
   PluginRepository,
   ProcessRepository,
   SearchRepository,
@@ -126,7 +122,6 @@ export class BaseService {
   constructor(
     protected logger: LoggingRepository,
     protected accessRepository: AccessRepository,
-    protected activityRepository: ActivityRepository,
     protected albumRepository: AlbumRepository,
     protected albumUserRepository: AlbumUserRepository,
     protected apiKeyRepository: ApiKeyRepository,
@@ -154,7 +149,6 @@ export class BaseService {
     protected notificationRepository: NotificationRepository,
     protected oauthRepository: OAuthRepository,
     protected objectStorageRepository: ObjectStorageRepository,
-    protected partnerRepository: PartnerRepository,
     protected pluginRepository: PluginRepository,
     protected processRepository: ProcessRepository,
     protected searchRepository: SearchRepository,
@@ -194,7 +188,6 @@ export class BaseService {
     const service = new Service(
       LoggingRepository.create(),
       ctx.accessRepository,
-      ctx.activityRepository,
       ctx.albumRepository,
       ctx.albumUserRepository,
       ctx.apiKeyRepository,
@@ -222,7 +215,6 @@ export class BaseService {
       ctx.notificationRepository,
       ctx.oauthRepository,
       ctx.objectStorageRepository,
-      ctx.partnerRepository,
       ctx.pluginRepository,
       ctx.processRepository,
       ctx.searchRepository,

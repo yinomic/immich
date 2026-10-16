@@ -279,3 +279,14 @@
 | 删除资产 | `204`；对象从桶中移除；作业 0 报错 |
 
 检查：`tsc` 绿、eslint（max-warnings 0）绿、95 文件 / 1700 用例全绿。
+
+### Round 9（单账号：删除「伙伴共享」与「评论点赞」）
+面向"一个账号爸妈共用"的第一步：把**多用户共享**与**评论/点赞**整块删掉。
+
+- 删除 `partner`（伙伴共享：`partner.service/controller/repository/dto` + `partner`/`partner_audit` 表 + 相关 Job/Queue/同步实体）与 `activity`（相册评论/点赞：service/controller/repository/dto + `activity`/`activity_audit` 表）
+- 删除 `utils/asset.util.ts` 的 `getMyPartnerIds()`，`timeline/search/map` 三个服务改为**只搜索当前账号自己**（`getUserIdsToSearch()`、`buildTimeBucketOptions()` 不再拼接伙伴 id，也不再需要 visibility 参数）
+- 清理 DI 注册、权限/标签、测试夹具与相关用例（含 partner 相关 medium/sync 用例）
+- 运行时验证：登录 → 时间线 3 个桶 → 语义搜索 3 命中 → 相册列表 1 个 → 作业 0 报错；`/api/partner`、`/api/activities` 均返回 **404**（已移除）；`/api/shared-links` 仍为 200（下一轮处理）
+- 检查：`tsc` 绿、eslint（max-warnings 0）绿、91 文件 / 1663 用例全绿
+
+**下一轮**：删除「分享链接（shared link）」与「相册共享给他人（album_user）」，并清理 web 端对应的死页面。

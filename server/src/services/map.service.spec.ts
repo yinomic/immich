@@ -2,9 +2,7 @@ import { MapService } from 'src/services/map.service.js';
 import { AlbumFactory } from 'test/factories/album.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
-import { PartnerFactory } from 'test/factories/partner.factory.js';
 import { userStub } from 'test/fixtures/user.stub.js';
-import { getForPartner } from 'test/mappers.js';
 import { ServiceMocks, newTestService } from 'test/utils.js';
 
 describe(MapService.name, () => {
@@ -29,41 +27,10 @@ describe(MapService.name, () => {
         state: asset.exifInfo.state,
         country: asset.exifInfo.country,
       };
-      mocks.partner.getAll.mockResolvedValue([]);
       mocks.map.getMapMarkers.mockResolvedValue([marker]);
 
       const markers = await sut.getMapMarkers(auth, {});
 
-      expect(markers).toHaveLength(1);
-      expect(markers[0]).toEqual(marker);
-    });
-
-    it('should include partner assets', async () => {
-      const auth = AuthFactory.create();
-      const partner = PartnerFactory.create({ sharedWithId: auth.user.id });
-
-      const asset = AssetFactory.from()
-        .exif({ latitude: 42, longitude: 69, city: 'city', state: 'state', country: 'country' })
-        .build();
-      const marker = {
-        id: asset.id,
-        lat: asset.exifInfo.latitude!,
-        lon: asset.exifInfo.longitude!,
-        city: asset.exifInfo.city,
-        state: asset.exifInfo.state,
-        country: asset.exifInfo.country,
-      };
-      mocks.partner.getAll.mockResolvedValue([getForPartner(partner)]);
-      mocks.map.getMapMarkers.mockResolvedValue([marker]);
-
-      const markers = await sut.getMapMarkers(auth, { withPartners: true });
-
-      expect(mocks.map.getMapMarkers).toHaveBeenCalledWith(
-        auth.user.id,
-        [auth.user.id, partner.sharedById],
-        expect.arrayContaining([]),
-        { withPartners: true },
-      );
       expect(markers).toHaveLength(1);
       expect(markers[0]).toEqual(marker);
     });
@@ -81,7 +48,6 @@ describe(MapService.name, () => {
         state: asset.exifInfo.state,
         country: asset.exifInfo.country,
       };
-      mocks.partner.getAll.mockResolvedValue([]);
       mocks.map.getMapMarkers.mockResolvedValue([marker]);
       const album1 = AlbumFactory.create();
       const album2 = AlbumFactory.from().albumUser({ userId: userStub.user1.id }).build();

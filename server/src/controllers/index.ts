@@ -1,4 +1,3 @@
-import { ActivityController } from 'src/controllers/activity.controller.js';
 import { AlbumController } from 'src/controllers/album.controller.js';
 import { ApiKeyController } from 'src/controllers/api-key.controller.js';
 import { AppController } from 'src/controllers/app.controller.js';
@@ -21,7 +20,6 @@ import { MemoryController } from 'src/controllers/memory.controller.js';
 import { NotificationAdminController } from 'src/controllers/notification-admin.controller.js';
 import { NotificationController } from 'src/controllers/notification.controller.js';
 import { OAuthController } from 'src/controllers/oauth.controller.js';
-import { PartnerController } from 'src/controllers/partner.controller.js';
 import { PluginController } from 'src/controllers/plugin.controller.js';
 import { QueueController } from 'src/controllers/queue.controller.js';
 import { SearchController } from 'src/controllers/search.controller.js';
@@ -43,7 +41,6 @@ import { WorkflowController } from 'src/controllers/workflow.controller.js';
 
 export const controllers = [
   ApiKeyController,
-  ActivityController,
   AlbumController,
   AppController,
   AssetController,
@@ -65,7 +62,6 @@ export const controllers = [
   NotificationController,
   NotificationAdminController,
   OAuthController,
-  PartnerController,
   PluginController,
   QueueController,
   SearchController,

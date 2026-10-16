@@ -5,7 +5,6 @@ import { AccessRepository } from 'src/repositories/access.repository.js';
 import { AssetRepository } from 'src/repositories/asset.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
 import { DB } from 'src/schema/index.js';
 import { SearchService } from 'src/services/search.service.js';
@@ -18,7 +17,7 @@ let defaultDatabase: Kysely<DB>;
 const setup = (db?: Kysely<DB>) => {
   return newMediumService(SearchService, {
     database: db || defaultDatabase,
-    real: [AccessRepository, AssetRepository, DatabaseRepository, SearchRepository, PartnerRepository],
+    real: [AccessRepository, AssetRepository, DatabaseRepository, SearchRepository],
     mock: [LoggingRepository],
   });
 };
@@ -71,23 +70,7 @@ describe(SearchService.name, () => {
     ]);
   });
 
-  describe('searchStatistics', () => {
-    it('should not return locked assets of partner in elevated session', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { user: partner } = await ctx.newUser();
-
-      await ctx.newPartner({ sharedById: partner.id, sharedWithId: user.id });
-
-      await ctx.newAsset({ ownerId: partner.id, visibility: AssetVisibility.Locked });
-
-      const auth = factory.auth({ user: { id: user.id }, session: { hasElevatedPermission: true } });
-
-      const result = await sut.searchStatistics(auth, { visibility: AssetVisibility.Locked });
-
-      expect(result).toEqual({ total: 0 });
-    });
-  });
+  describe('searchStatistics', () => {});
 
   describe('withStacked option', () => {
     it('should exclude stacked assets when withStacked is false', async () => {
@@ -153,24 +136,6 @@ describe(SearchService.name, () => {
       const response = await sut.searchMetadata(auth, { size: 250, albumIds: [album.id] });
 
       expect(response.assets.items.length).toBe(1);
-    });
-
-    it('should not return assets for album, a user is not in, when partner sharing is enabled', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { user: otherUser } = await ctx.newUser();
-
-      await ctx.newPartner({ sharedById: otherUser.id, sharedWithId: user.id });
-
-      const { asset } = await ctx.newAsset({ ownerId: otherUser.id });
-      const { album } = await ctx.newAlbum({ ownerId: otherUser.id });
-      await ctx.newAlbumAsset({ albumId: album.id, assetId: asset.id });
-
-      const auth = factory.auth({ user: { id: user.id } });
-
-      await expect(sut.searchMetadata(auth, { size: 250, albumIds: [album.id] })).rejects.toThrow(
-        'Not found or no album.read access',
-      );
     });
   });
 
@@ -329,44 +294,6 @@ describe(SearchService.name, () => {
         filter: { visibility: { eq: AssetVisibility.Locked } },
       });
       expect(elevated.assets.items).toEqual([expect.objectContaining({ id: locked.id })]);
-    });
-
-    it('should exclude partner assets from a locked-only search', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { user: partner } = await ctx.newUser();
-      await ctx.newPartner({ sharedById: partner.id, sharedWithId: user.id });
-      const { asset: ownLocked } = await ctx.newAsset({ ownerId: user.id, visibility: AssetVisibility.Locked });
-      await ctx.newAsset({ ownerId: partner.id, visibility: AssetVisibility.Locked });
-
-      const auth = factory.auth({ user: { id: user.id }, session: { hasElevatedPermission: true } });
-      const response = await sut.searchMetadata(auth, {
-        size: 250,
-        filter: { visibility: { eq: AssetVisibility.Locked } },
-      });
-
-      expect(response.assets.items).toEqual([expect.objectContaining({ id: ownLocked.id })]);
-    });
-
-    it('should never return partner locked assets, even for locked-matching mixed filters', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { user: partner } = await ctx.newUser();
-      await ctx.newPartner({ sharedById: partner.id, sharedWithId: user.id });
-      const { asset: ownLocked } = await ctx.newAsset({ ownerId: user.id, visibility: AssetVisibility.Locked });
-      const { asset: partnerTimeline } = await ctx.newAsset({ ownerId: partner.id });
-      await ctx.newAsset({ ownerId: partner.id, visibility: AssetVisibility.Locked });
-
-      const auth = factory.auth({ user: { id: user.id }, session: { hasElevatedPermission: true } });
-      const response = await sut.searchMetadata(auth, {
-        size: 250,
-        filter: { visibility: { in: [AssetVisibility.Locked, AssetVisibility.Timeline] } },
-      });
-
-      const ids = response.assets.items.map(({ id }) => id);
-      expect(ids.toSorted((a, b) => a.localeCompare(b))).toEqual(
-        [ownLocked.id, partnerTimeline.id].toSorted((a, b) => a.localeCompare(b)),
-      );
     });
 
     it('should paginate with an opaque cursor', async () => {

@@ -1,9 +1,8 @@
 import { AssetEditAction } from 'src/dtos/editing.dto.js';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
-import { partner_delete_audit, stack_delete_audit } from 'src/schema/functions.js';
+import { stack_delete_audit } from 'src/schema/functions.js';
 import { BaseService } from 'src/services/base.service.js';
 import { MediumTestContext } from 'test/medium.factory.js';
 import { getKyselyDB } from 'test/utils.js';
@@ -16,20 +15,6 @@ describe('audit', () => {
       database: await getKyselyDB(),
       real: [],
       mock: [LoggingRepository],
-    });
-  });
-
-  describe(partner_delete_audit.name, () => {
-    it('should not cascade user deletes to partners_audit', async () => {
-      const partnerRepo = ctx.get(PartnerRepository);
-      const userRepo = ctx.get(UserRepository);
-      const { user: user1 } = await ctx.newUser();
-      const { user: user2 } = await ctx.newUser();
-      await partnerRepo.create({ sharedById: user1.id, sharedWithId: user2.id });
-      await userRepo.delete(user1, true);
-      await expect(
-        ctx.database.selectFrom('partner_audit').select(['id']).where('sharedById', '=', user1.id).execute(),
-      ).resolves.toHaveLength(0);
     });
   });
 

@@ -1,5 +1,4 @@
 import { AccessRepository } from 'src/repositories/access.repository.js';
-import { ActivityRepository } from 'src/repositories/activity.repository.js';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository.js';
 import { AlbumRepository } from 'src/repositories/album.repository.js';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository.js';
@@ -28,7 +27,6 @@ import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
 import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
@@ -54,7 +52,6 @@ import { WorkflowRepository } from 'src/repositories/workflow.repository.js';
 
 export const repositories = [
   AccessRepository,
-  ActivityRepository,
   AlbumRepository,
   AlbumUserRepository,
   ApiKeyRepository,
@@ -83,7 +80,6 @@ export const repositories = [
   NotificationRepository,
   OAuthRepository,
   ObjectStorageRepository,
-  PartnerRepository,
   PluginRepository,
   ProcessRepository,
   SearchRepository,

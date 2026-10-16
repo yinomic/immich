@@ -5,43 +5,30 @@ import { AssetVisibility, Permission } from 'src/enum.js';
 import { TimeBucketOptions } from 'src/repositories/asset.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { requireElevatedPermission } from 'src/utils/access.js';
-import { getMyPartnerIds } from 'src/utils/asset.util.js';
 
 @Injectable()
 export class TimelineService extends BaseService {
   async getTimeBuckets(auth: AuthDto, dto: TimeBucketDto): Promise<TimeBucketsResponseDto[]> {
     await this.timeBucketChecks(auth, dto);
-    const timeBucketOptions = await this.buildTimeBucketOptions(auth, dto);
+    const timeBucketOptions = this.buildTimeBucketOptions(auth, dto);
     return await this.assetRepository.getTimeBuckets(timeBucketOptions, auth);
   }
 
   // pre-jsonified response
   async getTimeBucket(auth: AuthDto, dto: TimeBucketAssetDto): Promise<string> {
     await this.timeBucketChecks(auth, dto);
-    const timeBucketOptions = await this.buildTimeBucketOptions(auth, { ...dto });
+    const timeBucketOptions = this.buildTimeBucketOptions(auth, { ...dto });
 
     // TODO: use id cursor for pagination
     const bucket = await this.assetRepository.getTimeBucket(dto.timeBucket, timeBucketOptions, auth);
     return bucket.assets;
   }
 
-  private async buildTimeBucketOptions(auth: AuthDto, dto: TimeBucketDto): Promise<TimeBucketOptions> {
-    const { userId, ...options } = dto;
-    let userIds: string[] | undefined;
+  private buildTimeBucketOptions(auth: AuthDto, dto: TimeBucketDto): TimeBucketOptions {
+    const { userId, withPartners: _withPartners, ...options } = dto;
 
-    if (userId) {
-      userIds = [userId];
-      if (dto.withPartners) {
-        const partnerIds = await getMyPartnerIds({
-          userId: auth.user.id,
-          repository: this.partnerRepository,
-          timelineEnabled: !options.personId || undefined,
-        });
-        userIds.push(...partnerIds);
-      }
-    }
-
-    return { ...options, userIds };
+    // single account: the only universe is the caller
+    return { ...options, userIds: userId ? [userId] : [auth.user.id] };
   }
 
   private async timeBucketChecks(auth: AuthDto, dto: TimeBucketDto) {

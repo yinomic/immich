@@ -2,7 +2,6 @@ import { Kysely } from 'kysely';
 import { SyncEntityType, SyncRequestType } from 'src/enum.js';
 import { DB } from 'src/schema/index.js';
 import { SyncTestContext } from 'test/medium.factory.js';
-import { factory } from 'test/small.factory.js';
 import { getKyselyDB } from 'test/utils.js';
 
 let defaultDatabase: Kysely<DB>;
@@ -60,22 +59,6 @@ describe(SyncRequestType.AssetExifsV1, () => {
     ]);
 
     await ctx.syncAckAll(auth, response);
-    await ctx.assertSyncIsComplete(auth, [SyncRequestType.AssetExifsV1]);
-  });
-
-  it('should only sync asset exif for own user', async () => {
-    const { auth, ctx } = await setup();
-    const { user: user2 } = await ctx.newUser();
-    await ctx.newPartner({ sharedById: user2.id, sharedWithId: auth.user.id });
-    const { asset } = await ctx.newAsset({ ownerId: user2.id });
-    await ctx.newExif({ assetId: asset.id, make: 'Canon' });
-    const { session } = await ctx.newSession({ userId: user2.id });
-    const auth2 = factory.auth({ session, user: user2 });
-
-    await expect(ctx.syncStream(auth2, [SyncRequestType.AssetExifsV1])).resolves.toEqual([
-      expect.objectContaining({ type: SyncEntityType.AssetExifV1 }),
-      expect.objectContaining({ type: SyncEntityType.SyncCompleteV1 }),
-    ]);
     await ctx.assertSyncIsComplete(auth, [SyncRequestType.AssetExifsV1]);
   });
 });

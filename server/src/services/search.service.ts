@@ -23,7 +23,6 @@ import { AssetOrder, AssetVisibility, Permission } from 'src/enum.js';
 import { AssetSearchScope } from 'src/repositories/search.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { requireElevatedPermission } from 'src/utils/access.js';
-import { getMyPartnerIds } from 'src/utils/asset.util.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor.js';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter.js';
@@ -107,7 +106,7 @@ export class SearchService extends BaseService {
     } else if (auth.sharedLink) {
       throw new BadRequestException('Shared link access is only allowed in combination with an albumIds filter');
     } else {
-      userIds = await this.getUserIdsToSearch(auth, dto.visibility);
+      userIds = this.getUserIdsToSearch(auth);
     }
 
     const page = dto.page ?? 1;
@@ -132,7 +131,7 @@ export class SearchService extends BaseService {
       return this.searchStatisticsV3(auth, dto);
     }
 
-    const userIds = await this.getUserIdsToSearch(auth, dto.visibility);
+    const userIds = this.getUserIdsToSearch(auth);
     if (dto.visibility === AssetVisibility.Locked) {
       requireElevatedPermission(auth);
     }
@@ -154,7 +153,7 @@ export class SearchService extends BaseService {
       requireElevatedPermission(auth);
     }
 
-    const userIds = await this.getUserIdsToSearch(auth, dto.visibility);
+    const userIds = this.getUserIdsToSearch(auth);
     const items = await this.searchRepository.searchRandom(dto.size, {
       ...dto,
       visibility: dto.visibility ?? (auth.session?.hasElevatedPermission ? undefined : 'not-locked'),
@@ -169,7 +168,7 @@ export class SearchService extends BaseService {
       requireElevatedPermission(auth);
     }
 
-    const userIds = await this.getUserIdsToSearch(auth, dto.visibility);
+    const userIds = this.getUserIdsToSearch(auth);
     const items = await this.searchRepository.searchLargeAssets(dto.size, {
       ...dto,
       visibility: dto.visibility ?? (auth.session?.hasElevatedPermission ? undefined : 'not-locked'),
@@ -192,7 +191,7 @@ export class SearchService extends BaseService {
       throw new BadRequestException('Smart search is not enabled');
     }
 
-    const userIds = await this.getUserIdsToSearch(auth, dto.visibility);
+    const userIds = this.getUserIdsToSearch(auth);
     const page = dto.page ?? 1;
     const size = dto.size;
     const candidates = await this.getVectorCandidates(auth, dto, page, size);
@@ -210,13 +209,13 @@ export class SearchService extends BaseService {
   }
 
   async getAssetsByCity(auth: AuthDto): Promise<AssetResponseDto[]> {
-    const userIds = await this.getUserIdsToSearch(auth);
+    const userIds = this.getUserIdsToSearch(auth);
     const assets = await this.searchRepository.getAssetsByCity(userIds);
     return assets.map((asset) => mapAsset(asset));
   }
 
   async getSearchSuggestions(auth: AuthDto, dto: SearchSuggestionRequestDto) {
-    const userIds = await this.getUserIdsToSearch(auth);
+    const userIds = this.getUserIdsToSearch(auth);
     const suggestions = await this.getSuggestions(userIds, dto);
     if (dto.includeNull) {
       suggestions.push(null);
@@ -325,11 +324,10 @@ export class SearchService extends BaseService {
     }
 
     const albumIds = collectFilterIds(filter, 'albumIds');
-    const [userIds] = await Promise.all([
-      // a fully confined filter searches albums only, so the unused universe can skip the partner lookup
-      fullyConfined ? [auth.user.id] : this.getUserIdsToSearch(auth),
-      albumIds.length > 0 ? this.requireAccess({ auth, ids: albumIds, permission: Permission.AlbumRead }) : undefined,
-    ]);
+    const userIds = fullyConfined ? [auth.user.id] : this.getUserIdsToSearch(auth);
+    await (albumIds.length > 0
+      ? this.requireAccess({ auth, ids: albumIds, permission: Permission.AlbumRead })
+      : undefined);
 
     return { filter: effectiveFilter, scope: { userIds, lockedOwnerId: auth.user.id, viewingUserId: auth.user.id } };
   }
@@ -383,17 +381,9 @@ export class SearchService extends BaseService {
     throw new BadRequestException('Either `query` or `queryAssetId` must be set');
   }
 
-  private async getUserIdsToSearch(auth: AuthDto, visibility?: AssetVisibility): Promise<string[]> {
-    // Locked assets are personal. Never include partner IDs, regardless of A's elevated session.
-    if (visibility === AssetVisibility.Locked) {
-      return [auth.user.id];
-    }
-    const partnerIds = await getMyPartnerIds({
-      userId: auth.user.id,
-      repository: this.partnerRepository,
-      timelineEnabled: true,
-    });
-    return [auth.user.id, ...partnerIds];
+  private getUserIdsToSearch(auth: AuthDto): string[] {
+    // single account: there are no partners to include
+    return [auth.user.id];
   }
 
   private mapResponse(

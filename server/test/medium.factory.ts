@@ -19,7 +19,6 @@ import {
   SyncRequestType,
 } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
-import { ActivityRepository } from 'src/repositories/activity.repository.js';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository.js';
 import { AlbumRepository } from 'src/repositories/album.repository.js';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository.js';
@@ -43,7 +42,6 @@ import { MemoryRepository } from 'src/repositories/memory.repository.js';
 import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
 import { SessionRepository } from 'src/repositories/session.repository.js';
@@ -163,12 +161,6 @@ export class MediumTestContext<S extends ClassConstructor<typeof BaseService> = 
     const user = mediumFactory.userInsert({ ...dto });
     const result = await this.get(UserRepository).create(user);
     return { user, result };
-  }
-
-  async newPartner(dto: { sharedById: string; sharedWithId: string; inTimeline?: boolean }) {
-    const partner = { inTimeline: true, ...dto };
-    const result = await this.get(PartnerRepository).create(partner);
-    return { partner, result };
   }
 
   async newStack(dto: Omit<Insertable<StackTable>, 'primaryAssetId'>, assetIds: string[]) {
@@ -443,7 +435,6 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case AccessRepository:
     case AlbumRepository:
     case AlbumUserRepository:
-    case ActivityRepository:
     case ApiKeyRepository:
     case AssetRepository:
     case AssetEditRepository:
@@ -453,7 +444,6 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case MemoryRepository:
     case LibraryRepository:
     case NotificationRepository:
-    case PartnerRepository:
     case SearchRepository:
     case SessionRepository:
     case SharedLinkRepository:
@@ -525,7 +515,6 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
 
 const newMockRepository = <T>(key: ClassConstructor<T>) => {
   switch (key) {
-    case ActivityRepository:
     case AlbumRepository:
     case AssetRepository:
     case AssetJobRepository:
@@ -535,7 +524,6 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case MemoryRepository:
     case IntegrityRepository:
     case NotificationRepository:
-    case PartnerRepository:
     case SessionRepository:
     case SyncRepository:
     case SyncCheckpointRepository:

@@ -19,7 +19,6 @@ describe(SearchService.name, () => {
 
   beforeEach(() => {
     ({ sut, mocks } = newTestService(SearchService));
-    mocks.partner.getAll.mockResolvedValue([]);
   });
 
   it('should work', () => {
@@ -81,7 +80,6 @@ describe(SearchService.name, () => {
   describe('getSearchSuggestions', () => {
     it('should return search suggestions for country', async () => {
       mocks.search.getCountries.mockResolvedValue(['USA']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.COUNTRY }),
@@ -91,7 +89,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for country (including null)', async () => {
       mocks.search.getCountries.mockResolvedValue(['USA']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.COUNTRY }),
@@ -101,7 +98,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for state', async () => {
       mocks.search.getStates.mockResolvedValue(['California']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.STATE }),
@@ -111,7 +107,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for state (including null)', async () => {
       mocks.search.getStates.mockResolvedValue(['California']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.STATE }),
@@ -121,7 +116,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for city', async () => {
       mocks.search.getCities.mockResolvedValue(['Denver']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.CITY }),
@@ -131,7 +125,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for city (including null)', async () => {
       mocks.search.getCities.mockResolvedValue(['Denver']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.CITY }),
@@ -141,7 +134,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera make', async () => {
       mocks.search.getCameraMakes.mockResolvedValue(['Nikon']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.CAMERA_MAKE }),
@@ -151,7 +143,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera make (including null)', async () => {
       mocks.search.getCameraMakes.mockResolvedValue(['Nikon']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.CAMERA_MAKE }),
@@ -161,7 +152,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera model', async () => {
       mocks.search.getCameraModels.mockResolvedValue(['Fujifilm X100VI']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.CAMERA_MODEL }),
@@ -171,7 +161,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera model (including null)', async () => {
       mocks.search.getCameraModels.mockResolvedValue(['Fujifilm X100VI']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.CAMERA_MODEL }),
@@ -181,7 +170,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera lens model', async () => {
       mocks.search.getCameraLensModels.mockResolvedValue(['10-24mm']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: false, type: SearchSuggestionType.CAMERA_LENS_MODEL }),
@@ -191,7 +179,6 @@ describe(SearchService.name, () => {
 
     it('should return search suggestions for camera lens model (including null)', async () => {
       mocks.search.getCameraLensModels.mockResolvedValue(['10-24mm']);
-      mocks.partner.getAll.mockResolvedValue([]);
 
       await expect(
         sut.getSearchSuggestions(authStub.user1, { includeNull: true, type: SearchSuggestionType.CAMERA_LENS_MODEL }),

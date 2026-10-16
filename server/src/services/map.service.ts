@@ -2,14 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { MapMarkerDto, MapMarkerResponseDto, MapReverseGeocodeDto } from 'src/dtos/map.dto.js';
 import { BaseService } from 'src/services/base.service.js';
-import { getMyPartnerIds } from 'src/utils/asset.util.js';
 
 @Injectable()
 export class MapService extends BaseService {
   async getMapMarkers(auth: AuthDto, options: MapMarkerDto): Promise<MapMarkerResponseDto[]> {
     const userIds = [auth.user.id];
     if (options.withPartners) {
-      const partnerIds = await getMyPartnerIds({ userId: auth.user.id, repository: this.partnerRepository });
+      const partnerIds: string[] = [];
       userIds.push(...partnerIds);
     }
 

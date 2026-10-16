@@ -4,7 +4,6 @@ import { AssetVisibility, SharedLinkType } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
 import { AssetRepository } from 'src/repositories/asset.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { SharedLinkRepository } from 'src/repositories/shared-link.repository.js';
 import { DB } from 'src/schema/index.js';
 import { TimelineService } from 'src/services/timeline.service.js';
@@ -17,7 +16,7 @@ let defaultDatabase: Kysely<DB>;
 const setup = (db?: Kysely<DB>) => {
   return newMediumService(TimelineService, {
     database: db || defaultDatabase,
-    real: [AssetRepository, AccessRepository, PartnerRepository],
+    real: [AssetRepository, AccessRepository],
     mock: [LoggingRepository],
   });
 };
@@ -85,18 +84,6 @@ describe(TimelineService.name, () => {
       await expect(response).rejects.toThrow(
         'withPartners is only supported for non-archived, non-trashed, non-favorited, non-locked assets',
       );
-    });
-
-    it('should return error if time bucket is requested with locked visibility for partner', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { user: partner } = await ctx.newUser();
-      await ctx.newPartner({ sharedById: partner.id, sharedWithId: user.id });
-
-      const auth = factory.auth({ user, session: { hasElevatedPermission: true } });
-
-      const response = sut.getTimeBuckets(auth, { userId: partner.id, visibility: AssetVisibility.Locked });
-      await expect(response).rejects.toThrow("You may not access another user's locked timeline");
     });
 
     it('should not allow access for unrelated shared links', async () => {
@@ -169,56 +156,6 @@ describe(TimelineService.name, () => {
       const rawResponse = await sut.getTimeBucket(auth, { timeBucket: '1970-02-01', isTrashed: true });
       const response = JSON.parse(rawResponse);
       expect(response).toEqual(expect.objectContaining({ isTrashed: [true] }));
-    });
-
-    it('should return false for favorite status unless asset owner', async () => {
-      const { sut, ctx } = setup();
-      const [{ asset: asset1 }, { asset: asset2 }] = await Promise.all([
-        ctx.newUser().then(async ({ user }) => {
-          const result = await ctx.newAsset({
-            ownerId: user.id,
-            fileCreatedAt: new Date('1970-02-12'),
-            localDateTime: new Date('1970-02-12'),
-            isFavorite: true,
-          });
-          await ctx.newExif({ assetId: result.asset.id, make: 'Canon' });
-          return result;
-        }),
-
-        ctx.newUser().then(async ({ user }) => {
-          const result = await ctx.newAsset({
-            ownerId: user.id,
-            fileCreatedAt: new Date('1970-02-13'),
-            localDateTime: new Date('1970-02-13'),
-            isFavorite: true,
-          });
-          await ctx.newExif({ assetId: result.asset.id, make: 'Canon' });
-          return result;
-        }),
-      ]);
-
-      await Promise.all([
-        ctx.newPartner({ sharedById: asset1.ownerId, sharedWithId: asset2.ownerId }),
-        ctx.newPartner({ sharedById: asset2.ownerId, sharedWithId: asset1.ownerId }),
-      ]);
-
-      const auth1 = factory.auth({ user: { id: asset1.ownerId } });
-      const rawResponse1 = await sut.getTimeBucket(auth1, {
-        timeBucket: '1970-02-01',
-        withPartners: true,
-        visibility: AssetVisibility.Timeline,
-      });
-      const response1 = JSON.parse(rawResponse1);
-      expect(response1).toEqual(expect.objectContaining({ id: [asset2.id, asset1.id], isFavorite: [false, true] }));
-
-      const auth2 = factory.auth({ user: { id: asset2.ownerId } });
-      const rawResponse2 = await sut.getTimeBucket(auth2, {
-        timeBucket: '1970-02-01',
-        withPartners: true,
-        visibility: AssetVisibility.Timeline,
-      });
-      const response2 = JSON.parse(rawResponse2);
-      expect(response2).toEqual(expect.objectContaining({ id: [asset2.id, asset1.id], isFavorite: [true, false] }));
     });
   });
 

@@ -50,26 +50,6 @@ describe(TimelineService.name, () => {
   });
 
   describe('getTimeBucket', () => {
-    it('should return the assets for a album time bucket if user has album.read', async () => {
-      mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set(['album-id']));
-      const json = `[{ id: ['asset-id'] }]`;
-      mocks.asset.getTimeBucket.mockResolvedValue({ assets: json });
-
-      await expect(sut.getTimeBucket(authStub.admin, { timeBucket: 'bucket', albumId: 'album-id' })).resolves.toEqual(
-        json,
-      );
-
-      expect(mocks.access.album.checkOwnerAccess).toHaveBeenCalledWith(authStub.admin.user.id, new Set(['album-id']));
-      expect(mocks.asset.getTimeBucket).toHaveBeenCalledWith(
-        'bucket',
-        {
-          timeBucket: 'bucket',
-          albumId: 'album-id',
-        },
-        authStub.admin,
-      );
-    });
-
     it('should return the assets for a archive time bucket if user has archive.read', async () => {
       const json = `[{ id: ['asset-id'] }]`;
       mocks.asset.getTimeBucket.mockResolvedValue({ assets: json });
@@ -88,31 +68,6 @@ describe(TimelineService.name, () => {
           visibility: AssetVisibility.Archive,
           userIds: [authStub.admin.user.id],
         }),
-        authStub.admin,
-      );
-    });
-
-    it('should include partner shared assets', async () => {
-      const json = `[{ id: ['asset-id'] }]`;
-      mocks.asset.getTimeBucket.mockResolvedValue({ assets: json });
-      mocks.partner.getAll.mockResolvedValue([]);
-
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          visibility: AssetVisibility.Timeline,
-          userId: authStub.admin.user.id,
-          withPartners: true,
-        }),
-      ).resolves.toEqual(json);
-      expect(mocks.asset.getTimeBucket).toHaveBeenCalledWith(
-        'bucket',
-        {
-          timeBucket: 'bucket',
-          visibility: AssetVisibility.Timeline,
-          withPartners: true,
-          userIds: [authStub.admin.user.id],
-        },
         authStub.admin,
       );
     });

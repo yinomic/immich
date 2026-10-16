@@ -20,7 +20,6 @@ import { AuthGuard } from 'src/middleware/auth.guard.js';
 import { FileUploadInterceptor } from 'src/middleware/file-upload.interceptor.js';
 import { GlobalExceptionFilter } from 'src/middleware/global-exception.filter.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
-import { ActivityRepository } from 'src/repositories/activity.repository.js';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository.js';
 import { AlbumRepository } from 'src/repositories/album.repository.js';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository.js';
@@ -49,7 +48,6 @@ import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
 import { ObjectStorageRepository } from 'src/repositories/object-storage.repository.js';
-import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
@@ -233,7 +231,6 @@ export const automock = <T>(
 
 export type ServiceOverrides = {
   access: AccessRepository;
-  activity: ActivityRepository;
   album: AlbumRepository;
   albumUser: AlbumUserRepository;
   apiKey: ApiKeyRepository;
@@ -262,7 +259,6 @@ export type ServiceOverrides = {
   notification: NotificationRepository;
   oauth: OAuthRepository;
   objectStorage: ObjectStorageRepository;
-  partner: PartnerRepository;
   plugin: PluginRepository;
   process: ProcessRepository;
   search: SearchRepository;
@@ -319,7 +315,6 @@ export const getMocks = () => {
     // eslint-disable-next-line no-sparse-arrays
     cron: automock(CronRepository, { args: [, loggerMock] }),
     crypto: newCryptoRepositoryMock(),
-    activity: automock(ActivityRepository),
     album: automock(AlbumRepository, { strict: false }),
     albumUser: automock(AlbumUserRepository),
     asset: newAssetRepositoryMock(),
@@ -346,7 +341,6 @@ export const getMocks = () => {
     notification: automock(NotificationRepository),
     oauth: automock(OAuthRepository, { args: [loggerMock] }),
     objectStorage: automock(ObjectStorageRepository, { args: [configMock, loggerMock], strict: false }),
-    partner: automock(PartnerRepository, { strict: false }),
     plugin: automock(PluginRepository, { strict: true, args: [databaseMock, loggerMock] }),
     process: automock(ProcessRepository),
     search: automock(SearchRepository, { strict: false }),
@@ -387,7 +381,6 @@ export const newTestService = <T extends BaseService>(
   const sut = new Service(
     overrides.logger || (mocks.logger as As<LoggingRepository>),
     overrides.access || (mocks.access as IAccessRepository as AccessRepository),
-    overrides.activity || (mocks.activity as As<ActivityRepository>),
     overrides.album || (mocks.album as As<AlbumRepository>),
     overrides.albumUser || (mocks.albumUser as As<AlbumUserRepository>),
     overrides.apiKey || (mocks.apiKey as As<ApiKeyRepository>),
@@ -415,7 +408,6 @@ export const newTestService = <T extends BaseService>(
     overrides.notification || (mocks.notification as As<NotificationRepository>),
     overrides.oauth || (mocks.oauth as As<OAuthRepository>),
     overrides.objectStorage || (mocks.objectStorage as As<ObjectStorageRepository>),
-    overrides.partner || (mocks.partner as As<PartnerRepository>),
     overrides.plugin || (mocks.plugin as As<PluginRepository>),
     overrides.process || (mocks.process as As<ProcessRepository>),
     overrides.search || (mocks.search as As<SearchRepository>),

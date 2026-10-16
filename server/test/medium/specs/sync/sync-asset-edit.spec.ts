@@ -279,22 +279,4 @@ describe(SyncRequestType.AssetEditsV1, () => {
     await ctx.syncAckAll(auth, response);
     await ctx.assertSyncIsComplete(auth, [SyncRequestType.AssetEditsV1]);
   });
-
-  it('should not sync edits for partner assets', async () => {
-    const { auth, ctx } = await setup();
-    const { user: partner } = await ctx.newUser();
-    await ctx.newPartner({ sharedById: partner.id, sharedWithId: auth.user.id });
-    const { asset } = await ctx.newAsset({ ownerId: partner.id });
-    const assetEditRepo = ctx.get(AssetEditRepository);
-
-    await assetEditRepo.replaceAll(asset.id, [
-      {
-        action: AssetEditAction.Crop,
-        parameters: { x: 10, y: 20, width: 100, height: 200 },
-      },
-    ]);
-
-    // Should not see partner's asset edits in own sync
-    await ctx.assertSyncIsComplete(auth, [SyncRequestType.AssetEditsV1]);
-  });
 });

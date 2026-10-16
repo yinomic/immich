@@ -1,4 +1,3 @@
-import { ActivityService } from 'src/services/activity.service.js';
 import { AlbumService } from 'src/services/album.service.js';
 import { ApiKeyService } from 'src/services/api-key.service.js';
 import { ApiService } from 'src/services/api.service.js';
@@ -22,7 +21,6 @@ import { MemoryService } from 'src/services/memory.service.js';
 import { MetadataService } from 'src/services/metadata.service.js';
 import { NotificationAdminService } from 'src/services/notification-admin.service.js';
 import { NotificationService } from 'src/services/notification.service.js';
-import { PartnerService } from 'src/services/partner.service.js';
 import { PluginService } from 'src/services/plugin.service.js';
 import { QueueService } from 'src/services/queue.service.js';
 import { SearchService } from 'src/services/search.service.js';
@@ -50,7 +48,6 @@ import { WorkflowService } from 'src/services/workflow.service.js';
 
 export const services = [
   ApiKeyService,
-  ActivityService,
   AlbumService,
   ApiService,
   AssetFileService,
@@ -73,7 +70,6 @@ export const services = [
   MetadataService,
   NotificationService,
   NotificationAdminService,
-  PartnerService,
   PluginService,
   QueueService,
   SearchService,
