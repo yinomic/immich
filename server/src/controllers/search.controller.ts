@@ -82,7 +82,7 @@ export class SearchController {
   @HttpCode(HttpStatus.OK)
   @Endpoint({
     summary: 'Smart asset search',
-    description: 'Perform a smart search for assets by using machine learning vectors to determine relevance.',
+    description: 'Perform a smart search for assets by using cloud embedding vectors to determine relevance.',
     history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
   })
   searchSmart(@Auth() auth: AuthDto, @Body() dto: SmartSearchDto): Promise<SearchResponseDto> {

@@ -136,18 +136,12 @@ export const endpointTags: Record<ApiTag, string> = {
   [ApiTag.AssetFiles]: 'An asset file is a file associated with an asset, including edited versions, thumbnails, etc.',
   [ApiTag.Authentication]: 'Endpoints related to user authentication, including OAuth.',
   [ApiTag.AuthenticationAdmin]: 'Administrative endpoints related to authentication.',
-  [ApiTag.ClusterGroups]:
-    'A cluster group is a set of users whose faces are clustered together, so that a person can be shared between them.',
   [ApiTag.ConfigUser]: 'The system configuration properties that are visible to logged in users.',
   [ApiTag.ConfigAdmin]: 'Endpoints to view and modify the full system configuration.',
   [ApiTag.ConfigPublic]: 'The system configuration properties that are visible to everyone.',
   [ApiTag.DatabaseBackups]: 'Manage backups of the Immich database.',
   [ApiTag.Deprecated]: 'Deprecated endpoints that are planned for removal in the next major release.',
   [ApiTag.Download]: 'Endpoints for downloading assets or collections of assets.',
-  [ApiTag.Duplicates]: 'Endpoints for managing and identifying duplicate assets.',
-  [ApiTag.Faces]:
-    'A face is a detected human face within an asset, which can be associated with a person. Faces are normally detected via machine learning, but can also be created manually.',
-  [ApiTag.Integrity]: 'Endpoints for viewing and managing integrity reports.',
   [ApiTag.Jobs]:
     'Queues and background jobs are used for processing tasks asynchronously. Queues can be paused and resumed as needed.',
   [ApiTag.Libraries]:
@@ -161,8 +155,6 @@ export const endpointTags: Record<ApiTag, string> = {
     'A notification is a specialized message sent to users to inform them of important events. Currently, these notifications are only shown in the Immich web application.',
   [ApiTag.NotificationsAdmin]: 'Notification administrative endpoints.',
   [ApiTag.Partners]: 'A partner is a link with another user that allows sharing of assets between two users.',
-  [ApiTag.People]:
-    'A person is a collection of faces, which can be favorited and named. A person can also be merged into another person. People are automatically created via the face recognition job.',
   [ApiTag.Plugins]:
     'A plugin is an installed module that makes filters and actions available for the workflow feature.',
   [ApiTag.Queues]:
@@ -177,7 +169,6 @@ export const endpointTags: Record<ApiTag, string> = {
     'A shared link is a public url that provides access to a specific album, asset, or collection of assets. A shared link can be protected with a password, include a specific slug, allow or disallow downloads, and optionally include an expiration date.',
   [ApiTag.Stacks]:
     'A stack is a group of related assets. One asset is the "primary" asset, and the rest are "child" assets. On the main timeline, stack parents are included by default, while child assets are hidden.',
-  [ApiTag.Sync]: 'A collection of endpoints for the new mobile synchronization implementation.',
   [ApiTag.SystemConfig]: 'Endpoints to view, modify, and validate the system configuration settings.',
   [ApiTag.SystemMetadata]:
     'Endpoints to view, modify, and validate the system metadata, which includes information about things like admin onboarding status.',
@@ -194,6 +185,12 @@ export const endpointTags: Record<ApiTag, string> = {
   [ApiTag.Views]: 'Endpoints for specialized views, such as the folder view.',
   [ApiTag.Workflows]:
     'A workflow is a set of actions that run whenever a triggering event occurs. Workflows also can include filters to further limit execution.',
+  [ApiTag.Duplicates]: 'Duplicates endpoints.',
+  [ApiTag.Faces]: 'Faces endpoints.',
+  [ApiTag.Integrity]: 'Integrity (admin) endpoints.',
+  [ApiTag.ClusterGroups]: 'Cluster groups endpoints.',
+  [ApiTag.People]: 'People endpoints.',
+  [ApiTag.Sync]: 'Sync endpoints.',
 };
 
 export const AUDIO_ENCODER: Record<AudioCodec, string> = {

@@ -187,12 +187,6 @@ export enum Permission {
   BackupUpload = 'backup.upload',
   BackupDelete = 'backup.delete',
 
-  ClusterGroupRead = 'clusterGroup.read',
-  ClusterGroupLeave = 'clusterGroup.leave',
-  ClusterGroupRequestCreate = 'clusterGroupRequest.create',
-  ClusterGroupRequestRead = 'clusterGroupRequest.read',
-  ClusterGroupRequestDelete = 'clusterGroupRequest.delete',
-
   AdminConfigRead = 'adminConfig.read',
   AdminConfigUpdate = 'adminConfig.update',
 
@@ -200,11 +194,6 @@ export enum Permission {
 
   DuplicateRead = 'duplicate.read',
   DuplicateDelete = 'duplicate.delete',
-
-  FaceCreate = 'face.create',
-  FaceRead = 'face.read',
-  FaceUpdate = 'face.update',
-  FaceDelete = 'face.delete',
 
   FolderRead = 'folder.read',
 
@@ -244,12 +233,6 @@ export enum Permission {
   PartnerUpdate = 'partner.update',
   PartnerDelete = 'partner.delete',
 
-  PersonCreate = 'person.create',
-  PersonRead = 'person.read',
-  PersonUpdate = 'person.update',
-  PersonDelete = 'person.delete',
-  PersonStatistics = 'person.statistics',
-  PersonMerge = 'person.merge',
   PersonReassign = 'person.reassign',
 
   PinCodeCreate = 'pinCode.create',
@@ -442,14 +425,6 @@ export enum AssetStatus {
   Trashed = 'trashed',
   Deleted = 'deleted',
 }
-
-export enum SourceType {
-  MachineLearning = 'machine-learning',
-  Exif = 'exif',
-  Manual = 'manual',
-}
-
-export const SourceTypeSchema = z.enum(SourceType).describe('Face detection source type').meta({ id: 'SourceType' });
 
 export enum IntegrityReport {
   UntrackedFile = 'untracked_file',
