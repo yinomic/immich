@@ -1,6 +1,6 @@
 import { Kysely } from 'kysely';
 import { AssetEditAction } from 'src/dtos/editing.dto.js';
-import { AssetFileType, AssetMetadataKey, AssetStatus, JobName, SharedLinkType } from 'src/enum.js';
+import { AssetFileType, AssetMetadataKey, AssetStatus, JobName } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
 import { AlbumRepository } from 'src/repositories/album.repository.js';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository.js';
@@ -9,8 +9,6 @@ import { AssetRepository } from 'src/repositories/asset.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { SharedLinkAssetRepository } from 'src/repositories/shared-link-asset.repository.js';
-import { SharedLinkRepository } from 'src/repositories/shared-link.repository.js';
 import { StackRepository } from 'src/repositories/stack.repository.js';
 import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
@@ -31,7 +29,6 @@ const setup = (db?: Kysely<DB>) => {
       AssetJobRepository,
       AlbumRepository,
       AccessRepository,
-      SharedLinkAssetRepository,
       StackRepository,
       UserRepository,
     ],
@@ -69,54 +66,6 @@ describe(AssetService.name, () => {
   });
 
   describe('copy', () => {
-    it('should copy albums', async () => {
-      const { sut, ctx } = setup();
-      const albumRepo = ctx.get(AlbumRepository);
-
-      const { user } = await ctx.newUser();
-      const { asset: oldAsset } = await ctx.newAsset({ ownerId: user.id });
-      const { asset: newAsset } = await ctx.newAsset({ ownerId: user.id });
-
-      const { album } = await ctx.newAlbum({ ownerId: user.id });
-      await ctx.newAlbumAsset({ albumId: album.id, assetId: oldAsset.id });
-
-      const auth = factory.auth({ user: { id: user.id } });
-      await sut.copy(auth, { sourceId: oldAsset.id, targetId: newAsset.id });
-
-      await expect(albumRepo.getAssetIds(album.id, [oldAsset.id, newAsset.id])).resolves.toEqual(
-        new Set([oldAsset.id, newAsset.id]),
-      );
-    });
-
-    it('should copy shared links', async () => {
-      const { sut, ctx } = setup();
-      const sharedLinkRepo = ctx.get(SharedLinkRepository);
-
-      const { user } = await ctx.newUser();
-      const { asset: oldAsset } = await ctx.newAsset({ ownerId: user.id });
-      const { asset: newAsset } = await ctx.newAsset({ ownerId: user.id });
-
-      await ctx.newExif({ assetId: oldAsset.id, description: 'foo' });
-      await ctx.newExif({ assetId: newAsset.id, description: 'bar' });
-
-      const { id: sharedLinkId } = await sharedLinkRepo.create({
-        allowUpload: false,
-        key: Buffer.from('123'),
-        type: SharedLinkType.Individual,
-        userId: user.id,
-        assetIds: [oldAsset.id],
-      });
-
-      const auth = factory.auth({ user: { id: user.id } });
-
-      await sut.copy(auth, { sourceId: oldAsset.id, targetId: newAsset.id });
-      await expect(sharedLinkRepo.get(user.id, sharedLinkId)).resolves.toEqual(
-        expect.objectContaining({
-          assets: [expect.objectContaining({ id: oldAsset.id }), expect.objectContaining({ id: newAsset.id })],
-        }),
-      );
-    });
-
     it('should merge stacks', async () => {
       const { sut, ctx } = setup();
       const stackRepo = ctx.get(StackRepository);

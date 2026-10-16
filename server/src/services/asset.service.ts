@@ -83,10 +83,6 @@ export class AssetService extends BaseService {
 
     const data = mapAsset(asset, { withStack: true, auth });
 
-    if (auth.sharedLink) {
-      delete data.owner;
-    }
-
     return data;
   }
 
@@ -194,15 +190,7 @@ export class AssetService extends BaseService {
 
   async copy(
     auth: AuthDto,
-    {
-      sourceId,
-      targetId,
-      albums = true,
-      sidecar = true,
-      sharedLinks = true,
-      stack = true,
-      favorite = true,
-    }: AssetCopyDto,
+    { sourceId, targetId, albums = true, sidecar = true, stack = true, favorite = true }: AssetCopyDto,
   ) {
     await this.requireAccess({ auth, permission: Permission.AssetCopy, ids: [sourceId, targetId] });
     const sourceAsset = await this.assetRepository.getForCopy(sourceId);
@@ -218,10 +206,6 @@ export class AssetService extends BaseService {
 
     if (albums) {
       await this.albumRepository.copyAlbums({ sourceAssetId: sourceId, targetAssetId: targetId });
-    }
-
-    if (sharedLinks) {
-      await this.sharedLinkAssetRepository.copySharedLinks({ sourceAssetId: sourceId, targetAssetId: targetId });
     }
 
     if (stack) {

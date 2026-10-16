@@ -40,8 +40,6 @@ import { ProcessRepository } from 'src/repositories/process.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
 import { ServerInfoRepository } from 'src/repositories/server-info.repository.js';
 import { SessionRepository } from 'src/repositories/session.repository.js';
-import { SharedLinkAssetRepository } from 'src/repositories/shared-link-asset.repository.js';
-import { SharedLinkRepository } from 'src/repositories/shared-link.repository.js';
 import { StackRepository } from 'src/repositories/stack.repository.js';
 import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { SyncCheckpointRepository } from 'src/repositories/sync-checkpoint.repository.js';
@@ -96,8 +94,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   SearchRepository,
   ServerInfoRepository,
   SessionRepository,
-  SharedLinkRepository,
-  SharedLinkAssetRepository,
   StackRepository,
   StorageRepository,
   SyncRepository,
@@ -154,8 +150,6 @@ export class BaseService {
     protected searchRepository: SearchRepository,
     protected serverInfoRepository: ServerInfoRepository,
     protected sessionRepository: SessionRepository,
-    protected sharedLinkRepository: SharedLinkRepository,
-    protected sharedLinkAssetRepository: SharedLinkAssetRepository,
     protected stackRepository: StackRepository,
     protected storageRepository: StorageRepository,
     protected syncRepository: SyncRepository,
@@ -220,8 +214,6 @@ export class BaseService {
       ctx.searchRepository,
       ctx.serverInfoRepository,
       ctx.sessionRepository,
-      ctx.sharedLinkRepository,
-      ctx.sharedLinkAssetRepository,
       ctx.stackRepository,
       ctx.storageRepository,
       ctx.syncRepository,

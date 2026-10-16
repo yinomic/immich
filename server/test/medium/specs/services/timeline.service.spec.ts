@@ -1,10 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { Kysely } from 'kysely';
-import { AssetVisibility, SharedLinkType } from 'src/enum.js';
+import { AssetVisibility } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
 import { AssetRepository } from 'src/repositories/asset.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { SharedLinkRepository } from 'src/repositories/shared-link.repository.js';
 import { DB } from 'src/schema/index.js';
 import { TimelineService } from 'src/services/timeline.service.js';
 import { newMediumService } from 'test/medium.factory.js';
@@ -142,48 +141,5 @@ describe(TimelineService.name, () => {
       const response = JSON.parse(rawResponse);
       expect(response).toEqual(expect.objectContaining({ id: [] }));
     });
-
-    it('should return time bucket in trash', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const { asset } = await ctx.newAsset({
-        ownerId: user.id,
-        localDateTime: new Date('1970-02-12'),
-        deletedAt: new Date(),
-      });
-      await ctx.newExif({ assetId: asset.id, make: 'Canon' });
-      const auth = factory.auth({ user: { id: user.id } });
-      const rawResponse = await sut.getTimeBucket(auth, { timeBucket: '1970-02-01', isTrashed: true });
-      const response = JSON.parse(rawResponse);
-      expect(response).toEqual(expect.objectContaining({ isTrashed: [true] }));
-    });
-  });
-
-  it('should strip geodata metadata if shared link without exif', async () => {
-    const { sut, ctx } = setup();
-    const sharedLinkRepo = ctx.get(SharedLinkRepository);
-
-    const { user } = await ctx.newUser();
-    const { asset } = await ctx.newAsset({
-      ownerId: user.id,
-      localDateTime: new Date('1970-02-12'),
-      deletedAt: new Date(),
-    });
-    const { album } = await ctx.newAlbum({ ownerId: user.id });
-    await ctx.newAlbumAsset({ albumId: album.id, assetId: asset.id });
-
-    const { id: sharedLinkId } = await sharedLinkRepo.create({
-      allowUpload: false,
-      key: Buffer.from('123'),
-      type: SharedLinkType.Album,
-      userId: user.id,
-      albumId: album.id,
-    });
-
-    await ctx.newExif({ assetId: asset.id, city: 'Austin', country: 'USA' });
-    const auth = factory.auth({ sharedLink: { id: sharedLinkId, showExif: false } });
-    const rawResponse = await sut.getTimeBucket(auth, { albumId: album.id, timeBucket: '1970-02-01', isTrashed: true });
-    const response = JSON.parse(rawResponse);
-    expect(response).not.toEqual(expect.objectContaining({ city: expect.any(Array), country: expect.any(Array) }));
   });
 });

@@ -45,8 +45,6 @@ import { ObjectStorageRepository } from 'src/repositories/object-storage.reposit
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
 import { SessionRepository } from 'src/repositories/session.repository.js';
-import { SharedLinkAssetRepository } from 'src/repositories/shared-link-asset.repository.js';
-import { SharedLinkRepository } from 'src/repositories/shared-link.repository.js';
 import { StackRepository } from 'src/repositories/stack.repository.js';
 import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { SyncCheckpointRepository } from 'src/repositories/sync-checkpoint.repository.js';
@@ -446,8 +444,6 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case NotificationRepository:
     case SearchRepository:
     case SessionRepository:
-    case SharedLinkRepository:
-    case SharedLinkAssetRepository:
     case StackRepository:
     case SyncRepository:
     case SyncCheckpointRepository:

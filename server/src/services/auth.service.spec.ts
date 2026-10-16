@@ -11,7 +11,6 @@ import { AuthFactory } from 'test/factories/auth.factory.js';
 import { OAuthProfileFactory } from 'test/factories/oauth-profile.factory.js';
 import { SessionFactory } from 'test/factories/session.factory.js';
 import { UserFactory } from 'test/factories/user.factory.js';
-import { sharedLinkStub } from 'test/fixtures/shared-link.stub.js';
 import { systemConfigStub } from 'test/fixtures/system-config.stub.js';
 import { userStub } from 'test/fixtures/user.stub.js';
 import { newUuid } from 'test/small.factory.js';
@@ -382,131 +381,6 @@ describe(AuthService.name, () => {
           hasElevatedPermission: false,
         },
       });
-    });
-  });
-
-  describe('validate - shared key', () => {
-    it('should not accept a non-existent key', async () => {
-      mocks.sharedLink.getByKey.mockResolvedValue(void 0);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': 'key' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-
-    it('should not accept an expired key', async () => {
-      mocks.sharedLink.getByKey.mockResolvedValue(sharedLinkStub.expired as any);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': 'key' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-
-    it('should not accept a key on a non-shared route', async () => {
-      mocks.sharedLink.getByKey.mockResolvedValue(sharedLinkStub.valid as any);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': 'key' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
-        }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-    });
-
-    it('should not accept a key without a user', async () => {
-      mocks.sharedLink.getByKey.mockResolvedValue(sharedLinkStub.expired as any);
-      mocks.user.get.mockResolvedValue(void 0);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': 'key' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-
-    it('should accept a base64url key', async () => {
-      const user = UserFactory.create();
-      const sharedLink = { ...sharedLinkStub.valid, user } as any;
-
-      mocks.sharedLink.getByKey.mockResolvedValue(sharedLink);
-      mocks.user.get.mockResolvedValue(user);
-
-      const buffer = sharedLink.key;
-      const key = buffer.toString('base64url');
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': key },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).resolves.toEqual({ user, sharedLink });
-
-      expect(mocks.sharedLink.getByKey).toHaveBeenCalledWith(buffer);
-    });
-
-    it('should accept a hex key', async () => {
-      const user = UserFactory.create();
-      const sharedLink = { ...sharedLinkStub.valid, user } as any;
-
-      mocks.sharedLink.getByKey.mockResolvedValue(sharedLink);
-      mocks.user.get.mockResolvedValue(user);
-
-      const buffer = sharedLink.key;
-      const key = buffer.toString('hex');
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-key': key },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).resolves.toEqual({ user, sharedLink });
-
-      expect(mocks.sharedLink.getByKey).toHaveBeenCalledWith(buffer);
-    });
-  });
-
-  describe('validate - shared link slug', () => {
-    it('should not accept a non-existent slug', async () => {
-      mocks.sharedLink.getBySlug.mockResolvedValue(void 0);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-slug': 'slug' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-
-    it('should accept a valid slug', async () => {
-      const user = UserFactory.create();
-      const sharedLink = { ...sharedLinkStub.valid, slug: 'slug-123', user } as any;
-
-      mocks.sharedLink.getBySlug.mockResolvedValue(sharedLink);
-      mocks.user.get.mockResolvedValue(user);
-
-      await expect(
-        sut.authenticate({
-          headers: { 'x-immich-share-slug': 'slug-123' },
-          queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: true, uri: 'test' },
-        }),
-      ).resolves.toEqual({ user, sharedLink });
-
-      expect(mocks.sharedLink.getBySlug).toHaveBeenCalledWith('slug-123');
     });
   });
 

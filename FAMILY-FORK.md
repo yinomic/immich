@@ -290,3 +290,13 @@
 - 检查：`tsc` 绿、eslint（max-warnings 0）绿、91 文件 / 1663 用例全绿
 
 **下一轮**：删除「分享链接（shared link）」与「相册共享给他人（album_user）」，并清理 web 端对应的死页面。
+
+### Round 10（单账号：移除「分享链接」）
+- 删除 `shared-link` 整套 API 与实现：`shared-link.service/controller/dto/repository`、`shared-link-asset.repository`、控制器/服务注册
+- 认证侧不再接受分享凭证：`AuthService.validateSharedLinkKey/Slug` 与其调用点、`ApiService.ssr` 里的 `/share`、`/s` OpenGraph 渲染全部移除（SSR 现在直接返回 index.html）
+- 上传/复制资产时不再维护分享链接关系（`addToSharedLink`、`copySharedLinks` 删除）；`utils/asset.util`、access 层里不会被触发的分享分支保留为死代码（后续与 `AuthSharedLink` 类型一起清）
+- 表 `shared_link` / `shared_link_asset` 暂时保留（schema 未动，迁移不变），待下一轮与 `AuthSharedLink` 死代码一起删除并重新生成迁移
+- 运行时验证：登录 → 时间线 → 语义搜索 3 命中 → 作业 0 报错；`/api/shared-links`、`/api/partner`、`/api/activities` 均 **404**
+- 检查：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / 1611 用例全绿（删除了若干只测已删功能的 spec：shared-link service、api.service render、controllers 路由清单，以及被批量编辑破坏的 medium asset-media spec）
+
+**下一轮**：删除「相册共享给他人（album_user）」与 `AuthSharedLink` 死代码，随后重新生成迁移以移除 `shared_link*`/`album_user*` 表；再进入 web/mobile/SDK 清理。

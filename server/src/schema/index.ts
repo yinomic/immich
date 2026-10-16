@@ -108,8 +108,8 @@ export class ImmichDatabase {
     PartnerAuditTable,
     PartnerTable,
     SessionTable,
-    SharedLinkAssetTable,
     SharedLinkTable,
+    SharedLinkAssetTable,
     StackTable,
     StackAuditTable,
     SessionSyncCheckpointTable,
@@ -213,7 +213,6 @@ export interface DB {
 
   shared_link: SharedLinkTable;
   shared_link_asset: SharedLinkAssetTable;
-
   stack: StackTable;
   stack_audit: StackAuditTable;
 

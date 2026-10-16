@@ -85,7 +85,7 @@ export async function configureExpress(
     );
   }
 
-  app.use(app.get(ssr).ssr(excludePaths));
+  app.use(app.get(ssr).ssr());
   app.use(compression());
 
   const server = await (host ? app.listen(port, host) : app.listen(port));

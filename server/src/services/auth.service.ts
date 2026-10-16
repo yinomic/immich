@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import { IncomingHttpHeaders } from 'node:http';
 import sanitize from 'sanitize-filename';
 import { LOGIN_DUMMY_HASH, LOGIN_URL, MOBILE_REDIRECT, SALT_ROUNDS } from 'src/constants.js';
-import { AuthSharedLink, AuthUser, UserAdmin } from 'src/database.js';
+import { UserAdmin } from 'src/database.js';
 import {
   AuthDto,
   AuthStatusResponseDto,
@@ -248,22 +248,12 @@ export class AuthService extends BaseService {
   }
 
   private async validate({ headers, queryParams }: Omit<ValidateRequest, 'metadata'>): Promise<AuthDto> {
-    const shareKey = (headers[ImmichHeader.SharedLinkKey] || queryParams[ImmichQuery.SharedLinkKey]) as string;
-    const shareSlug = (headers[ImmichHeader.SharedLinkSlug] || queryParams[ImmichQuery.SharedLinkSlug]) as string;
     const session = (headers[ImmichHeader.UserToken] ||
       headers[ImmichHeader.SessionToken] ||
       queryParams[ImmichQuery.SessionKey] ||
       this.getBearerToken(headers) ||
       this.getCookieToken(headers)) as string;
     const apiKey = (headers[ImmichHeader.ApiKey] || queryParams[ImmichQuery.ApiKey]) as string;
-
-    if (shareKey) {
-      return this.validateSharedLinkKey(shareKey);
-    }
-
-    if (shareSlug) {
-      return this.validateSharedLinkSlug(shareSlug);
-    }
 
     if (session) {
       return this.validateSession(session, headers);
@@ -495,35 +485,6 @@ export class AuthService extends BaseService {
   private getCookieCodeVerifier(headers: IncomingHttpHeaders): string | null {
     const cookies = parse(headers.cookie || '');
     return cookies[ImmichCookie.OAuthCodeVerifier] || null;
-  }
-
-  async validateSharedLinkKey(key: string | string[]): Promise<AuthDto> {
-    key = Array.isArray(key) ? key[0] : key;
-
-    const bytes = Buffer.from(key, key.length === 100 ? 'hex' : 'base64url');
-    const sharedLink = await this.sharedLinkRepository.getByKey(bytes);
-    if (!this.isValidSharedLink(sharedLink)) {
-      throw new UnauthorizedException('Invalid share key');
-    }
-
-    return { user: sharedLink.user, sharedLink };
-  }
-
-  async validateSharedLinkSlug(slug: string | string[]): Promise<AuthDto> {
-    slug = Array.isArray(slug) ? slug[0] : slug;
-
-    const sharedLink = await this.sharedLinkRepository.getBySlug(slug);
-    if (!this.isValidSharedLink(sharedLink)) {
-      throw new UnauthorizedException('Invalid share slug');
-    }
-
-    return { user: sharedLink.user, sharedLink };
-  }
-
-  private isValidSharedLink(
-    sharedLink?: AuthSharedLink & { user: AuthUser | null },
-  ): sharedLink is AuthSharedLink & { user: AuthUser } {
-    return !!sharedLink?.user && (!sharedLink.expiresAt || new Date(sharedLink.expiresAt) > new Date());
   }
 
   private async validateApiKey(key: string): Promise<AuthDto> {

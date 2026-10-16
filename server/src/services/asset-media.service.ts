@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import sanitize from 'sanitize-filename';
 import type { UploadFile, UploadRequest } from 'src/types.js';
 import { StorageCore } from 'src/cores/storage.core.js';
-import { Asset, AuthSharedLink } from 'src/database.js';
+import { Asset } from 'src/database.js';
 import {
   AssetBulkUploadCheckResponseDto,
   AssetMediaResponseDto,
@@ -214,10 +214,6 @@ export class AssetMediaService extends BaseService {
 
       await this.jobRepository.queue({ name: JobName.AssetExtractMetadata, data: { id: asset.id, source: 'upload' } });
 
-      if (auth.sharedLink) {
-        await this.addToSharedLink(auth.sharedLink, asset.id);
-      }
-
       await this.eventRepository.emit('AssetCreate', { asset, file });
 
       return { id: asset.id, status: AssetMediaStatus.CREATED };
@@ -234,10 +230,6 @@ export class AssetMediaService extends BaseService {
         if (!duplicateId) {
           this.logger.error(`Error locating duplicate for checksum constraint`);
           throw new InternalServerErrorException();
-        }
-
-        if (auth.sharedLink) {
-          await this.addToSharedLink(auth.sharedLink, duplicateId);
         }
 
         this.logger.debug(`Duplicate asset upload rejected: existing asset ${duplicateId}`);
@@ -387,26 +379,6 @@ export class AssetMediaService extends BaseService {
         };
       }),
     };
-  }
-
-  private async addToSharedLink(sharedLink: AuthSharedLink, assetId: string) {
-    if (!sharedLink.albumId) {
-      await this.sharedLinkRepository.addAssets(sharedLink.id, [assetId]);
-      return;
-    }
-
-    const album = await this.albumRepository.getById(sharedLink.albumId);
-    if (!album) {
-      return;
-    }
-
-    await this.albumRepository.addAssetIds(album.id, [assetId]);
-    const userIds = album.albumUsers.map(({ user }) => user.id);
-    await this.eventRepository.emit('AlbumUpdate', {
-      id: album.id,
-      userIds,
-      recipientIds: userIds,
-    });
   }
 
   private requireQuota(auth: AuthDto, size: number) {
