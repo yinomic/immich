@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { JobOf } from 'src/types.js';
 import { OnEvent, OnJob } from 'src/decorators.js';
 
-import { AssetVisibility, DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName } from 'src/enum.js';
+import { AssetVisibility, ImmichWorker, JobName, JobStatus, QueueName, SystemMetadataKey } from 'src/enum.js';
 import { BaseService } from 'src/services/base.service.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
 import { batched } from 'src/utils/misc.js';
@@ -19,46 +19,45 @@ import { batched } from 'src/utils/misc.js';
 export class SmartInfoService extends BaseService {
   @OnEvent({ name: 'ConfigInit', workers: [ImmichWorker.Microservices] })
   async onConfigInit() {
-    await this.syncIndexDimension();
+    await this.syncIndexState();
   }
 
   @OnEvent({ name: 'ConfigUpdate', workers: [ImmichWorker.Microservices], server: true })
   async onConfigUpdate() {
-    await this.syncIndexDimension();
+    await this.syncIndexState();
   }
 
   /**
-   * The stored vectors are only meaningful for one (model, dimension) pair. If
-   * the configured dimension no longer matches the table, rebuild the column
-   * and drop the now-invalid vectors; the re-index job repopulates them.
+   * Stored vectors are only meaningful for one (model, dimension) pair. When
+   * either changes, drop the index — the re-index job repopulates it, and
+   * comparing against a stale vector space would silently return nonsense.
    */
-  private async syncIndexDimension() {
+  private async syncIndexState() {
     if (!this.embeddingRepository.isEnabled()) {
       return;
     }
 
+    const model = this.embeddingRepository.getModelName();
     const dimSize = this.embeddingRepository.getDimSize();
-    if (!dimSize) {
-      this.logger.log(
-        `Cloud search is enabled with model '${this.embeddingRepository.getModelName()}'; ` +
-          `using the dimension reported by the provider.`,
-      );
+    const stored = await this.systemMetadataRepository.get(SystemMetadataKey.CloudSearchIndex);
+
+    if (!stored) {
+      this.logger.log(`Cloud search index initialised with model '${model}'`);
+      await this.systemMetadataRepository.set(SystemMetadataKey.CloudSearchIndex, { model, dimSize });
       return;
     }
 
-    await this.databaseRepository.withLock(DatabaseLock.CLIPDimSize, async () => {
-      const dbDimSize = await this.databaseRepository.getDimensionSize('smart_search');
-      if (dbDimSize === dimSize) {
-        return;
-      }
+    if (stored.model === model && stored.dimSize === dimSize) {
+      return;
+    }
 
-      this.logger.log(
-        `Embedding dimension of model '${this.embeddingRepository.getModelName()}' is ${dimSize}, ` +
-          `but the database expects ${dbDimSize}. Rebuilding the smart search index.`,
-      );
-      await this.databaseRepository.setDimensionSize(dimSize);
-      this.logger.log(`Successfully updated smart search dimension from ${dbDimSize} to ${dimSize}.`);
-    });
+    this.logger.warn(
+      `Embedding model changed from '${stored.model}' (${stored.dimSize ?? '?'}d) to '${model}' ` +
+        `(${dimSize ?? '?'}d): clearing the vector index, a full re-index is required.`,
+    );
+    await this.vectorStoreRepository.clear();
+    await this.systemMetadataRepository.set(SystemMetadataKey.CloudSearchIndex, { model, dimSize });
+    await this.jobRepository.queue({ name: JobName.SmartSearchQueueAll, data: { force: true } });
   }
 
   @OnJob({ name: JobName.SmartSearchQueueAll, queue: QueueName.SmartSearch })
@@ -67,10 +66,9 @@ export class SmartInfoService extends BaseService {
       return JobStatus.Skipped;
     }
 
-    const dimSize = this.embeddingRepository.getDimSize();
-    if (force && dimSize) {
-      // in addition to deleting embeddings, update the dimension size in case it failed earlier
-      await this.databaseRepository.setDimensionSize(dimSize);
+    if (force) {
+      // a forced re-index discards the whole index, including stale entries
+      await this.vectorStoreRepository.clear();
     }
 
     for await (const assets of batched(this.assetJobRepository.streamForEncodeClip(force))) {
@@ -101,12 +99,7 @@ export class SmartInfoService extends BaseService {
       mimeType: mimeTypes.lookup(asset.originalPath),
     });
 
-    if (this.databaseRepository.isBusy(DatabaseLock.CLIPDimSize)) {
-      this.logger.verbose(`Waiting for embedding dimension size to be updated`);
-      await this.databaseRepository.wait(DatabaseLock.CLIPDimSize);
-    }
-
-    await this.searchRepository.upsert(asset.id, JSON.stringify(embedding));
+    await this.vectorStoreRepository.upsert(asset.id, embedding);
 
     return JobStatus.Success;
   }

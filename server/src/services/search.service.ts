@@ -29,9 +29,31 @@ import { getMyPartnerIds } from 'src/utils/asset.util.js';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor.js';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter.js';
 
+/**
+ * The vector store returns a ranked id list; the relational query returns rows in
+ * arbitrary order. Re-apply the ranking, then page over it.
+ */
+const pageByRank = <T extends { id: string }>(rows: T[], rankedIds: string[], page: number, size: number) => {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const ranked = rankedIds.map((id) => byId.get(id)).filter((row): row is T => row !== undefined);
+  const start = (page - 1) * size;
+
+  return {
+    items: ranked.slice(start, start + size),
+    hasNextPage: ranked.length > start + size,
+  };
+};
+
+/**
+ * How many vector hits to ask for per requested result. The relational filters
+ * run afterwards, so we need slack; the cap keeps the SQL `in (...)` sane.
+ */
+const VECTOR_OVERFETCH = 4;
+const MAX_VECTOR_CANDIDATES = 1000;
+
 @Injectable()
 export class SearchService extends BaseService {
-  private embeddingCache = new LRUMap<string, string>(100);
+  private embeddingCache = new LRUMap<string, number[]>(100);
 
   async searchPerson(auth: AuthDto, dto: SearchPeopleDto): Promise<PersonResponseDto[]> {
     const people = await this.personRepository.getByName(auth.user.id, dto.name, { withHidden: dto.withHidden });
@@ -176,21 +198,20 @@ export class SearchService extends BaseService {
       throw new BadRequestException('Smart search is not enabled');
     }
 
-    const userIds = this.getUserIdsToSearch(auth, dto.visibility);
-    const embedding = await this.resolveEmbedding(auth, dto);
+    const userIds = await this.getUserIdsToSearch(auth, dto.visibility);
     const page = dto.page ?? 1;
     const size = dto.size;
-    const { hasNextPage, items } = await this.searchRepository.searchSmart(
-      { page, size },
-      {
-        ...dto,
-        userIds: await userIds,
-        viewingUserId: auth.user.id,
-        embedding,
-        visibility: dto.visibility ?? (auth.session?.hasElevatedPermission ? undefined : 'not-locked'),
-      },
-    );
+    const candidates = await this.getVectorCandidates(auth, dto, page, size);
 
+    const rows = await this.searchRepository.searchSmartByIds({
+      ...dto,
+      assetIds: candidates.ids,
+      userIds,
+      viewingUserId: auth.user.id,
+      visibility: dto.visibility ?? (auth.session?.hasElevatedPermission ? undefined : 'not-locked'),
+    });
+
+    const { items, hasNextPage } = pageByRank(rows, candidates.ids, page, size);
     return this.mapResponse(items, { auth }, { nextPage: hasNextPage ? (page + 1).toString() : null });
   }
 
@@ -280,18 +301,19 @@ export class SearchService extends BaseService {
       throw new BadRequestException('Smart search is not enabled');
     }
 
-    const [{ filter, scope }, embedding] = await Promise.all([
+    const [{ filter, scope }, candidates] = await Promise.all([
       this.resolveSearchScopeV3(auth, dto),
-      this.resolveEmbedding(auth, dto),
+      this.getVectorCandidates(auth, dto, 1, dto.size),
     ]);
 
-    // no cursor until a rank-aware pagination strategy for smart search is decided
-    const { items } = await this.searchRepository.searchSmartV3(
-      { take: dto.size },
-      { filter, withExif: dto.withExif, embedding },
+    const rows = await this.searchRepository.searchSmartV3ByIds(
+      { filter, withExif: dto.withExif },
       scope,
+      candidates.ids,
     );
 
+    // no cursor until a rank-aware pagination strategy for smart search is decided
+    const { items } = pageByRank(rows, candidates.ids, 1, dto.size);
     return this.mapResponse(items, { auth });
   }
 
@@ -318,12 +340,29 @@ export class SearchService extends BaseService {
     return { filter: effectiveFilter, scope: { userIds, lockedOwnerId: auth.user.id, viewingUserId: auth.user.id } };
   }
 
-  private async resolveEmbedding(auth: AuthDto, dto: SmartSearchDto): Promise<string> {
+  /**
+   * Ask the vector store for the nearest assets. Over-fetching keeps recall
+   * acceptable because the relational filters (visibility, trash, dates...) are
+   * applied afterwards in SQL and may drop some candidates.
+   */
+  private async getVectorCandidates(
+    auth: AuthDto,
+    dto: SmartSearchDto,
+    page: number,
+    size: number,
+  ): Promise<{ ids: string[] }> {
+    const embedding = await this.resolveEmbedding(auth, dto);
+    const topK = Math.min(page * size * VECTOR_OVERFETCH, MAX_VECTOR_CANDIDATES);
+    const matches = await this.vectorStoreRepository.search(embedding, { topK });
+    return { ids: matches.map((match) => match.assetId) };
+  }
+
+  private async resolveEmbedding(auth: AuthDto, dto: SmartSearchDto): Promise<number[]> {
     if (dto.query) {
       const key = this.embeddingRepository.getModelName() + dto.query;
       let embedding = this.embeddingCache.get(key);
       if (!embedding) {
-        embedding = JSON.stringify(await this.embeddingRepository.embedText(dto.query));
+        embedding = await this.embeddingRepository.embedText(dto.query);
         this.embeddingCache.set(key, embedding);
       }
       return embedding;
@@ -331,8 +370,7 @@ export class SearchService extends BaseService {
 
     if (dto.queryAssetId) {
       await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [dto.queryAssetId] });
-      const getEmbeddingResponse = await this.searchRepository.getEmbedding(dto.queryAssetId);
-      const assetEmbedding = getEmbeddingResponse?.embedding;
+      const assetEmbedding = await this.vectorStoreRepository.get(dto.queryAssetId);
       if (!assetEmbedding) {
         throw new BadRequestException(`Asset ${dto.queryAssetId} has no embedding`);
       }

@@ -50,6 +50,7 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
+import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -109,6 +110,7 @@ export const repositories = [
   TelemetryRepository,
   TrashRepository,
   UserRepository,
+  VectorStoreRepository,
   ViewRepository,
   VersionHistoryRepository,
   VideoStreamRepository,

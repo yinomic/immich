@@ -16,7 +16,6 @@ import {
   searchAssetBuilderLegacy,
   searchMetadataV3Examples,
   searchRandomV3Examples,
-  searchSmartV3Examples,
   searchStatisticsV3Examples,
   withExifInner,
   withSearchOrder,
@@ -317,30 +316,20 @@ export class SearchRepository {
       },
     ],
   })
-  searchSmart(pagination: SearchPaginationOptions, options: SmartSearchOptions) {
-    if (!z.int().min(1).max(1000).safeParse(pagination.size).success) {
-      throw new Error(`Invalid value for 'size': ${pagination.size}`);
+  /**
+   * Fetch the assets for a set of candidate ids produced by the vector store.
+   * Ranking (and paging) happens in the caller, which knows the similarity order.
+   */
+  async searchSmartByIds(options: Omit<SmartSearchOptions, 'embedding'> & { assetIds: string[] }) {
+    const { assetIds, ...rest } = options;
+    if (assetIds.length === 0) {
+      return [];
     }
 
-    return this.db.transaction().execute(async (trx) => {
-      await sql`set local vchordrq.probes = ${sql.lit(probes[VectorIndex.Clip])}`.execute(trx);
-      const items = await searchAssetBuilderLegacy(trx, options)
-        .select(columns.searchAsset)
-        .innerJoin('smart_search', 'asset.id', 'smart_search.assetId')
-        .orderBy(sql`smart_search.embedding <=> ${options.embedding}`)
-        .orderBy('asset.id', 'asc')
-        .limit(pagination.size + 1)
-        .offset((pagination.page - 1) * pagination.size)
-        .execute();
-      return paginationHelper(items, pagination.size);
-    });
-  }
-
-  @GenerateSql({
-    params: [DummyValue.UUID],
-  })
-  async getEmbedding(assetId: string) {
-    return this.db.selectFrom('smart_search').selectAll().where('assetId', '=', assetId).executeTakeFirst();
+    return searchAssetBuilderLegacy(this.db, rest)
+      .select(columns.searchAsset)
+      .where('asset.id', '=', anyUuid(assetIds))
+      .execute();
   }
 
   @GenerateSql({
@@ -565,24 +554,20 @@ export class SearchRepository {
   }
 
   // TODO(v4): drop the V3 suffix once the legacy methods are removed
-  @GenerateSql(...searchSmartV3Examples)
-  searchSmartV3(
-    pagination: PaginationOptions,
-    options: Omit<AssetSearchBuilderV3Options, 'order'> & { embedding: string },
+  /** See `searchSmartByIds`: the vector store provides the ids and their order. */
+  async searchSmartV3ByIds(
+    options: Omit<AssetSearchBuilderV3Options, 'order'>,
     scope: AssetSearchScope,
+    assetIds: string[],
   ) {
-    return this.db.transaction().execute(async (trx) => {
-      await sql`set local vchordrq.probes = ${sql.lit(probes[VectorIndex.Clip])}`.execute(trx);
-      const items = await searchAssetBuilder(trx, options, scope)
-        .select(columns.searchAsset)
-        .innerJoin('smart_search', 'asset.id', 'smart_search.assetId')
-        .orderBy(sql`smart_search.embedding <=> ${options.embedding}`)
-        .orderBy('asset.id', 'asc')
-        .limit(pagination.take + 1)
-        .offset(pagination.skip ?? 0)
-        .execute();
-      return paginationHelper(items, pagination.take);
-    });
+    if (assetIds.length === 0) {
+      return [];
+    }
+
+    return searchAssetBuilder(this.db, options, scope)
+      .select(columns.searchAsset)
+      .where('asset.id', '=', anyUuid(assetIds))
+      .execute();
   }
 
   // TODO(v4): drop the V3 suffix once the legacy methods are removed

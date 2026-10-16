@@ -96,6 +96,7 @@ export const envData: EnvData = {
     model: 'mock-embedding',
     dimSize: 512,
     timeoutMs: 30_000,
+    vectorStorePath: undefined,
   },
 
   telemetry: {

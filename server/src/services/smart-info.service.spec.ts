@@ -1,4 +1,4 @@
-import { AssetVisibility, ImmichWorker, JobName, JobStatus } from 'src/enum.js';
+import { AssetVisibility, ImmichWorker, JobName, JobStatus, SystemMetadataKey } from 'src/enum.js';
 import { SmartInfoService } from 'src/services/smart-info.service.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { ServiceMocks, makeStream, newTestService } from 'test/utils.js';
@@ -14,6 +14,7 @@ describe(SmartInfoService.name, () => {
     mocks.embedding.isEnabled.mockReturnValue(true);
     mocks.embedding.getModelName.mockReturnValue('mock-embedding');
     mocks.embedding.getDimSize.mockReturnValue(512);
+    mocks.systemMetadata.get.mockResolvedValue({ model: 'mock-embedding', dimSize: 512 });
   });
 
   it('should work', () => {
@@ -21,59 +22,54 @@ describe(SmartInfoService.name, () => {
   });
 
   describe('onConfigInit', () => {
-    it('should return if cloud search is disabled', async () => {
+    it('should do nothing if cloud search is disabled', async () => {
       mocks.embedding.isEnabled.mockReturnValue(false);
 
       await sut.onConfigInit();
 
-      expect(mocks.database.getDimensionSize).not.toHaveBeenCalled();
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
+      expect(mocks.systemMetadata.get).not.toHaveBeenCalled();
+      expect(mocks.vectorStore.clear).not.toHaveBeenCalled();
     });
 
-    it('should not touch the database if the provider reports the dimension itself', async () => {
-      mocks.embedding.getDimSize.mockReturnValue(undefined);
+    it('should record the index state on first run', async () => {
+      mocks.systemMetadata.get.mockResolvedValue(null);
 
       await sut.onConfigInit();
 
-      expect(mocks.database.getDimensionSize).not.toHaveBeenCalled();
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
+      expect(mocks.systemMetadata.set).toHaveBeenCalledWith(SystemMetadataKey.CloudSearchIndex, {
+        model: 'mock-embedding',
+        dimSize: 512,
+      });
+      expect(mocks.vectorStore.clear).not.toHaveBeenCalled();
     });
 
-    it('should return if the configured and stored dimension size are equal', async () => {
-      mocks.database.getDimensionSize.mockResolvedValue(512);
+    it('should keep the index when model and dimension are unchanged', async () => {
+      await sut.onConfigInit();
+
+      expect(mocks.vectorStore.clear).not.toHaveBeenCalled();
+      expect(mocks.job.queue).not.toHaveBeenCalled();
+    });
+
+    it('should clear the index and queue a re-index when the model changed', async () => {
+      mocks.systemMetadata.get.mockResolvedValue({ model: 'ViT-B-32__openai', dimSize: 512 });
 
       await sut.onConfigInit();
 
-      expect(mocks.database.getDimensionSize).toHaveBeenCalledTimes(1);
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
+      expect(mocks.vectorStore.clear).toHaveBeenCalled();
+      expect(mocks.systemMetadata.set).toHaveBeenCalledWith(SystemMetadataKey.CloudSearchIndex, {
+        model: 'mock-embedding',
+        dimSize: 512,
+      });
+      expect(mocks.job.queue).toHaveBeenCalledWith({ name: JobName.SmartSearchQueueAll, data: { force: true } });
     });
 
-    it('should rebuild the index if the dimension changed', async () => {
-      mocks.database.getDimensionSize.mockResolvedValue(768);
+    it('should clear the index and queue a re-index when the dimension changed', async () => {
+      mocks.systemMetadata.get.mockResolvedValue({ model: 'mock-embedding', dimSize: 768 });
 
       await sut.onConfigInit();
 
-      expect(mocks.database.setDimensionSize).toHaveBeenCalledWith(512);
-    });
-  });
-
-  describe('onConfigUpdate', () => {
-    it('should return if cloud search is disabled', async () => {
-      mocks.embedding.isEnabled.mockReturnValue(false);
-
-      await sut.onConfigUpdate();
-
-      expect(mocks.database.getDimensionSize).not.toHaveBeenCalled();
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
-    });
-
-    it('should rebuild the index if the dimension changed', async () => {
-      mocks.database.getDimensionSize.mockResolvedValue(512);
-      mocks.embedding.getDimSize.mockReturnValue(2048);
-
-      await sut.onConfigUpdate();
-
-      expect(mocks.database.setDimensionSize).toHaveBeenCalledWith(2048);
+      expect(mocks.vectorStore.clear).toHaveBeenCalled();
+      expect(mocks.job.queue).toHaveBeenCalledWith({ name: JobName.SmartSearchQueueAll, data: { force: true } });
     });
   });
 
@@ -83,7 +79,6 @@ describe(SmartInfoService.name, () => {
 
       expect(await sut.handleQueueEncodeClip({})).toEqual(JobStatus.Skipped);
 
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
       expect(mocks.job.queueAll).not.toHaveBeenCalled();
     });
 
@@ -94,18 +89,17 @@ describe(SmartInfoService.name, () => {
       expect(await sut.handleQueueEncodeClip({ force: false })).toEqual(JobStatus.Success);
 
       expect(mocks.job.queueAll).toHaveBeenCalledWith([{ name: JobName.SmartSearch, data: { id: asset.id } }]);
-      expect(mocks.assetJob.streamForEncodeClip).toHaveBeenCalledWith(false);
-      expect(mocks.database.setDimensionSize).not.toHaveBeenCalled();
+      expect(mocks.vectorStore.clear).not.toHaveBeenCalled();
     });
 
-    it('should reset the dimension when forcing a full re-index', async () => {
+    it('should discard the index when forcing a full re-index', async () => {
       const asset = AssetFactory.create();
       mocks.assetJob.streamForEncodeClip.mockReturnValue(makeStream([asset]));
 
       expect(await sut.handleQueueEncodeClip({ force: true })).toEqual(JobStatus.Success);
 
+      expect(mocks.vectorStore.clear).toHaveBeenCalled();
       expect(mocks.assetJob.streamForEncodeClip).toHaveBeenCalledWith(true);
-      expect(mocks.database.setDimensionSize).toHaveBeenCalledExactlyOnceWith(512);
     });
   });
 
@@ -116,7 +110,6 @@ describe(SmartInfoService.name, () => {
       expect(await sut.handleEncodeClip({ id: '123' })).toEqual(JobStatus.Skipped);
 
       expect(mocks.assetJob.getForClipEncoding).not.toHaveBeenCalled();
-      expect(mocks.embedding.embedImage).not.toHaveBeenCalled();
     });
 
     it('should fail if the asset could not be found', async () => {
@@ -124,8 +117,7 @@ describe(SmartInfoService.name, () => {
 
       expect(await sut.handleEncodeClip({ id: 'non-existent' })).toEqual(JobStatus.Failed);
 
-      expect(mocks.embedding.embedImage).not.toHaveBeenCalled();
-      expect(mocks.search.upsert).not.toHaveBeenCalled();
+      expect(mocks.vectorStore.upsert).not.toHaveBeenCalled();
     });
 
     it('should skip invisible assets', async () => {
@@ -134,8 +126,7 @@ describe(SmartInfoService.name, () => {
 
       expect(await sut.handleEncodeClip({ id: asset.id })).toEqual(JobStatus.Skipped);
 
-      expect(mocks.embedding.embedImage).not.toHaveBeenCalled();
-      expect(mocks.search.upsert).not.toHaveBeenCalled();
+      expect(mocks.vectorStore.upsert).not.toHaveBeenCalled();
     });
 
     it('should embed the original file and store the vector', async () => {
@@ -151,20 +142,7 @@ describe(SmartInfoService.name, () => {
         data: Buffer.from('original-bytes'),
         mimeType: 'image/jpeg',
       });
-      expect(mocks.search.upsert).toHaveBeenCalledWith(asset.id, '[0.01,0.02,0.03]');
-    });
-
-    it('should wait for the dimension lock before writing', async () => {
-      const asset = AssetFactory.create();
-      mocks.assetJob.getForClipEncoding.mockResolvedValue(asset);
-      mocks.storage.readFile.mockResolvedValue(Buffer.from('original-bytes'));
-      mocks.embedding.embedImage.mockResolvedValue([0.01, 0.02, 0.03]);
-      mocks.database.isBusy.mockReturnValue(true);
-
-      expect(await sut.handleEncodeClip({ id: asset.id })).toEqual(JobStatus.Success);
-
-      expect(mocks.database.wait).toHaveBeenCalled();
-      expect(mocks.search.upsert).toHaveBeenCalledWith(asset.id, '[0.01,0.02,0.03]');
+      expect(mocks.vectorStore.upsert).toHaveBeenCalledWith(asset.id, [0.01, 0.02, 0.03]);
     });
   });
 });

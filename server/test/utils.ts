@@ -71,6 +71,7 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
+import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -289,6 +290,7 @@ export type ServiceOverrides = {
   telemetry: TelemetryRepository;
   trash: TrashRepository;
   user: UserRepository;
+  vectorStore: VectorStoreRepository;
   versionHistory: VersionHistoryRepository;
   videoStream: VideoStreamRepository;
   view: ViewRepository;
@@ -380,6 +382,7 @@ export const getMocks = () => {
     telemetry: newTelemetryRepositoryMock(),
     trash: automock(TrashRepository),
     user: automock(UserRepository, { strict: false }),
+    vectorStore: automock(VectorStoreRepository, { args: [configMock, loggerMock], strict: false }),
     versionHistory: automock(VersionHistoryRepository),
     videoStream: automock(VideoStreamRepository, { strict: false }),
     view: automock(ViewRepository),
@@ -453,6 +456,7 @@ export const newTestService = <T extends BaseService>(
     overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
     overrides.trash || (mocks.trash as As<TrashRepository>),
     overrides.user || (mocks.user as As<UserRepository>),
+    overrides.vectorStore || (mocks.vectorStore as As<VectorStoreRepository>),
     overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
     overrides.videoStream || (mocks.videoStream as As<VideoStreamRepository>),
     overrides.view || (mocks.view as As<ViewRepository>),

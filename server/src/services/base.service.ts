@@ -58,6 +58,7 @@ import { TagRepository } from 'src/repositories/tag.repository.js';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository.js';
 import { TrashRepository } from 'src/repositories/trash.repository.js';
 import { UserRepository } from 'src/repositories/user.repository.js';
+import { VectorStoreRepository } from 'src/repositories/vector-store.repository.js';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository.js';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository.js';
 import { ViewRepository } from 'src/repositories/view-repository.js';
@@ -127,6 +128,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   TelemetryRepository,
   TrashRepository,
   UserRepository,
+  VectorStoreRepository,
   VersionHistoryRepository,
   VideoStreamRepository,
   ViewRepository,
@@ -191,6 +193,7 @@ export class BaseService {
     protected telemetryRepository: TelemetryRepository,
     protected trashRepository: TrashRepository,
     protected userRepository: UserRepository,
+    protected vectorStoreRepository: VectorStoreRepository,
     protected versionRepository: VersionHistoryRepository,
     protected videoStreamRepository: VideoStreamRepository,
     protected viewRepository: ViewRepository,
@@ -264,6 +267,7 @@ export class BaseService {
       ctx.telemetryRepository,
       ctx.trashRepository,
       ctx.userRepository,
+      ctx.vectorStoreRepository,
       ctx.versionRepository,
       ctx.videoStreamRepository,
       ctx.viewRepository,

@@ -56,6 +56,7 @@ export const EnvSchema = z
     IMMICH_CLOUD_SEARCH_MODEL: z.string().optional(),
     IMMICH_CLOUD_SEARCH_PROVIDER: CloudSearchProviderSchema.optional(),
     IMMICH_CLOUD_SEARCH_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+    IMMICH_VECTOR_STORE_PATH: absolutePath,
     IMMICH_HELMET_FILE: z.string().optional(),
     IMMICH_ENV: ImmichEnvironmentSchema.optional(),
     IMMICH_HOST: z.string().optional(),

@@ -187,3 +187,13 @@
 - 本机 Docker 只能访问 `ccr.ccs.tencentyun.com` 私有镜像源，`registry-1.docker.io` / `ghcr.io` 拉取超时 → 无法直接起官方 `immich-postgres`（含 vectorchord）容器做运行时冒烟。
 - 可用的本地 `postgres:16` 镜像**不含 pgvector/vectorchord** → 只要向量还在 Postgres 里，本地就跑不起来。
 - **结论（也印证了目标方向）**：把向量搬到云向量桶（VikingDB/VDB）后，Postgres 可用 stock 镜像，本地冒烟与部署都更简单。因此 P2 的"向量库抽象 + VikingDB 适配器"优先级提到 P3（云存储）之前。
+
+### Round 3（向量库抽象：向量离开 Postgres）
+- 新增 `server/src/repositories/vector/vector-store.ts`：`VectorStore` 接口（`upsert/delete/get/search/clear`）+ 余弦距离（与 pgvector `<=>` 语义一致，含 `vectorLiteral`）
+- 新增 `file-vector-store.ts`：本地开发/单机用的向量库（内存 + 追加式 JSONL 日志 + 启动压缩），**无需 pgvector、无需云 key 也能跑通全链路**；配 8 个单测（排序、topK、maxDistance、assetIds 预过滤、删除、重启恢复、维度校验、脏日志容错）
+- 新增 `vector-store.repository.ts`：DI 入口，按 env 选择后端（当前 file；VikingDB 适配器下一轮）
+- `smart-info.service`：写入改为 `vectorStoreRepository.upsert`；索引状态（model/dim）存 `system_metadata`（新 key `CloudSearchIndex`），模型或维度变化 → 清空索引 + 自动入队全量重建；`force` 重建会丢弃整库索引
+- `search.service`：语义检索改为「向量库取候选 → SQL 按 id 过滤 → 按相似度重排分页」（`VECTOR_OVERFETCH=4`、上限 1000），以图搜图直接读向量库；`search.repository` 用 `searchSmartByIds` / `searchSmartV3ByIds` 取代原先带 `<=>` 的 SQL 方法，并删除 `getEmbedding`
+- 验证：`tsc` 绿、eslint 绿、106 文件 / 2337 用例全绿
+
+**遗留（下一轮）**：① `duplicate.service` 仍读 `smart_search`（该表已不再写入 → 重复检测实际处于"empty"状态，随 ML 删除一并处理）；② `search.repository`/`duplicate.repository` 的 `queries/*.sql` 快照已过期，需重新生成；③ 删除 `smart_search`/`face_search` 表与 pgvector 依赖，compose 换 stock Postgres；④ 写 `viking-vector-store.ts`（已从官方 SDK 提取到真实契约：`api-vikingdb.volces.com`、签名 service=`air`、`/api/collection/upsert_data`、`/api/collection/del_data`、`/api/index/search`（body 为 `{collection_name, index_name, search:{order_by_vector:{vectors:[...]}, limit, output_fields, primary_key_in}}`））

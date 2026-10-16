@@ -453,16 +453,13 @@ describe(SearchService.name, () => {
         assetIds.push(asset.id);
       }
 
-      const options = { filter: {}, embedding: unitVector(0) };
       const scope = { userIds: [user.id], lockedOwnerId: user.id };
-      const firstPage = await searchRepository.searchSmartV3({ take: 2 }, options, scope);
-      expect(firstPage.items.length).toBe(2);
-      expect(firstPage.items[0].id).toBe(assetIds[0]);
-      expect(firstPage.hasNextPage).toBe(true);
+      const firstPage = await searchRepository.searchSmartV3ByIds({ filter: {} }, scope, assetIds.slice(0, 2));
+      expect(firstPage.length).toBe(2);
+      expect(firstPage[0].id).toBe(assetIds[0]);
 
-      const secondPage = await searchRepository.searchSmartV3({ take: 2, skip: 2 }, options, scope);
-      expect(secondPage.items.length).toBe(1);
-      expect(secondPage.hasNextPage).toBe(false);
+      const secondPage = await searchRepository.searchSmartV3ByIds({ filter: {} }, scope, assetIds.slice(2));
+      expect(secondPage.length).toBe(1);
     });
   });
 });

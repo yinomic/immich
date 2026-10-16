@@ -124,6 +124,7 @@ export interface EnvData {
     model?: string;
     dimSize?: number;
     timeoutMs: number;
+    vectorStorePath?: string;
   };
 
   workers: ImmichWorker[];
@@ -375,6 +376,7 @@ const getEnv = (): EnvData => {
       model: dto.IMMICH_CLOUD_SEARCH_MODEL,
       dimSize: dto.IMMICH_CLOUD_SEARCH_DIM,
       timeoutMs: dto.IMMICH_CLOUD_SEARCH_TIMEOUT_MS ?? 30_000,
+      vectorStorePath: dto.IMMICH_VECTOR_STORE_PATH,
     },
 
     telemetry: {
