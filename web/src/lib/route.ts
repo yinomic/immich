@@ -83,8 +83,6 @@ export const Route = {
   viewMemoryAsset: ({ id, assetId, ...params }: { id: string; assetId: string; isSaved?: boolean }) =>
     `/memories/${id}/photos/${assetId}` + asQueryString({ assetId, ...params }),
 
-  // partners
-  viewPartner: ({ id }: { id: string }) => `/partners/${id}`,
 
   // people
   people: () => '/people',
@@ -108,8 +106,6 @@ export const Route = {
     return `/search` + asQueryString({ query });
   },
 
-  // sharing
-  sharing: () => '/sharing',
 
   // shared links
   sharedLinks: (params?: { filter?: SharedLinkTab }) => '/shared-links' + asQueryString(params),

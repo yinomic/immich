@@ -6,8 +6,7 @@
   import JobSettings from './JobSettings.svelte';
   import LibrarySettings from './LibrarySettings.svelte';
   import LoggingSettings from './LoggingSettings.svelte';
-  import MachineLearningSettings from './MachineLearningSettings.svelte';
-  import MapSettings from './MapSettings.svelte';
+    import MapSettings from './MapSettings.svelte';
   import MetadataSettings from './MetadataSettings.svelte';
   import NewVersionCheckSettings from './NewVersionCheckSettings.svelte';
   import NightlyTasksSettings from './NightlyTasksSettings.svelte';
@@ -114,13 +113,6 @@
       subtitle: $t('admin.manage_log_settings'),
       key: 'logging',
       icon: mdiFileDocumentOutline,
-    },
-    {
-      component: MachineLearningSettings,
-      title: $t('admin.machine_learning_settings'),
-      subtitle: $t('admin.machine_learning_settings_description'),
-      key: 'machine-learning',
-      icon: mdiRobotOutline,
     },
     {
       component: MapSettings,

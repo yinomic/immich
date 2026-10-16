@@ -62,13 +62,6 @@
     <NavbarItem title={$t('shared_links')} href={Route.sharedLinks()} icon={mdiLink} />
   {/if}
 
-  <NavbarItem
-    title={$t('sharing')}
-    href={Route.sharing()}
-    icon={mdiAccountMultipleOutline}
-    activeIcon={mdiAccountMultiple}
-  />
-
   <NavbarGroup title={$t('library')} size="tiny" />
 
   <NavbarItem title={$t('favorites')} href={Route.favorites()} icon={mdiHeartOutline} activeIcon={mdiHeart} />

@@ -307,3 +307,13 @@
 - **说明**：`album_user` 表**不能直接删**——每个相册的 *所有者* 也记录在这张表里（role=owner），要彻底移除需要先把归属迁移到 `album.ownerId`，属于数据模型改动，留待后续
 - 运行时验证：相册列表正常；`PUT /albums/:id/users` → `400 {"message":"Album sharing was removed in this build"}`；时间线、语义搜索（3 命中）正常；作业 0 报错
 - 检查：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / 1598 用例全绿
+
+### Round 12（客户端清理第一步：删掉已失效的页面）
+服务端删了这么多接口后，web 里对应的页面已是死页面，本轮先清掉最确定的一批：
+
+- 删除 **ML 设置页** `admin/system-settings/MachineLearningSettings.svelte` 及其在系统设置页里的入口（服务端 `machineLearning` 配置块早已删除，这页现在必然报错）
+- 删除 **伙伴共享页** `(user)/partners/**` 与 **共享总览页** `(user)/sharing/**`（含 `sharing/sharedlinks`）
+- 清理引用：`lib/route.ts` 的 `viewPartner`/`sharing`、侧边栏的「共享」入口、命令面板（`lib/commands.ts`）里的「共享」
+- 验证：`pnpm --filter immich-web check:typescript` 0 错、`check:svelte`（`--fail-on-warnings`）**0 错 0 警告**
+
+**说明**：人脸/人物页面（`(user)/people`、`explore` 等）仍保留——它们引用了大量 API 类型，需要和 `packages/sdk`/`open-api` 一起重新生成后再删，属于下一步。`shared_links` 入口同样留待与 SDK 一起处理。

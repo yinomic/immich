@@ -119,12 +119,6 @@ export const getPagesProvider = ($t: MessageFormatter) => {
       $if: () => authManager.authenticated,
     },
     {
-      title: $t('sharing'),
-      icon: mdiAccountMultipleOutline,
-      onAction: () => goto(Route.sharing()),
-      $if: () => authManager.authenticated,
-    },
-    {
       title: $t('favorites'),
       icon: mdiHeartOutline,
       onAction: () => goto(Route.favorites()),
