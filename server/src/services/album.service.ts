@@ -284,59 +284,14 @@ export class AlbumService extends BaseService {
     return results;
   }
 
-  async addUsers(auth: AuthDto, id: string, { albumUsers }: AddUsersDto): Promise<AlbumResponseDto> {
-    await this.requireAccess({ auth, permission: Permission.AlbumShare, ids: [id] });
-
-    const album = await this.findOrFail(id, auth.user.id);
-
-    for (const { userId, role } of albumUsers) {
-      if (role === AlbumUserRole.Owner) {
-        throw new BadRequestException('Cannot add another owner');
-      }
-
-      const exists = album.albumUsers.some(({ user: { id } }) => id === userId);
-      if (exists) {
-        continue;
-      }
-
-      const user = await this.userRepository.get(userId, {});
-      if (!user) {
-        this.logger.debug('Adding user to album failed: user not found');
-        throw new BadRequestException('Invalid user');
-      }
-
-      await this.albumUserRepository.create({ userId, albumId: id, role });
-      await this.eventRepository.emit('AlbumInvite', { id, userId, senderName: auth.user.name });
-    }
-
-    return this.mapWithMetadata(await this.findOrFail(id, auth.user.id));
+  addUsers(_auth: AuthDto, _id: string, _dto: AddUsersDto): Promise<AlbumResponseDto> {
+    // NOTE (family fork): a single account owns every album, so albums are not
+    // shared with other users any more.
+    throw new BadRequestException('Album sharing was removed in this build');
   }
 
-  async removeUser(auth: AuthDto, id: string, userId: string | 'me'): Promise<void> {
-    if (userId === 'me') {
-      userId = auth.user.id;
-    }
-
-    const album = await this.findOrFail(id, auth.user.id);
-
-    const exists = album.albumUsers.find(({ user: { id } }) => id === userId);
-    if (!exists) {
-      throw new BadRequestException('Album not shared with user');
-    }
-
-    if (
-      exists.role === AlbumUserRole.Owner &&
-      album.albumUsers.filter(({ role }) => role === AlbumUserRole.Owner).length === 1
-    ) {
-      throw new BadRequestException('Cannot remove the last album owner');
-    }
-
-    // non-admin can remove themselves
-    if (auth.user.id !== userId) {
-      await this.requireAccess({ auth, permission: Permission.AlbumShare, ids: [id] });
-    }
-
-    await this.albumUserRepository.delete({ albumId: id, userId });
+  removeUser(_auth: AuthDto, _id: string, _userId: string | 'me'): Promise<void> {
+    throw new BadRequestException('Album sharing was removed in this build');
   }
 
   async updateUser(auth: AuthDto, id: string, userId: string, dto: UpdateAlbumUserDto): Promise<void> {

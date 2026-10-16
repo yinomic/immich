@@ -300,3 +300,10 @@
 - 检查：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / 1611 用例全绿（删除了若干只测已删功能的 spec：shared-link service、api.service render、controllers 路由清单，以及被批量编辑破坏的 medium asset-media spec）
 
 **下一轮**：删除「相册共享给他人（album_user）」与 `AuthSharedLink` 死代码，随后重新生成迁移以移除 `shared_link*`/`album_user*` 表；再进入 web/mobile/SDK 清理。
+
+### Round 11（单账号：停用「相册共享给他人」）
+- 相册分享 API 现在直接拒绝：`PUT /albums/:id/users`、`PUT /albums/:id/user/:userId`、`DELETE /albums/:id/user/:userId` 均返回 `400 Album sharing was removed in this build`（`AlbumService.addUsers/removeUser/updateAlbumUser` 保留签名以便控制器与 DTO 兼容，但不再写库）
+- 删除对应用例（album.service 的 addUsers/removeUser 两个 describe）
+- **说明**：`album_user` 表**不能直接删**——每个相册的 *所有者* 也记录在这张表里（role=owner），要彻底移除需要先把归属迁移到 `album.ownerId`，属于数据模型改动，留待后续
+- 运行时验证：相册列表正常；`PUT /albums/:id/users` → `400 {"message":"Album sharing was removed in this build"}`；时间线、语义搜索（3 命中）正常；作业 0 报错
+- 检查：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / 1598 用例全绿
