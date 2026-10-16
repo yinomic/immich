@@ -1,5 +1,4 @@
 import type { ImageDimensions } from 'src/types.js';
-import { AssetFace } from 'src/database.js';
 import { AssetOcrResponseDto } from 'src/dtos/ocr.dto.js';
 
 type BoundingBox = {
@@ -28,44 +27,6 @@ const scale = (box: BoundingBox, target: ImageDimensions, source?: ImageDimensio
     y1: (box.y1 / sourceHeight) * target.height,
     x2: (box.x2 / sourceWidth) * target.width,
     y2: (box.y2 / sourceHeight) * target.height,
-  };
-};
-
-export const checkFaceVisibility = (
-  faces: AssetFace[],
-  originalAssetDimensions: ImageDimensions,
-  crop?: BoundingBox,
-): { visible: AssetFace[]; hidden: AssetFace[] } => {
-  if (!crop) {
-    return {
-      visible: faces.filter((face) => !face.isVisible),
-      hidden: [],
-    };
-  }
-
-  const status = faces.map((face) => {
-    const scaledFace = scale(
-      {
-        x1: face.boundingBoxX1,
-        y1: face.boundingBoxY1,
-        x2: face.boundingBoxX2,
-        y2: face.boundingBoxY2,
-      },
-      originalAssetDimensions,
-      { width: face.imageWidth, height: face.imageHeight },
-    );
-
-    const overlapPercentage = boundingBoxOverlap(scaledFace, crop);
-
-    return {
-      face,
-      isVisible: overlapPercentage >= 0.5,
-    };
-  });
-
-  return {
-    visible: status.filter((s) => s.isVisible).map((s) => s.face),
-    hidden: status.filter((s) => !s.isVisible).map((s) => s.face),
   };
 };
 

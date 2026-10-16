@@ -6,7 +6,6 @@ import {
   AssetPathType,
   ImageFormat,
   PathType,
-  PersonPathType,
   RawExtractedFormat,
   StorageFolder,
   UserPathType,
@@ -16,7 +15,6 @@ import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
-import { PersonRepository } from 'src/repositories/person.repository.js';
 import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository.js';
 import { getAssetFile } from 'src/utils/asset.util.js';
@@ -37,8 +35,6 @@ export interface MoveRequest {
 
 export type ThumbnailPathEntity = { id: string; ownerId: string };
 
-export type PersonThumbnailPathEntity = { personGroupId: string; ownerId: string };
-
 export type HlsSessionFolder = { ownerId: string; sessionId: string };
 
 export type HlsVariantFolder = { ownerId: string; sessionId: string; variantIndex: number };
@@ -55,7 +51,6 @@ export class StorageCore {
     private configRepository: ConfigRepository,
     private cryptoRepository: CryptoRepository,
     private moveRepository: MoveRepository,
-    private personRepository: PersonRepository,
     private storageRepository: StorageRepository,
     private systemMetadataRepository: SystemMetadataRepository,
     private logger: LoggingRepository,
@@ -68,7 +63,6 @@ export class StorageCore {
     configRepository: ConfigRepository,
     cryptoRepository: CryptoRepository,
     moveRepository: MoveRepository,
-    personRepository: PersonRepository,
     storageRepository: StorageRepository,
     systemMetadataRepository: SystemMetadataRepository,
     logger: LoggingRepository,
@@ -79,7 +73,6 @@ export class StorageCore {
         configRepository,
         cryptoRepository,
         moveRepository,
-        personRepository,
         storageRepository,
         systemMetadataRepository,
         logger,
@@ -115,10 +108,6 @@ export class StorageCore {
 
   static getBaseFolder(folder: StorageFolder) {
     return join(StorageCore.getMediaLocation(), folder);
-  }
-
-  static getPersonThumbnailPath(person: PersonThumbnailPathEntity) {
-    return StorageCore.getNestedPath(StorageFolder.Thumbnails, person.ownerId, `${person.personGroupId}.jpeg`);
   }
 
   static getImagePath(asset: ThumbnailPathEntity, { fileType, format, isEdited }: ImagePathOptions) {
@@ -178,21 +167,6 @@ export class StorageCore {
       oldPath: encodedVideoFile?.path || null,
       newPath: StorageCore.getEncodedVideoPath(asset),
     });
-  }
-
-  async movePersonFile(person: PersonThumbnailPathEntity & { thumbnailPath: string }, pathType: PersonPathType) {
-    const { ownerId, personGroupId, thumbnailPath } = person;
-    switch (pathType) {
-      case PersonPathType.Face: {
-        await this.moveFile({
-          entityId: personGroupId,
-          ownerId,
-          pathType,
-          oldPath: thumbnailPath,
-          newPath: StorageCore.getPersonThumbnailPath(person),
-        });
-      }
-    }
   }
 
   async moveFile(request: MoveRequest) {
@@ -337,14 +311,6 @@ export class StorageCore {
         return this.assetRepository.upsertFile({ assetId: id, type: pathType as AssetFileType, path: newPath });
       }
 
-      case PersonPathType.Face: {
-        if (!ownerId) {
-          this.logger.warn('Unable to save person path without an owner');
-          return;
-        }
-
-        return this.personRepository.update({ ownerId, personGroupId: id, thumbnailPath: newPath });
-      }
 
       case UserPathType.Profile: {
         this.logger.warn('Unexpected path type:', pathType);

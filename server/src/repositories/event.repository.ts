@@ -42,7 +42,6 @@ type EventMap = {
   AlbumInvite: [{ id: string; userId: string; senderName: string }];
 
   // cluster group events
-  ClusterGroupRequest: [{ clusterGroupId: string; userId: string; senderName: string }];
 
   // asset events
   AssetCreate: [{ asset: Pick<Asset, 'id' | 'ownerId'>; file?: UploadFile }];

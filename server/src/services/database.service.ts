@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { coerce, eq, gt, lt, satisfies } from 'semver';
-import type { VectorExtension } from 'src/types.js';
-import { EXTENSION_NAMES, ErrorMessages, VECTOR_EXTENSIONS } from 'src/constants.js';
+import { ErrorMessages } from 'src/constants.js';
 import { OnEvent } from 'src/decorators.js';
-import { BootstrapEventPriority, DatabaseExtension, DatabaseLock, VectorIndex } from 'src/enum.js';
+import { BootstrapEventPriority, DatabaseLock } from 'src/enum.js';
 import { BaseService } from 'src/services/base.service.js';
 
 type CreateFailedArgs = { name: string; extension: string };
@@ -65,52 +64,6 @@ export class DatabaseService extends BaseService {
     }
 
     await this.databaseRepository.withLock(DatabaseLock.Migrations, async () => {
-      const extension = await this.databaseRepository.getVectorExtension();
-      const name = EXTENSION_NAMES[extension];
-      const extensionRange = this.databaseRepository.getExtensionVersionRange(extension);
-
-      const extensionVersions = await this.databaseRepository.getExtensionVersions(VECTOR_EXTENSIONS);
-      const { installedVersion, availableVersion } = extensionVersions.find((v) => v.name === extension) ?? {};
-      if (!availableVersion) {
-        throw new Error(messages.notInstalled(name));
-      }
-
-      if ([availableVersion, installedVersion].some((version) => version && eq(version, '0.0.0'))) {
-        throw new Error(messages.nightlyVersion({ name, extension, version: '0.0.0' }));
-      }
-
-      if (!satisfies(availableVersion, extensionRange)) {
-        throw new Error(messages.outOfRange({ name, extension, version: availableVersion, range: extensionRange }));
-      }
-
-      if (!installedVersion) {
-        await this.createExtension(extension);
-      }
-
-      if (installedVersion && gt(availableVersion, installedVersion)) {
-        await this.updateExtension(extension, availableVersion);
-      } else if (installedVersion && !satisfies(installedVersion, extensionRange)) {
-        throw new Error(messages.outOfRange({ name, extension, version: installedVersion, range: extensionRange }));
-      } else if (installedVersion && lt(availableVersion, installedVersion)) {
-        throw new Error(messages.invalidDowngrade({ name, extension, availableVersion, installedVersion }));
-      }
-
-      try {
-        await this.databaseRepository.reindexVectorsIfNeeded([VectorIndex.Clip, VectorIndex.Face]);
-      } catch (error) {
-        this.logger.warn(
-          'Could not run vector reindexing checks. If the extension was updated, please restart the Postgres instance. If you are upgrading directly from a version below 1.107.2, please upgrade to 1.107.2 first.',
-        );
-        throw error;
-      }
-
-      for (const { name: dbName, installedVersion } of extensionVersions) {
-        const isDepended = dbName === DatabaseExtension.Vector && extension === DatabaseExtension.VectorChord;
-        if (dbName !== extension && installedVersion && !isDepended) {
-          await this.dropExtension(dbName);
-        }
-      }
-
       const preparation = [];
       const { database } = this.configRepository.getEnv();
       if (!database.skipMigrations) {
@@ -120,10 +73,6 @@ export class DatabaseService extends BaseService {
           preparation.push(this.databaseRepository.vacuum({ analyze: true }));
         }
       }
-      preparation.push(
-        this.databaseRepository.prewarm(VectorIndex.Clip),
-        this.databaseRepository.prewarm(VectorIndex.Face),
-      );
       await Promise.all(preparation);
     });
   }
@@ -141,32 +90,6 @@ export class DatabaseService extends BaseService {
     }
   }
 
-  private async createExtension(extension: DatabaseExtension) {
-    try {
-      await this.databaseRepository.createExtension(extension);
-    } catch (error) {
-      const name = EXTENSION_NAMES[extension];
-      this.logger.fatal(messages.createFailed({ name, extension }));
-      throw error;
-    }
-  }
 
-  private async updateExtension(extension: VectorExtension, availableVersion: string) {
-    this.logger.log(`Updating ${EXTENSION_NAMES[extension]} extension to ${availableVersion}`);
-    try {
-      await this.databaseRepository.updateVectorExtension(extension, availableVersion);
-    } catch (error) {
-      this.logger.warn(messages.updateFailed({ name: EXTENSION_NAMES[extension], extension, availableVersion }));
-      throw error;
-    }
-  }
 
-  private async dropExtension(extension: DatabaseExtension) {
-    try {
-      await this.databaseRepository.dropExtension(extension);
-    } catch (error) {
-      const name = EXTENSION_NAMES[extension];
-      this.logger.warn(messages.dropFailed({ name, extension }), error);
-    }
-  }
 }

@@ -9,7 +9,6 @@ import { CLS_ID, ClsModuleOptions } from 'nestjs-cls';
 import { OpenTelemetryModuleOptions } from 'nestjs-otel/lib/interfaces/index.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { VectorExtension } from 'src/types.js';
 import { IWorker, citiesFile } from 'src/constants.js';
 import { Telemetry } from 'src/decorators.js';
 import { EnvSchema } from 'src/dtos/env.dto.js';
@@ -64,7 +63,6 @@ export interface EnvData {
   database: {
     config: DatabaseConnectionParams;
     skipMigrations: boolean;
-    vectorExtension?: VectorExtension;
   };
 
   licensePublicKey: {
@@ -263,20 +261,6 @@ const getEnv = (): EnvData => {
         ssl: dto.DB_SSL_MODE || undefined,
       };
 
-  let vectorExtension: VectorExtension | undefined;
-  if (dto.DB_VECTOR_EXTENSION) {
-    switch (dto.DB_VECTOR_EXTENSION) {
-      case 'pgvector': {
-        vectorExtension = DatabaseExtension.Vector;
-        break;
-      }
-      case 'vectorchord': {
-        vectorExtension = DatabaseExtension.VectorChord;
-        break;
-      }
-    }
-  }
-
   return {
     host: dto.IMMICH_HOST,
     port: dto.IMMICH_PORT || 2283,
@@ -331,7 +315,6 @@ const getEnv = (): EnvData => {
     database: {
       config: databaseConnection,
       skipMigrations: dto.DB_SKIP_MIGRATIONS ?? false,
-      vectorExtension,
     },
 
     helmet: {

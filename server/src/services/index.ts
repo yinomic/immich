@@ -8,11 +8,9 @@ import { AssetService } from 'src/services/asset.service.js';
 import { AuthAdminService } from 'src/services/auth-admin.service.js';
 import { AuthService } from 'src/services/auth.service.js';
 import { CliService } from 'src/services/cli.service.js';
-import { ClusterGroupService } from 'src/services/cluster-group.service.js';
 import { DatabaseBackupService } from 'src/services/database-backup.service.js';
 import { DatabaseService } from 'src/services/database.service.js';
 import { DownloadService } from 'src/services/download.service.js';
-import { DuplicateService } from 'src/services/duplicate.service.js';
 import { HlsService } from 'src/services/hls.service.js';
 import { IntegrityService } from 'src/services/integrity.service.js';
 import { JobService } from 'src/services/job.service.js';
@@ -26,7 +24,6 @@ import { NotificationAdminService } from 'src/services/notification-admin.servic
 import { NotificationService } from 'src/services/notification.service.js';
 import { OcrService } from 'src/services/ocr.service.js';
 import { PartnerService } from 'src/services/partner.service.js';
-import { PersonService } from 'src/services/person.service.js';
 import { PluginService } from 'src/services/plugin.service.js';
 import { QueueService } from 'src/services/queue.service.js';
 import { SearchService } from 'src/services/search.service.js';
@@ -66,7 +63,6 @@ export const services = [
   DatabaseBackupService,
   DatabaseService,
   DownloadService,
-  DuplicateService,
   IntegrityService,
   HlsService,
   JobService,
@@ -79,9 +75,7 @@ export const services = [
   NotificationService,
   NotificationAdminService,
   OcrService,
-  ClusterGroupService,
   PartnerService,
-  PersonService,
   PluginService,
   QueueService,
   SearchService,

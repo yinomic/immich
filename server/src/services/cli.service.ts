@@ -180,13 +180,12 @@ export class CliService extends BaseService {
   }
 
   async getSampleFilePaths(): Promise<string[]> {
-    const [assets, people, users] = await Promise.all([
+    const [assets, users] = await Promise.all([
       this.assetRepository.getFileSamples(),
-      this.personRepository.getFileSamples(),
       this.userRepository.getFileSamples(),
     ]);
 
-    const paths = Array.from(people, (person) => person.thumbnailPath);
+    const paths: string[] = [];
 
     for (const user of users) {
       paths.push(user.profileImagePath);

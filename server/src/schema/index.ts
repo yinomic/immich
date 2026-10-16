@@ -1,17 +1,14 @@
 import { Database, Extensions, Generated, Int8 } from '@immich/sql-tools';
 import {
   album_user_role_enum,
-  asset_face_source_type,
   asset_visibility_enum,
   assets_status_enum,
-  person_user_role_enum,
 } from 'src/schema/enums.js';
 import {
   album_user_after_insert,
   album_user_delete,
   album_user_delete_audit,
   asset_delete_audit,
-  asset_face_audit,
   asset_metadata_audit,
   asset_ocr_delete_audit,
   f_concat_ws,
@@ -21,8 +18,6 @@ import {
   memory_asset_delete_audit,
   memory_delete_audit,
   partner_delete_audit,
-  person_delete_audit,
-  person_group_delete_audit,
   stack_delete_audit,
   updated_at,
   user_delete_audit,
@@ -41,8 +36,6 @@ import { AssetAudioTable, AssetKeyframeTable, AssetVideoTable } from 'src/schema
 import { AssetEditAuditTable } from 'src/schema/tables/asset-edit-audit.table.js';
 import { AssetEditTable } from 'src/schema/tables/asset-edit.table.js';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table.js';
-import { AssetFaceAuditTable } from 'src/schema/tables/asset-face-audit.table.js';
-import { AssetFaceTable } from 'src/schema/tables/asset-face.table.js';
 import { AssetFileTable } from 'src/schema/tables/asset-file.table.js';
 import { AssetJobStatusTable } from 'src/schema/tables/asset-job-status.table.js';
 import { AssetMetadataAuditTable } from 'src/schema/tables/asset-metadata-audit.table.js';
@@ -50,9 +43,6 @@ import { AssetMetadataTable } from 'src/schema/tables/asset-metadata.table.js';
 import { AssetOcrAuditTable } from 'src/schema/tables/asset-ocr-audit.table.js';
 import { AssetOcrTable } from 'src/schema/tables/asset-ocr.table.js';
 import { AssetTable } from 'src/schema/tables/asset.table.js';
-import { ClusterGroupRequestTable } from 'src/schema/tables/cluster-group-request.table.js';
-import { ClusterGroupTable } from 'src/schema/tables/cluster-group.table.js';
-import { FaceSearchTable } from 'src/schema/tables/face-search.table.js';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table.js';
 import { IntegrityReportTable } from 'src/schema/tables/integrity-report.table.js';
 import { LibraryTable } from 'src/schema/tables/library.table.js';
@@ -66,17 +56,11 @@ import { NotificationTable } from 'src/schema/tables/notification.table.js';
 import { OcrSearchTable } from 'src/schema/tables/ocr-search.table.js';
 import { PartnerAuditTable } from 'src/schema/tables/partner-audit.table.js';
 import { PartnerTable } from 'src/schema/tables/partner.table.js';
-import { PersonAuditTable } from 'src/schema/tables/person-audit.table.js';
-import { PersonGroupAuditTable } from 'src/schema/tables/person-group-audit.table.js';
-import { PersonGroupTable } from 'src/schema/tables/person-group.table.js';
-import { PersonUserTable } from 'src/schema/tables/person-user.table.js';
-import { PersonTable } from 'src/schema/tables/person.table.js';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table.js';
 import { PluginTable } from 'src/schema/tables/plugin.table.js';
 import { SessionTable } from 'src/schema/tables/session.table.js';
 import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table.js';
 import { SharedLinkTable } from 'src/schema/tables/shared-link.table.js';
-import { SmartSearchTable } from 'src/schema/tables/smart-search.table.js';
 import { StackAuditTable } from 'src/schema/tables/stack-audit.table.js';
 import { StackTable } from 'src/schema/tables/stack.table.js';
 import { SessionSyncCheckpointTable } from 'src/schema/tables/sync-checkpoint.table.js';
@@ -113,8 +97,6 @@ export class ImmichDatabase {
     AssetAuditTable,
     AssetEditTable,
     AssetEditAuditTable,
-    AssetFaceTable,
-    AssetFaceAuditTable,
     AssetMetadataTable,
     AssetMetadataAuditTable,
     AssetJobStatusTable,
@@ -123,9 +105,6 @@ export class ImmichDatabase {
     AssetTable,
     AssetFileTable,
     AssetExifTable,
-    ClusterGroupTable,
-    ClusterGroupRequestTable,
-    FaceSearchTable,
     GeodataPlacesTable,
     IntegrityReportTable,
     LibraryTable,
@@ -139,15 +118,9 @@ export class ImmichDatabase {
     OcrSearchTable,
     PartnerAuditTable,
     PartnerTable,
-    PersonTable,
-    PersonAuditTable,
-    PersonUserTable,
-    PersonGroupTable,
-    PersonGroupAuditTable,
     SessionTable,
     SharedLinkAssetTable,
     SharedLinkTable,
-    SmartSearchTable,
     StackTable,
     StackAuditTable,
     SessionSyncCheckpointTable,
@@ -183,21 +156,16 @@ export class ImmichDatabase {
     memory_delete_audit,
     memory_asset_delete_audit,
     stack_delete_audit,
-    person_delete_audit,
-    person_group_delete_audit,
-    user_metadata_audit,
+        user_metadata_audit,
     asset_metadata_audit,
-    asset_face_audit,
-    asset_ocr_delete_audit,
+      asset_ocr_delete_audit,
     album_user_delete,
   ];
 
   enum = [
     album_user_role_enum,
     assets_status_enum,
-    asset_face_source_type,
     asset_visibility_enum,
-    person_user_role_enum,
   ];
 }
 
@@ -226,8 +194,6 @@ export interface DB {
   asset_edit: AssetEditTable;
   asset_edit_audit: AssetEditAuditTable;
   asset_exif: AssetExifTable;
-  asset_face: AssetFaceTable;
-  asset_face_audit: AssetFaceAuditTable;
   asset_file: AssetFileTable;
   asset_metadata: AssetMetadataTable;
   asset_metadata_audit: AssetMetadataAuditTable;
@@ -239,7 +205,6 @@ export interface DB {
   asset_keyframe: AssetKeyframeTable;
   ocr_search: OcrSearchTable;
 
-  face_search: FaceSearchTable;
 
   geodata_places: GeodataPlacesTable;
 
@@ -263,14 +228,7 @@ export interface DB {
   partner: PartnerTable;
   partner_audit: PartnerAuditTable;
 
-  person: PersonTable;
-  person_audit: PersonAuditTable;
-  person_user: PersonUserTable;
-  person_group: PersonGroupTable;
-  person_group_audit: PersonGroupAuditTable;
 
-  cluster_group: ClusterGroupTable;
-  cluster_group_request: ClusterGroupRequestTable;
 
   session: SessionTable;
   session_sync_checkpoint: SessionSyncCheckpointTable;
@@ -278,7 +236,6 @@ export interface DB {
   shared_link: SharedLinkTable;
   shared_link_asset: SharedLinkAssetTable;
 
-  smart_search: SmartSearchTable;
 
   stack: StackTable;
   stack_audit: StackAuditTable;

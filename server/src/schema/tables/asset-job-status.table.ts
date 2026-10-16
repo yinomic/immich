@@ -17,4 +17,8 @@ export class AssetJobStatusTable {
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   ocrAt!: Timestamp | null;
+
+  /** when the cloud embedding for this asset was last refreshed */
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  embeddedAt!: Timestamp | null;
 }

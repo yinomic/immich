@@ -18,8 +18,8 @@ import {
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import { PostgresJSDialect } from 'kysely-postgres-js';
 import { Notice, PostgresError } from 'postgres';
-import type { AudioStreamInfo, VectorExtension, VideoFormat, VideoPacketInfo, VideoStreamInfo } from 'src/types.js';
-import { LockableProperty, Person, columns, lockableProperties } from 'src/database.js';
+import type { AudioStreamInfo, VideoFormat, VideoPacketInfo, VideoStreamInfo } from 'src/types.js';
+import { LockableProperty, columns, lockableProperties } from 'src/database.js';
 import { DummyValue, GenerateSqlQueries } from 'src/decorators.js';
 import { AssetEditActionItem } from 'src/dtos/editing.dto.js';
 import {
@@ -204,23 +204,6 @@ export function withVideoPackets(eb: ExpressionBuilder<DB, 'asset' | 'asset_keyf
   ).$castTo<VideoPacketInfo | null>();
 }
 
-export function withSmartSearch<O>(qb: SelectQueryBuilder<DB, 'asset', O>) {
-  return qb
-    .leftJoin('smart_search', 'asset.id', 'smart_search.assetId')
-    .select((eb) => jsonObjectFrom(eb.table('smart_search')).as('smartSearch'));
-}
-
-export function withFaces(eb: ExpressionBuilder<DB, 'asset'>, withHidden?: boolean, withDeletedFace?: boolean) {
-  return jsonArrayFrom(
-    eb
-      .selectFrom('asset_face')
-      .selectAll('asset_face')
-      .whereRef('asset_face.assetId', '=', 'asset.id')
-      .$if(!withDeletedFace, (qb) => qb.where('asset_face.deletedAt', 'is', null))
-      .$if(!withHidden, (qb) => qb.where('asset_face.isVisible', '=', true)),
-  ).as('faces');
-}
-
 export function withFiles(eb: ExpressionBuilder<DB, 'asset'>, type?: AssetFileType) {
   return jsonArrayFrom(
     eb
@@ -238,53 +221,6 @@ export function withFilePath(eb: ExpressionBuilder<DB, 'asset'>, type: AssetFile
     .whereRef('asset_file.assetId', '=', 'asset.id')
     .where('asset_file.type', '=', sql.lit(type))
     .where('asset_file.isEdited', '=', sql.lit(isEdited));
-}
-
-export type WithFacesAndPeopleOptions = {
-  /** whose version of the person to select */
-  viewingUserId?: string;
-  withHidden?: boolean;
-  withDeletedFace?: boolean;
-};
-
-export function withFacesAndPeople({ viewingUserId, withHidden, withDeletedFace }: WithFacesAndPeopleOptions) {
-  return (eb: ExpressionBuilder<DB, 'asset'>) =>
-    jsonArrayFrom(
-      eb
-        .selectFrom('asset_face')
-        .leftJoinLateral(
-          (eb) =>
-            eb
-              .selectFrom('person')
-              .selectAll('person')
-              .whereRef('person.personGroupId', '=', 'asset_face.personGroupId')
-              .$if(!viewingUserId, (qb) => qb.whereRef('person.ownerId', '=', 'asset.ownerId'))
-              .$if(!!viewingUserId, (qb) => qb.where('person.ownerId', '=', viewingUserId!))
-              .as('person'),
-          (join) => join.onTrue(),
-        )
-        .selectAll('asset_face')
-        .select((eb) => eb.table('person').$castTo<ShallowDehydrateObject<Person>>().as('person'))
-        .whereRef('asset_face.assetId', '=', 'asset.id')
-        .$if(!withDeletedFace, (qb) => qb.where('asset_face.deletedAt', 'is', null))
-        .$if(!withHidden, (qb) => qb.where('asset_face.isVisible', 'is', true)),
-    ).as('faces');
-}
-
-export function hasPeople<O>(qb: SelectQueryBuilder<DB, 'asset', O>, personGroupIds: string[]) {
-  return qb.innerJoin(
-    (eb) =>
-      eb
-        .selectFrom('asset_face')
-        .select('assetId')
-        .where('personGroupId', '=', anyUuid(personGroupIds!))
-        .where('deletedAt', 'is', null)
-        .where('isVisible', 'is', true)
-        .groupBy('assetId')
-        .having((eb) => eb.fn.count('personGroupId').distinct(), '=', personGroupIds.length)
-        .as('has_people'),
-    (join) => join.onRef('has_people.assetId', '=', 'asset.id'),
-  );
 }
 
 export function inSharedAlbum(eb: ExpressionBuilder<DB, 'asset'>, userId: string) {
@@ -439,7 +375,6 @@ export function searchAssetBuilderLegacy(kysely: Kysely<DB>, options: AssetSearc
     .$if(options.tagIds === null, (qb) =>
       qb.where((eb) => eb.not(eb.exists((eb) => eb.selectFrom('tag_asset').whereRef('assetId', '=', 'asset.id')))),
     )
-    .$if(!!options.personIds && options.personIds.length > 0, (qb) => hasPeople(qb, options.personIds!))
     .$if(!!options.createdBefore, (qb) => qb.where('asset.createdAt', '<=', options.createdBefore!))
     .$if(!!options.createdAfter, (qb) => qb.where('asset.createdAt', '>=', options.createdAfter!))
     .$if(!!options.updatedBefore, (qb) => qb.where('asset.updatedAt', '<=', options.updatedBefore!))
@@ -539,9 +474,6 @@ export function searchAssetBuilderLegacy(kysely: Kysely<DB>, options: AssetSearc
     )
     .$if(options.withStacked === false, (qb) => qb.where('asset.stackId', 'is', null))
     .$if(!!options.withExif, withExifInner)
-    .$if(!!(options.withFaces || options.withPeople), (qb) =>
-      qb.select(withFacesAndPeople({ viewingUserId: options.viewingUserId! })),
-    )
     .$if(!options.withDeleted, (qb) => qb.where('asset.deletedAt', 'is', null));
 }
 
@@ -549,13 +481,6 @@ type AssetExpressionBuilder = ExpressionBuilder<DB, 'asset' | 'asset_exif'>;
 
 const albumAssets = (eb: AssetExpressionBuilder) =>
   eb.selectFrom('album_asset').whereRef('album_asset.assetId', '=', 'asset.id');
-
-const visibleFaces = (eb: AssetExpressionBuilder) =>
-  eb
-    .selectFrom('asset_face')
-    .whereRef('asset_face.assetId', '=', 'asset.id')
-    .where('asset_face.deletedAt', 'is', null)
-    .where('asset_face.isVisible', '=', true);
 
 const tagAssets = (eb: AssetExpressionBuilder) =>
   eb.selectFrom('tag_asset').whereRef('tag_asset.assetId', '=', 'asset.id');
@@ -594,20 +519,6 @@ function albumIdsPredicates(eb: AssetExpressionBuilder, filter?: IdsFilter) {
           .select('album_asset.assetId')
           .groupBy('album_asset.assetId')
           .having((eb) => eb.fn.count('album_asset.albumId').distinct(), '=', ids.length),
-      ),
-  });
-}
-
-function personIdsPredicates(eb: AssetExpressionBuilder, filter?: IdsFilter) {
-  const matching = (ids: string[]) => visibleFaces(eb).where('asset_face.personGroupId', '=', anyUuid(ids));
-  return idsPredicates(eb, filter, {
-    matchesAny: (ids) => eb.exists(matching(ids)),
-    matchesAll: (ids) =>
-      eb.exists(
-        matching(ids)
-          .select('asset_face.assetId')
-          .groupBy('asset_face.assetId')
-          .having((eb) => eb.fn.count('asset_face.personGroupId').distinct(), '=', ids.length),
       ),
   });
 }
@@ -745,7 +656,6 @@ function branchPredicates(eb: AssetExpressionBuilder, branch: SearchFilterBranch
     ...(branch.isMotion ? [eb('asset.livePhotoVideoId', branch.isMotion.eq ? 'is not' : 'is', null)] : []),
     ...existsPredicates(eb, branch.isEncoded, () => encodedVideoFiles(eb)),
     ...existsPredicates(eb, branch.hasAlbums, () => albumAssets(eb)),
-    ...existsPredicates(eb, branch.hasPeople, () => visibleFaces(eb)),
     ...existsPredicates(eb, branch.hasTags, () => tagAssets(eb)),
     ...comparisonPredicates(eb, 'asset_exif.city', branch.city),
     ...comparisonPredicates(eb, 'asset_exif.state', branch.state),
@@ -775,7 +685,6 @@ function branchPredicates(eb: AssetExpressionBuilder, branch: SearchFilterBranch
     ...comparisonPredicates(eb, 'asset.updatedAt', branch.updatedAt),
     ...comparisonPredicates(eb, 'asset.deletedAt', branch.trashedAt),
     ...albumIdsPredicates(eb, branch.albumIds),
-    ...personIdsPredicates(eb, branch.personIds),
     ...tagIdsPredicates(eb, branch.tagIds),
     ...checksumPredicates(eb, branch.checksum),
     ...(encodedVideoPath
@@ -813,9 +722,6 @@ export function searchAssetBuilder(kysely: Kysely<DB>, options: AssetSearchBuild
       .$if(scopeGlobally, (qb) => qb.where(ownershipPredicate))
       .where((eb) =>
         eb.or([eb('asset.visibility', '!=', AssetVisibility.Locked), eb('asset.ownerId', '=', scope.lockedOwnerId)]),
-      )
-      .$if(!!(options.withFaces || options.withPeople), (qb) =>
-        qb.select(withFacesAndPeople({ viewingUserId: scope.viewingUserId! })),
       )
       .$if(options.withStacked === false, (qb) => qb.where('asset.stackId', 'is', null))
       .where((eb) => {
@@ -1095,34 +1001,6 @@ export const searchStatisticsV3Examples: GenerateSqlQueries[] = [
   },
 ];
 
-export type ReindexVectorIndexOptions = { indexName: string; lists?: number };
-
-type VectorIndexQueryOptions = { table: string; vectorExtension: VectorExtension } & ReindexVectorIndexOptions;
-
-export function vectorIndexQuery({ vectorExtension, table, indexName, lists }: VectorIndexQueryOptions): string {
-  switch (vectorExtension) {
-    case DatabaseExtension.VectorChord: {
-      return `
-        CREATE INDEX IF NOT EXISTS ${indexName} ON ${table} USING vchordrq (embedding vector_cosine_ops) WITH (options = $$
-        residual_quantization = false
-        [build.internal]
-        lists = [${lists ?? 1}]
-        spherical_centroids = true
-        build_threads = 4
-        sampling_factor = 1024
-        $$)`;
-    }
-    case DatabaseExtension.Vector: {
-      return `
-        CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}
-        USING hnsw (embedding vector_cosine_ops)
-        WITH (ef_construction = 300, m = 16)`;
-    }
-    default: {
-      throw new Error(`Unsupported vector extension: '${vectorExtension}'`);
-    }
-  }
-}
 
 export const updateLockedColumns = <T extends Record<string, unknown> & { lockedProperties?: LockableProperty[] }>(
   exif: T,

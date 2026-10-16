@@ -822,8 +822,6 @@ export enum DvSignalCompatibility {
 export enum DatabaseExtension {
   Cube = 'cube',
   EarthDistance = 'earthdistance',
-  Vector = 'vector',
-  VectorChord = 'vchord',
 }
 
 export enum BootstrapEventPriority {
@@ -844,10 +842,7 @@ export enum QueueName {
   ThumbnailGeneration = 'thumbnailGeneration',
   MetadataExtraction = 'metadataExtraction',
   VideoConversion = 'videoConversion',
-  FaceDetection = 'faceDetection',
-  FacialRecognition = 'facialRecognition',
   SmartSearch = 'smartSearch',
-  DuplicateDetection = 'duplicateDetection',
   BackgroundTask = 'backgroundTask',
   StorageTemplateMigration = 'storageTemplateMigration',
   Migration = 'migration',
@@ -878,10 +873,6 @@ export const QueueJobStatusSchema = z.enum(QueueJobStatus).describe('Queue job s
 export enum JobName {
   AssetDelete = 'AssetDelete',
   AssetDeleteCheck = 'AssetDeleteCheck',
-  AssetDetectFacesQueueAll = 'AssetDetectFacesQueueAll',
-  AssetDetectFaces = 'AssetDetectFaces',
-  AssetDetectDuplicatesQueueAll = 'AssetDetectDuplicatesQueueAll',
-  AssetDetectDuplicates = 'AssetDetectDuplicates',
   AssetEditThumbnailGeneration = 'AssetEditThumbnailGeneration',
   AssetEncodeVideoQueueAll = 'AssetEncodeVideoQueueAll',
   AssetEncodeVideo = 'AssetEncodeVideo',
@@ -896,8 +887,6 @@ export enum JobName {
 
   DatabaseBackup = 'DatabaseBackup',
 
-  FacialRecognitionQueueAll = 'FacialRecognitionQueueAll',
-  FacialRecognition = 'FacialRecognition',
 
   FileDelete = 'FileDelete',
   FileMigrationQueueAll = 'FileMigrationQueueAll',
@@ -926,9 +915,6 @@ export enum JobName {
   UserDeleteCheck = 'UserDeleteCheck',
   UserSyncUsage = 'UserSyncUsage',
 
-  PersonCleanup = 'PersonCleanup',
-  PersonFileMigration = 'PersonFileMigration',
-  PersonGenerateThumbnail = 'PersonGenerateThumbnail',
 
   SessionCleanup = 'SessionCleanup',
 
@@ -995,11 +981,6 @@ export enum JobStatus {
 
 export enum QueueCleanType {
   Failed = 'failed',
-}
-
-export enum VectorIndex {
-  Clip = 'clip_index',
-  Face = 'face_index',
 }
 
 export enum DatabaseLock {

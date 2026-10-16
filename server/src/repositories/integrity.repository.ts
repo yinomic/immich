@@ -86,13 +86,6 @@ export class IntegrityRepository {
   }
 
   @GenerateSql({ params: [DummyValue.STRING] })
-  getPersonThumbnailPathsByPaths(paths: string[]) {
-    return this.db
-      .selectFrom('person')
-      .select('person.thumbnailPath')
-      .where('person.thumbnailPath', 'in', paths)
-      .execute();
-  }
 
   @GenerateSql({ params: [DummyValue.STRING] })
   getTrackedPaths(paths: string[]) {
@@ -102,12 +95,6 @@ export class IntegrityRepository {
       .where('asset.originalPath', 'in', paths)
       .union((eb) =>
         eb.selectFrom('asset_file').select('asset_file.path as path').where('asset_file.path', 'in', paths),
-      )
-      .union((eb) =>
-        eb
-          .selectFrom('person')
-          .select((eb) => eb.ref('person.thumbnailPath').$castTo<string>().as('path'))
-          .where('person.thumbnailPath', 'in', paths),
       )
       .execute();
   }

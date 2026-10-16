@@ -3,12 +3,10 @@ import type { AudioStreamInfo, VideoFormat, VideoStreamInfo } from 'src/types.js
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
 import { AssetEditActionItem } from 'src/dtos/editing.dto.js';
 import { AssetFileType } from 'src/enum.js';
-import { FaceSearchResult } from 'src/repositories/search.repository.js';
 import { ActivityTable } from 'src/schema/tables/activity.table.js';
 import { AssetTable } from 'src/schema/tables/asset.table.js';
 import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { AlbumFactory } from 'test/factories/album.factory.js';
-import { AssetFaceFactory } from 'test/factories/asset-face.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { MemoryFactory } from 'test/factories/memory.factory.js';
 import { SharedLinkFactory } from 'test/factories/shared-link.factory.js';
@@ -37,23 +35,6 @@ export const getForStorageTemplate = (asset: ReturnType<AssetFactory['build']>) 
     isEdited: asset.isEdited,
   };
 };
-
-export const getAsDetectedFace = (face: ReturnType<AssetFaceFactory['build']>) => ({
-  faces: [
-    {
-      boundingBox: {
-        x1: face.boundingBoxX1,
-        y1: face.boundingBoxY1,
-        x2: face.boundingBoxX2,
-        y2: face.boundingBoxY2,
-      },
-      embedding: '[1, 2, 3, 4]',
-      score: 0.2,
-    },
-  ],
-  imageHeight: face.imageHeight,
-  imageWidth: face.imageWidth,
-});
 
 export const getForFacialRecognitionJob = (
   face: ReturnType<AssetFaceFactory['build']>,

@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { LRUMap } from 'mnemonist';
 import { AssetMapOptions, AssetResponseDto, MapAsset, mapAsset } from 'src/dtos/asset-response.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
-import { PersonResponseDto, mapPerson } from 'src/dtos/person.dto.js';
 import {
   LargeAssetSearchDto,
   MetadataSearchDto,
@@ -56,10 +55,6 @@ const MAX_VECTOR_CANDIDATES = 1000;
 export class SearchService extends BaseService {
   private embeddingCache = new LRUMap<string, number[]>(100);
 
-  async searchPerson(auth: AuthDto, dto: SearchPeopleDto): Promise<PersonResponseDto[]> {
-    const people = await this.personRepository.getByName(auth.user.id, dto.name, { withHidden: dto.withHidden });
-    return people.map((person) => mapPerson(person));
-  }
 
   async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
     const places = await this.searchRepository.searchPlaces(dto.name);

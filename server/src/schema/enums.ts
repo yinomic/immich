@@ -1,5 +1,4 @@
 import { registerEnum } from '@immich/sql-tools';
-import { PersonUserRole } from 'src/dtos/person.dto.js';
 import { AlbumUserRole, AssetStatus, AssetVisibility, ChecksumAlgorithm, SourceType, VideoCodec } from 'src/enum.js';
 
 export const album_user_role_enum = registerEnum({
@@ -10,11 +9,6 @@ export const album_user_role_enum = registerEnum({
 export const assets_status_enum = registerEnum({
   name: 'assets_status_enum',
   values: Object.values(AssetStatus),
-});
-
-export const asset_face_source_type = registerEnum({
-  name: 'sourcetype',
-  values: Object.values(SourceType),
 });
 
 export const asset_visibility_enum = registerEnum({
@@ -32,7 +26,3 @@ export const video_stream_variant_codec_enum = registerEnum({
   values: [VideoCodec.Av1, VideoCodec.Hevc, VideoCodec.H264],
 });
 
-export const person_user_role_enum = registerEnum({
-  name: 'person_user_role_enum',
-  values: Object.values(PersonUserRole),
-});

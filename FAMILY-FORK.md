@@ -206,3 +206,29 @@
 - `search.service`：以图搜图在向量库无法回读向量时（VikingDB）自动回退为「读原图 → 云端重嵌入」
 - 新增 `viking-vector-store.spec.ts`（8 例，mock fetch：签名头、Bearer、排序、批次、错误码、del_all、无回读）
 - 验证：`tsc` 绿、eslint 绿、108 文件 / 2349 用例全绿
+
+### Round 4（删除人脸/人物/重复检测 + 彻底摆脱 pgvector，并跑通运行时冒烟）
+**已删除（服务端）**
+- 人脸/人物：`person/cluster-group/face` 服务、控制器、仓库、DTO、schema 表（7 张）、`person_*`/`asset_face_*` 函数、`asset.people` 字段、`personIds`/`withPeople`/`hasPeople` 查询、`user.clusterGroupId` 列与 `cluster_group*` 表、人物相关 Job/Queue/权限/事件/通知、CLI 与同步（mobile sync）里的人脸/人物入口（同步类型保留但返回 400）
+- 重复检测：`duplicate` 服务/控制器/仓库/DTO/工具与 Job/Queue（其检测完全依赖向量，属于 ML 特性）
+- 图片 embedding 改为**索引原图**，并用新列 `asset_job_status.embeddedAt` 记录"已向量化"，取代原先依赖 `smart_search` 表的判断
+
+**pgvector 彻底移除**
+- 删除 `smart_search` / `face_search` 表、`vector`/`vchord` 扩展、`db.vectorExtension`、`DB_VECTOR_EXTENSION`、`DatabaseExtension.Vector*`、`VectorIndex`、`reindexVectors/prewarm/getDimensionSize/setDimensionSize` 等全部向量索引机制
+- **删掉 100 个历史迁移，改为单个全新迁移** `1792173794520-FamilyAlbumInitialSchema.ts`（从当前代码 schema 生成，355 条语句）
+- 迁移可通过 sql-tools 在 **stock `postgres:16`**（无任何向量扩展）上执行成功，且 `migrations generate` 复跑显示 **No changes detected**（零漂移）
+- compose 里 5 处自定义 Postgres 镜像 → `postgres:16`（含 e2e）
+- 顺带修掉两个 schema 里的表达式索引定义（`asset_localDateTime_idx` / `asset_localDateTime_month_idx` 需要额外括号，否则 PostgreSQL 报语法错误）
+
+**运行时冒烟（已通过）**
+环境：stock `postgres:16`（5433）+ `redis:7-alpine`（6380）+ 本机运行的 server（`IMMICH_CLOUD_SEARCH_PROVIDER=mock`、`IMMICH_VECTOR_STORE_PATH=/tmp/immich-data/vectors.jsonl`、`IMMICH_MACHINE_LEARNING_ENABLED=false`、无 ML 容器）
+1. `GET /api/server/ping` → 200；`POST /api/auth/admin-sign-up` → 201（响应里已无 `clusterGroupId`）
+2. `POST /api/assets`（multipart：文件放在 `assetData` 字段）→ 201
+3. `GET /api/timeline/buckets?size=MONTH` → `[{"timeBucket":"2026-01-01","count":1}]`
+4. `PUT /api/jobs/smartSearch {force:true}` → mock 云端向量写入 `/tmp/immich-data/vectors.jsonl`（512 维），`asset_job_status.embeddedAt` 写入成功，**无报错**
+5. `POST /api/search/smart {"query":"宝宝在玩积木"}` → 命中 1 张；`{"queryAssetId":...}` → 命中 1 张（复用库内向量）
+
+**遗留（下一轮优先）**
+- 单测/测试夹具尚未跟上删除：`pnpm --filter immich check` 目前会报 spec 相关错误（源码 `src/` 单独 typecheck 通过）；需清理 `test/utils.ts`、`test/medium.factory.ts`、`test/mappers.ts`、`test/factories/*` 以及各 spec 里对应已删功能的用例
+- OCR 与 `machine-learning.repository.ts` 尚未删除（OCR 仍会调用 ML 仓库；下一轮与 schema 一起清掉，并再次重生成迁移）
+- 云存储（TOS/COS）、无缩略图、单账号/无分享仍是未开工的大块（P3/P4）

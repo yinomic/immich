@@ -1,7 +1,6 @@
 import { Selectable, ShallowDehydrateObject } from 'kysely';
 import type { UserMetadataItem } from 'src/types.js';
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
-import { PersonUserRole } from 'src/dtos/person.dto.js';
 import {
   AlbumUserRole,
   AssetFileType,
@@ -134,7 +133,6 @@ export type User = {
 };
 
 export type UserAdmin = User & {
-  clusterGroupId: string;
   storageLabel: string | null;
   shouldChangePassword: boolean;
   isAdmin: boolean;
@@ -240,44 +238,6 @@ export type Session = {
 };
 
 export type Exif = Omit<Selectable<AssetExifTable>, 'updatedAt' | 'updateId' | 'lockedProperties'>;
-
-export type Person = {
-  createdAt: Date;
-  personGroupId: string;
-  ownerId: string;
-  updatedAt: Date;
-  updateId: string;
-  isFavorite: boolean;
-  name: string;
-  birthDate: Date | null;
-  color: string | null;
-  faceAssetId: string | null;
-  isHidden: boolean;
-  thumbnailPath: string;
-  otherPeople: { sharedById: string; name: string; birthDate: string | null; role: PersonUserRole }[];
-  sharedBy: PersonUser[];
-  sharedWith: PersonUser[];
-};
-
-export type PersonUser = User & { role: PersonUserRole };
-
-export type AssetFace = {
-  id: string;
-  deletedAt: Date | null;
-  assetId: string;
-  boundingBoxX1: number;
-  boundingBoxX2: number;
-  boundingBoxY1: number;
-  boundingBoxY2: number;
-  imageHeight: number;
-  imageWidth: number;
-  personGroupId: string | null;
-  sourceType: SourceType;
-  person?: ShallowDehydrateObject<Person> | null;
-  updatedAt: Date;
-  updateId: string;
-  isVisible: boolean;
-};
 
 export type Plugin = Selectable<PluginTable>;
 
@@ -391,7 +351,6 @@ export const columns = {
   ],
   userAdmin: [
     ...userColumns,
-    'clusterGroupId',
     'createdAt',
     'updatedAt',
     'deletedAt',
@@ -485,20 +444,6 @@ export const columns = {
   syncStack: ['stack.id', 'stack.createdAt', 'stack.updatedAt', 'stack.primaryAssetId', 'stack.ownerId'],
   syncUser: ['id', 'name', 'email', 'avatarColor', 'deletedAt', 'updateId', 'profileImagePath', 'profileChangedAt'],
   stack: ['stack.id', 'stack.primaryAssetId', 'ownerId'],
-  syncAssetFace: [
-    'asset_face.id',
-    'asset_face.assetId',
-    'asset_face.personGroupId as personId',
-    'asset_face.imageWidth',
-    'asset_face.imageHeight',
-    'asset_face.boundingBoxX1',
-    'asset_face.boundingBoxY1',
-    'asset_face.boundingBoxX2',
-    'asset_face.boundingBoxY2',
-    'asset_face.sourceType',
-    'asset_face.isVisible',
-    'asset_face.deletedAt',
-  ],
   syncAssetExif: [
     'asset_exif.assetId',
     'asset_exif.description',

@@ -8,19 +8,14 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { diff } from 'semver';
 import z from 'zod';
-import type { ExtensionVersion, VectorExtension } from 'src/types.js';
+import type { ExtensionVersion } from 'src/types.js';
 import {
   EXTENSION_NAMES,
   POSTGRES_VERSION_RANGE,
-  VECTORCHORD_LIST_SLACK_FACTOR,
-  VECTORCHORD_VERSION_RANGE,
-  VECTOR_EXTENSIONS,
-  VECTOR_INDEX_TABLES,
-  VECTOR_VERSION_RANGE,
   serverVersion,
 } from 'src/constants.js';
 import { GenerateSql } from 'src/decorators.js';
-import { DatabaseExtension, DatabaseLock, VectorIndex } from 'src/enum.js';
+import { DatabaseExtension, DatabaseLock } from 'src/enum.js';
 import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { immich_uuid_v7 } from 'src/schema/functions.js';
@@ -28,33 +23,6 @@ import { immich_uuid_v7 } from 'src/schema/functions.js';
 import 'src/schema/index.js'; // make sure all schema definitions are imported for schemaFromCode
 // eslint-disable-next-line import-x/no-duplicates
 import { DB } from 'src/schema/index.js';
-import { vectorIndexQuery } from 'src/utils/database.js';
-
-export let cachedVectorExtension: VectorExtension | undefined;
-export async function getVectorExtension(runner: Kysely<DB>): Promise<VectorExtension> {
-  if (cachedVectorExtension) {
-    return cachedVectorExtension;
-  }
-
-  cachedVectorExtension = new ConfigRepository().getEnv().database.vectorExtension;
-  if (cachedVectorExtension) {
-    return cachedVectorExtension;
-  }
-
-  const query = `SELECT name FROM pg_available_extensions WHERE name IN (${VECTOR_EXTENSIONS.map((ext) => `'${ext}'`).join(', ')})`;
-  const { rows: availableExtensions } = await sql.raw<{ name: VectorExtension }>(query).execute(runner);
-  const extensionNames = new Set(availableExtensions.map((row) => row.name));
-  cachedVectorExtension = VECTOR_EXTENSIONS.find((ext) => extensionNames.has(ext));
-  if (!cachedVectorExtension) {
-    throw new Error(`No vector extension found. Available extensions: ${VECTOR_EXTENSIONS.join(', ')}`);
-  }
-  return cachedVectorExtension;
-}
-
-export const probes: Record<VectorIndex, number> = {
-  [VectorIndex.Clip]: 1,
-  [VectorIndex.Face]: 1,
-};
 
 @Injectable()
 export class DatabaseRepository {
@@ -72,11 +40,7 @@ export class DatabaseRepository {
     await this.db.destroy();
   }
 
-  getVectorExtension(): Promise<VectorExtension> {
-    return getVectorExtension(this.db);
-  }
-
-  @GenerateSql({ params: [[DatabaseExtension.Vector]] })
+  @GenerateSql({ params: [[DatabaseExtension.Cube]] })
   async getExtensionVersions(extensions: readonly DatabaseExtension[]): Promise<ExtensionVersion[]> {
     const { rows } = await sql<ExtensionVersion>`
       SELECT name, default_version as "availableVersion", installed_version as "installedVersion"
@@ -84,20 +48,6 @@ export class DatabaseRepository {
       WHERE name in (${sql.join(extensions)})
     `.execute(this.db);
     return rows;
-  }
-
-  getExtensionVersionRange(extension: VectorExtension): string {
-    switch (extension) {
-      case DatabaseExtension.VectorChord: {
-        return VECTORCHORD_VERSION_RANGE;
-      }
-      case DatabaseExtension.Vector: {
-        return VECTOR_VERSION_RANGE;
-      }
-      default: {
-        throw new Error(`Unsupported vector extension: '${extension}'`);
-      }
-    }
   }
 
   @GenerateSql()
@@ -113,140 +63,11 @@ export class DatabaseRepository {
   async createExtension(extension: DatabaseExtension): Promise<void> {
     this.logger.log(`Creating ${EXTENSION_NAMES[extension]} extension`);
     await sql`CREATE EXTENSION IF NOT EXISTS ${sql.raw(extension)} CASCADE`.execute(this.db);
-    if (extension !== DatabaseExtension.VectorChord) {
-      return;
-    }
-
-    const dbName = sql.id(await this.getDatabaseName());
-    await sql`ALTER DATABASE ${dbName} SET vchordrq.probes = 1`.execute(this.db);
-    await sql`SET vchordrq.probes = 1`.execute(this.db);
   }
 
   async dropExtension(extension: DatabaseExtension): Promise<void> {
     this.logger.log(`Dropping ${EXTENSION_NAMES[extension]} extension`);
     await sql`DROP EXTENSION IF EXISTS ${sql.raw(extension)}`.execute(this.db);
-  }
-
-  async updateVectorExtension(extension: VectorExtension, targetVersion?: string): Promise<void> {
-    const [{ availableVersion, installedVersion }] = await this.getExtensionVersions([extension]);
-    if (!installedVersion) {
-      throw new Error(`${EXTENSION_NAMES[extension]} extension is not installed`);
-    }
-
-    if (!availableVersion) {
-      throw new Error(`No available version for ${EXTENSION_NAMES[extension]} extension`);
-    }
-    targetVersion ??= availableVersion;
-
-    if (!diff(installedVersion, targetVersion)) {
-      return;
-    }
-
-    await Promise.all([
-      this.db.schema.dropIndex(VectorIndex.Clip).ifExists().execute(),
-      this.db.schema.dropIndex(VectorIndex.Face).ifExists().execute(),
-    ]);
-
-    await sql`ALTER EXTENSION ${sql.raw(extension)} UPDATE TO ${sql.lit(targetVersion)}`.execute(this.db);
-    await Promise.all([this.reindexVectors(VectorIndex.Clip), this.reindexVectors(VectorIndex.Face)]);
-  }
-
-  async prewarm(index: VectorIndex): Promise<void> {
-    const vectorExtension = await getVectorExtension(this.db);
-    if (vectorExtension !== DatabaseExtension.VectorChord) {
-      return;
-    }
-    this.logger.debug(`Prewarming ${index}`);
-    await sql`SELECT vchordrq_prewarm(${index})`.execute(this.db);
-  }
-
-  async reindexVectorsIfNeeded(names: VectorIndex[]): Promise<void> {
-    const { rows } = await sql<{
-      indexdef: string;
-      indexname: string;
-    }>`SELECT indexdef, indexname FROM pg_indexes WHERE indexname = ANY(ARRAY[${sql.join(names)}])`.execute(this.db);
-
-    const vectorExtension = await getVectorExtension(this.db);
-
-    const promises = [];
-    for (const indexName of names) {
-      const row = rows.find((index) => index.indexname === indexName);
-      const table = VECTOR_INDEX_TABLES[indexName];
-      if (!row) {
-        promises.push(this.reindexVectors(indexName));
-        continue;
-      }
-
-      switch (vectorExtension) {
-        case DatabaseExtension.Vector: {
-          if (!row.indexdef.toLowerCase().includes('using hnsw')) {
-            promises.push(this.reindexVectors(indexName));
-          }
-          break;
-        }
-        case DatabaseExtension.VectorChord: {
-          const matches = row.indexdef.match(/(?<=lists = \[)\d+/g);
-          const lists = matches && matches.length > 0 ? Number(matches[0]) : 1;
-          promises.push(
-            this.getRowCount(table).then((count) => {
-              const targetLists = this.targetListCount(count);
-              this.logger.log(`targetLists=${targetLists}, current=${lists} for ${indexName} of ${count} rows`);
-              if (
-                !row.indexdef.toLowerCase().includes('using vchordrq') ||
-                // slack factor is to avoid frequent reindexing if the count is borderline
-                (lists !== targetLists && lists !== this.targetListCount(count * VECTORCHORD_LIST_SLACK_FACTOR))
-              ) {
-                probes[indexName] = this.targetProbeCount(targetLists);
-                return this.reindexVectors(indexName, { lists: targetLists });
-              }
-              probes[indexName] = this.targetProbeCount(lists);
-            }),
-          );
-          break;
-        }
-      }
-    }
-
-    if (promises.length > 0) {
-      await Promise.all(promises);
-    }
-  }
-
-  private async reindexVectors(indexName: VectorIndex, { lists }: { lists?: number } = {}): Promise<void> {
-    this.logger.log(`Reindexing ${indexName} (This may take a while, do not restart)`);
-    const table = VECTOR_INDEX_TABLES[indexName];
-    const vectorExtension = await getVectorExtension(this.db);
-
-    const { rows } = await sql<{
-      columnName: string;
-    }>`SELECT column_name as "columnName" FROM information_schema.columns WHERE table_name = ${table}`.execute(this.db);
-    if (rows.length === 0) {
-      this.logger.warn(
-        `Table ${table} does not exist, skipping reindexing. This is only normal if this is a new Immich instance.`,
-      );
-      return;
-    }
-    const dimSize = await this.getDimensionSize(table);
-    lists ||= this.targetListCount(await this.getRowCount(table));
-    await this.db.transaction().execute(async (tx) => {
-      await sql`DROP INDEX IF EXISTS ${sql.raw(indexName)}`.execute(tx);
-      if (table === 'smart_search') {
-        await sql`ALTER TABLE ${sql.raw(table)} DROP CONSTRAINT IF EXISTS dim_size_constraint`.execute(tx);
-      }
-      if (rows.every((row) => row.columnName !== 'embedding')) {
-        this.logger.warn(`Column 'embedding' does not exist in table '${table}', truncating and adding column.`);
-        await sql`TRUNCATE TABLE ${sql.raw(table)}`.execute(tx);
-        await sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN embedding real[] NOT NULL`.execute(tx);
-      }
-      await sql`ALTER TABLE ${sql.raw(table)} ALTER COLUMN embedding SET DATA TYPE real[]`.execute(tx);
-      await sql`
-        ALTER TABLE ${sql.raw(table)}
-        ALTER COLUMN embedding
-        SET DATA TYPE vector(${sql.raw(String(dimSize))})`.execute(tx);
-      await sql.raw(vectorIndexQuery({ vectorExtension, table, indexName, lists })).execute(tx);
-    });
-    this.logger.log(`Reindexed ${indexName}`);
-    void this.vacuum({ table }).catch((error) => this.logger.warn(`Failed to vacuum ${table}: ${error}`));
   }
 
   async vacuum({ analyze = false, table }: { analyze?: boolean; table?: keyof DB } = {}): Promise<void> {
@@ -292,92 +113,6 @@ export class DatabaseRepository {
     });
 
     return drift;
-  }
-
-  async getDimensionSize(table: string, column = 'embedding'): Promise<number> {
-    const { rows } = await sql<{ dimsize: number }>`
-      SELECT atttypmod as dimsize
-      FROM pg_attribute f
-        JOIN pg_class c ON c.oid = f.attrelid
-      WHERE c.relkind = 'r'::char
-        AND f.attnum > 0
-        AND c.relname = ${table}::text
-        AND f.attname = ${column}::text
-    `.execute(this.db);
-
-    const dimSize = rows[0]?.dimsize;
-    if (
-      !z
-        .int()
-        .min(1)
-        .max(2 ** 16)
-        .safeParse(dimSize).success
-    ) {
-      this.logger.warn(`Could not retrieve dimension size of column '${column}' in table '${table}', assuming 512`);
-      return 512;
-    }
-    return dimSize;
-  }
-
-  async setDimensionSize(dimSize: number): Promise<void> {
-    if (
-      !z
-        .int()
-        .min(1)
-        .max(2 ** 16)
-        .safeParse(dimSize).success
-    ) {
-      throw new Error(`Invalid CLIP dimension size: ${dimSize}`);
-    }
-
-    // this is done in two transactions to handle concurrent writes
-    await this.db.transaction().execute(async (trx) => {
-      await sql`delete from ${sql.table('smart_search')}`.execute(trx);
-      await trx.schema.alterTable('smart_search').dropConstraint('dim_size_constraint').ifExists().execute();
-      await sql`alter table ${sql.table('smart_search')} add constraint dim_size_constraint check (array_length(embedding::real[], 1) = ${sql.lit(dimSize)})`.execute(
-        trx,
-      );
-    });
-
-    const vectorExtension = await this.getVectorExtension();
-    await this.db.transaction().execute(async (trx) => {
-      await sql`drop index if exists clip_index`.execute(trx);
-      await trx.schema
-        .alterTable('smart_search')
-        .alterColumn('embedding', (col) => col.setDataType(sql.raw(`vector(${dimSize})`)))
-        .execute();
-      await sql
-        .raw(vectorIndexQuery({ vectorExtension, table: 'smart_search', indexName: VectorIndex.Clip }))
-        .execute(trx);
-      await trx.schema.alterTable('smart_search').dropConstraint('dim_size_constraint').ifExists().execute();
-    });
-    probes[VectorIndex.Clip] = 1;
-
-    await sql`vacuum analyze ${sql.table('smart_search')}`.execute(this.db);
-  }
-
-  async deleteAllSearchEmbeddings(): Promise<void> {
-    await sql`truncate ${sql.table('smart_search')}`.execute(this.db);
-  }
-
-  private targetListCount(count: number) {
-    if (count < 128_000) {
-      return 1;
-    }
-
-    return count < 2_048_000 ? 1 << (32 - Math.clz32(count / 1000)) : 1 << (33 - Math.clz32(Math.sqrt(count)));
-  }
-
-  private targetProbeCount(lists: number) {
-    return Math.ceil(lists / 8);
-  }
-
-  private async getRowCount(table: keyof DB): Promise<number> {
-    const { count } = await this.db
-      .selectFrom(this.db.dynamic.table(table).as('t'))
-      .select((eb) => eb.fn.countAll<number>().as('count'))
-      .executeTakeFirstOrThrow();
-    return count;
   }
 
   async runMigrations(): Promise<number> {
@@ -441,11 +176,6 @@ export class DatabaseRepository {
       await tx
         .updateTable('asset_file')
         .set((eb) => ({ path: eb.fn('REGEXP_REPLACE', ['path', source, target]) }))
-        .execute();
-
-      await tx
-        .updateTable('person')
-        .set((eb) => ({ thumbnailPath: eb.fn('REGEXP_REPLACE', ['thumbnailPath', source, target]) }))
         .execute();
 
       await tx

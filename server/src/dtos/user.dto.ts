@@ -117,10 +117,6 @@ const UserAdminDeleteSchema = z
 export class UserAdminDeleteDto extends createZodDto(UserAdminDeleteSchema) {}
 
 const UserAdminResponseSchema = UserResponseSchema.extend({
-  clusterGroupId: z
-    .uuidv4()
-    .describe('Cluster group the user is a member of')
-    .meta(new HistoryBuilder().added('v3.2.0').getExtensions()),
   storageLabel: z.string().nullable().describe('Storage label'),
   shouldChangePassword: z.boolean().describe('Require password change on next login'),
   isAdmin: z.boolean().describe('Is admin user'),
@@ -144,7 +140,6 @@ export function mapUserAdmin(entity: UserAdmin): UserAdminResponseDto {
 
   return {
     ...mapUser(entity),
-    clusterGroupId: entity.clusterGroupId,
     storageLabel: entity.storageLabel,
     shouldChangePassword: entity.shouldChangePassword,
     isAdmin: entity.isAdmin,

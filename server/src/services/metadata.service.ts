@@ -27,13 +27,12 @@ import {
 import { ReverseGeocodeResult } from 'src/repositories/map.repository.js';
 import { ImmichTags } from 'src/repositories/metadata.repository.js';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table.js';
-import { AssetFaceTable } from 'src/schema/tables/asset-face.table.js';
 import { BaseService } from 'src/services/base.service.js';
 import { getAssetFiles } from 'src/utils/asset.util.js';
 import { isAssetChecksumConstraint } from 'src/utils/database.js';
 import { mergeTimeZone } from 'src/utils/date.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
-import { batched, isFaceImportEnabled } from 'src/utils/misc.js';
+import { batched } from 'src/utils/misc.js';
 import { upsertTags } from 'src/utils/tag.js';
 import { Tasks } from 'src/utils/tasks.js';
 
@@ -127,7 +126,6 @@ const getLensModel = (exifTags: ImmichTags): string | null => {
   return lensModel || null;
 };
 
-type ImmichTagsWithFaces = ImmichTags & { RegionInfo: NonNullable<ImmichTags['RegionInfo']> };
 
 type Dates = {
   dateTimeOriginal: Date;
@@ -396,10 +394,6 @@ export class MetadataService extends BaseService {
 
     if (this.isMotionPhoto(asset, exifTags)) {
       tasks.push(() => this.applyMotionPhotos(asset, exifTags, dates, stats));
-    }
-
-    if (isFaceImportEnabled(metadata) && this.hasTaggedFaces(exifTags)) {
-      tasks.push(() => this.applyTaggedFaces(asset, exifTags));
     }
 
     await tasks.all();
@@ -817,16 +811,11 @@ export class MetadataService extends BaseService {
     }
   }
 
-  private hasTaggedFaces(tags: ImmichTags): tags is ImmichTagsWithFaces {
-    return (
-      tags.RegionInfo !== undefined && tags.RegionInfo.AppliedToDimensions && tags.RegionInfo.RegionList.length > 0
-    );
-  }
 
   private orientRegionInfo(
-    regionInfo: ImmichTagsWithFaces['RegionInfo'],
+    regionInfo: NonNullable<ImmichTags['RegionInfo']>,
     orientation: ExifOrientation | undefined,
-  ): ImmichTagsWithFaces['RegionInfo'] {
+  ): NonNullable<ImmichTags['RegionInfo']> {
     // skip default Orientation
     if (orientation === undefined || orientation === ExifOrientation.Horizontal) {
       return regionInfo;
@@ -899,107 +888,6 @@ export class MetadataService extends BaseService {
     };
   }
 
-  private async applyTaggedFaces(
-    asset: {
-      id: string;
-      ownerId: string;
-      clusterGroupId: string;
-      faces: { id: string; sourceType: SourceType }[];
-      originalPath: string;
-    },
-    tags: ImmichTags,
-  ) {
-    if (!tags.RegionInfo?.AppliedToDimensions || tags.RegionInfo.RegionList.length === 0) {
-      return;
-    }
-
-    const facesToAdd: (Insertable<AssetFaceTable> & { assetId: string })[] = [];
-    const existingNames = await this.personRepository.getDistinctNames(asset.ownerId, { withHidden: true });
-    const existingNameMap = new Map(
-      existingNames.map(({ personGroupId, name }) => [name.toLowerCase(), personGroupId]),
-    );
-    const missing: { name: string; ownerId: string; personGroupId: string; clusterGroupId: string }[] = [];
-    const missingWithFaceAsset: { personGroupId: string; ownerId: string; faceAssetId: string }[] = [];
-
-    const adjustedRegionInfo = this.orientRegionInfo(tags.RegionInfo, tags.Orientation);
-    const imageWidth = adjustedRegionInfo.AppliedToDimensions.W;
-    const imageHeight = adjustedRegionInfo.AppliedToDimensions.H;
-
-    for (const region of adjustedRegionInfo.RegionList) {
-      if (!region.Name) {
-        continue;
-      }
-
-      const loweredName = region.Name.toLowerCase();
-      const personGroupId = existingNameMap.get(loweredName) || this.cryptoRepository.randomUUID();
-
-      const X = Number(region.Area.X);
-      const Y = Number(region.Area.Y);
-      const W = Number(region.Area.W);
-      const H = Number(region.Area.H);
-
-      const face = {
-        id: this.cryptoRepository.randomUUID(),
-        personGroupId,
-        assetId: asset.id,
-        imageWidth,
-        imageHeight,
-        boundingBoxX1: Math.floor((X - W / 2) * imageWidth),
-        boundingBoxY1: Math.floor((Y - H / 2) * imageHeight),
-        boundingBoxX2: Math.floor((X + W / 2) * imageWidth),
-        boundingBoxY2: Math.floor((Y + H / 2) * imageHeight),
-        sourceType: SourceType.Exif,
-      };
-
-      facesToAdd.push(face);
-      if (existingNameMap.has(loweredName)) {
-        continue;
-      }
-
-      missing.push({
-        personGroupId,
-        ownerId: asset.ownerId,
-        clusterGroupId: asset.clusterGroupId,
-        name: region.Name,
-      });
-      missingWithFaceAsset.push({ personGroupId, ownerId: asset.ownerId, faceAssetId: face.id });
-    }
-
-    if (missing.length > 0) {
-      this.logger.debugFn(() => `Creating missing persons: ${missing.map((p) => `${p.name}/${p.personGroupId}`)}`);
-      await this.personRepository.createGroups(
-        missing.map((item) => ({ id: item.personGroupId, clusterGroupId: asset.clusterGroupId })),
-      );
-      await this.personRepository.createAll(
-        missing.map(({ name, ownerId, personGroupId }) => ({ name, ownerId, personGroupId })),
-      );
-
-      const jobs = missing.map(
-        ({ personGroupId, ownerId }) =>
-          ({ name: JobName.PersonGenerateThumbnail, data: { personGroupId, ownerId } }) as const,
-      );
-      await this.jobRepository.queueAll(jobs);
-    }
-
-    const facesToRemove = asset.faces.filter((face) => face.sourceType === SourceType.Exif).map((face) => face.id);
-    if (facesToRemove.length > 0) {
-      this.logger.debug(`Removing ${facesToRemove.length} faces for asset ${asset.id}: ${asset.originalPath}`);
-    }
-
-    if (facesToAdd.length > 0) {
-      this.logger.debug(
-        `Creating ${facesToAdd.length} faces from metadata for asset ${asset.id}: ${asset.originalPath}`,
-      );
-    }
-
-    if (facesToRemove.length > 0 || facesToAdd.length > 0) {
-      await this.personRepository.refreshFaces(facesToAdd, facesToRemove);
-    }
-
-    if (missingWithFaceAsset.length > 0) {
-      await this.personRepository.updateAll(missingWithFaceAsset);
-    }
-  }
 
   private getDates(
     asset: { id: string; originalPath: string; fileCreatedAt: Date },

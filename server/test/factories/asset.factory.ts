@@ -4,14 +4,12 @@ import { AssetTable } from 'src/schema/tables/asset.table.js';
 import { StackTable } from 'src/schema/tables/stack.table.js';
 import { AssetEditFactory } from 'test/factories/asset-edit.factory.js';
 import { AssetExifFactory } from 'test/factories/asset-exif.factory.js';
-import { AssetFaceFactory } from 'test/factories/asset-face.factory.js';
 import { AssetFileFactory } from 'test/factories/asset-file.factory.js';
 import { build } from 'test/factories/builder.factory.js';
 import { StackFactory } from 'test/factories/stack.factory.js';
 import {
   AssetEditLike,
   AssetExifLike,
-  AssetFaceLike,
   AssetFileLike,
   AssetLike,
   FactoryBuilder,
@@ -26,7 +24,6 @@ export class AssetFactory {
   #assetExif?: AssetExifFactory;
   #files: AssetFileFactory[] = [];
   #edits: AssetEditFactory[] = [];
-  #faces: AssetFaceFactory[] = [];
   #stack?: Selectable<StackTable> & { assets: Selectable<AssetTable>[]; primaryAsset: Selectable<AssetTable> };
 
   private constructor(private readonly value: Selectable<AssetTable>) {
@@ -95,11 +92,6 @@ export class AssetFactory {
     return this;
   }
 
-  face(dto: AssetFaceLike = {}, builder?: FactoryBuilder<AssetFaceFactory>) {
-    this.#faces.push(build(AssetFaceFactory.from({ assetId: this.value?.id, ...dto }), builder));
-    return this;
-  }
-
   file(dto: AssetFileLike = {}, builder?: FactoryBuilder<AssetFileFactory>) {
     this.#files.push(build(AssetFileFactory.from(dto).asset(this.value), builder));
     return this;
@@ -144,7 +136,6 @@ export class AssetFactory {
       exifInfo: exif as NonNullable<typeof exif>,
       files: this.#files.map((file) => file.build()),
       edits: this.#edits.map((edit) => edit.build()),
-      faces: this.#faces.map((face) => face.build()),
       stack: this.#stack ?? null,
       tags: [],
     };

@@ -236,19 +236,6 @@ export class NotificationService extends BaseService {
     await this.jobRepository.queue({ name: JobName.NotifyAlbumInvite, data: { id, recipientId: userId, senderName } });
   }
 
-  @OnEvent({ name: 'ClusterGroupRequest' })
-  async onClusterGroupRequest({ clusterGroupId, userId, senderName }: ArgOf<'ClusterGroupRequest'>) {
-    const item = await this.notificationRepository.create({
-      userId,
-      type: NotificationType.ClusterGroupRequest,
-      level: NotificationLevel.Info,
-      title: 'Cluster Group Request',
-      description: `${senderName} asked you to join their cluster group`,
-      data: JSON.stringify({ clusterGroupId }),
-    });
-
-    this.websocketRepository.clientSend('on_notification', userId, mapNotification(item));
-  }
 
   @OnEvent({ name: 'SessionDelete' })
   onSessionDelete({ sessionId }: ArgOf<'SessionDelete'>) {

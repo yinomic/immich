@@ -55,7 +55,6 @@ export class SyncRepository {
   asset: AssetSync;
   assetExif: AssetExifSync;
   assetEdit: AssetEditSync;
-  assetFace: AssetFaceSync;
   assetMetadata: AssetMetadataSync;
   assetOcr: AssetOcrSync;
   authUser: AuthUserSync;
@@ -65,8 +64,6 @@ export class SyncRepository {
   partnerAsset: PartnerAssetsSync;
   partnerAssetExif: PartnerAssetExifsSync;
   partnerStack: PartnerStackSync;
-  person: PersonSync;
-  personGroup: PersonGroupSync;
   stack: StackSync;
   user: UserSync;
   userMetadata: UserMetadataSync;
@@ -80,7 +77,6 @@ export class SyncRepository {
     this.asset = new AssetSync(this.db);
     this.assetExif = new AssetExifSync(this.db);
     this.assetEdit = new AssetEditSync(this.db);
-    this.assetFace = new AssetFaceSync(this.db);
     this.assetMetadata = new AssetMetadataSync(this.db);
     this.assetOcr = new AssetOcrSync(this.db);
     this.authUser = new AuthUserSync(this.db);
@@ -90,8 +86,6 @@ export class SyncRepository {
     this.partnerAsset = new PartnerAssetsSync(this.db);
     this.partnerAssetExif = new PartnerAssetExifsSync(this.db);
     this.partnerStack = new PartnerStackSync(this.db);
-    this.person = new PersonSync(this.db);
-    this.personGroup = new PersonGroupSync(this.db);
     this.stack = new StackSync(this.db);
     this.user = new UserSync(this.db);
     this.userMetadata = new UserMetadataSync(this.db);
@@ -417,98 +411,6 @@ class AuthUserSync extends BaseSync {
       .select(columns.syncUser)
       .select(['isAdmin', 'pinCode', 'oauthId', 'storageLabel', 'quotaSizeInBytes', 'quotaUsageInBytes'])
       .where('id', '=', options.userId)
-      .stream();
-  }
-}
-
-class PersonSync extends BaseSync {
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletes(options: SyncQueryOptions) {
-    return this.auditQuery('person_audit', options)
-      .select(['id', 'personGroupId as personId'])
-      .where('ownerId', '=', options.userId)
-      .stream();
-  }
-
-  cleanupAuditTable(daysAgo: number) {
-    return this.auditCleanup('person_audit', daysAgo);
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpserts(options: SyncQueryOptions) {
-    return this.upsertQuery('person', options)
-      .select([
-        'personGroupId as id',
-        'createdAt',
-        'updatedAt',
-        'ownerId',
-        'name',
-        'birthDate',
-        'isHidden',
-        'isFavorite',
-        'color',
-        'updateId',
-        'faceAssetId',
-      ])
-      .where('ownerId', '=', options.userId)
-      .stream();
-  }
-}
-
-class PersonGroupSync extends BaseSync {
-  cleanupAuditTable(daysAgo: number) {
-    return this.auditCleanup('person_group_audit', daysAgo);
-  }
-}
-
-class AssetFaceSync extends BaseSync {
-  // TODO(v5) drop when AssetFacesV2 is removed
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletesV2(options: SyncQueryOptions) {
-    return this.auditQuery('asset_face_audit', options)
-      .select(['asset_face_audit.id', 'assetFaceId'])
-      .leftJoin('asset', 'asset.id', 'asset_face_audit.assetId')
-      .where('asset.ownerId', '=', options.userId)
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletesV3(options: SyncQueryOptions) {
-    return this.auditQuery('asset_face_audit', options)
-      .select(['asset_face_audit.id', 'assetFaceId'])
-      .innerJoin('asset', 'asset.id', 'asset_face_audit.assetId')
-      .innerJoin('user as owner', 'owner.id', 'asset.ownerId')
-      .where('owner.clusterGroupId', '=', ({ selectFrom }) =>
-        selectFrom('user').select('user.clusterGroupId').where('user.id', '=', options.userId),
-      )
-      .stream();
-  }
-
-  cleanupAuditTable(daysAgo: number) {
-    return this.auditCleanup('asset_face_audit', daysAgo);
-  }
-
-  // TODO(v5) drop when AssetFacesV2 is removed
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpsertsV2(options: SyncQueryOptions) {
-    return this.upsertQuery('asset_face', options)
-      .select(columns.syncAssetFace)
-      .select('asset_face.updateId')
-      .leftJoin('asset', 'asset.id', 'asset_face.assetId')
-      .where('asset.ownerId', '=', options.userId)
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpsertsV3(options: SyncQueryOptions) {
-    return this.upsertQuery('asset_face', options)
-      .select(columns.syncAssetFace)
-      .select('asset_face.updateId')
-      .innerJoin('asset', 'asset.id', 'asset_face.assetId')
-      .innerJoin('user as owner', 'owner.id', 'asset.ownerId')
-      .where('owner.clusterGroupId', '=', ({ selectFrom }) =>
-        selectFrom('user').select('user.clusterGroupId').where('user.id', '=', options.userId),
-      )
       .stream();
   }
 }

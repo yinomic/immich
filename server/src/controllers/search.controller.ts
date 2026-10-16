@@ -3,7 +3,6 @@ import { ApiTags } from '@nestjs/swagger';
 import type { AuthDto } from 'src/dtos/auth.dto.js';
 import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import { AssetResponseDto } from 'src/dtos/asset-response.dto.js';
-import { PersonResponseDto } from 'src/dtos/person.dto.js';
 import {
   LargeAssetSearchDto,
   MetadataSearchDto,
@@ -100,17 +99,6 @@ export class SearchController {
   })
   getExploreData(@Auth() auth: AuthDto): Promise<SearchExploreResponseDto[]> {
     return this.service.getExploreData(auth);
-  }
-
-  @Get('person')
-  @Authenticated({ permission: Permission.PersonRead })
-  @Endpoint({
-    summary: 'Search people',
-    description: 'Search for people by name.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  searchPerson(@Auth() auth: AuthDto, @Query() dto: SearchPeopleDto): Promise<PersonResponseDto[]> {
-    return this.service.searchPerson(auth, dto);
   }
 
   @Get('places')

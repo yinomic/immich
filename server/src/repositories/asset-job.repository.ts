@@ -14,7 +14,6 @@ import {
   withEdits,
   withExif,
   withExifInner,
-  withFaces,
   withFilePath,
   withFiles,
   withVideoFormat,
@@ -31,8 +30,7 @@ export class AssetJobRepository {
     return this.db
       .selectFrom('asset')
       .where('asset.id', '=', asUuid(id))
-      .leftJoin('smart_search', 'asset.id', 'smart_search.assetId')
-      .select(['id', 'type', 'ownerId', 'duplicateId', 'stackId', 'visibility', 'smart_search.embedding'])
+      .select(['id', 'type', 'ownerId', 'duplicateId', 'stackId', 'visibility'])
       .limit(1)
       .executeTakeFirst();
   }
@@ -149,10 +147,7 @@ export class AssetJobRepository {
     return this.db
       .selectFrom('asset')
       .select(columns.asset)
-      .select(withFaces)
       .select((eb) => withFiles(eb, AssetFileType.Sidecar))
-      .innerJoin('user', 'user.id', 'asset.ownerId')
-      .select(['user.clusterGroupId'])
       .where('asset.id', '=', id)
       .executeTakeFirst();
   }
@@ -199,7 +194,6 @@ export class AssetJobRepository {
       .selectFrom('asset')
       .select(['asset.id'])
       .where('asset.deletedAt', 'is', null)
-      .innerJoin('smart_search', 'asset.id', 'smart_search.assetId')
       .$call(withDefaultVisibility)
       .$if(!force, (qb) =>
         qb
@@ -213,15 +207,16 @@ export class AssetJobRepository {
   streamForEncodeClip(force?: boolean) {
     // NOTE (family fork): cloud search embeds the *original* file — no preview
     // (thumbnail) is generated in this build, so we cannot require one to exist.
+    // "already embedded" is tracked in `asset_job_status.embeddedAt` because the
+    // vectors themselves live in the vector store, not in Postgres.
     return this.db
       .selectFrom('asset')
+      .innerJoin('asset_job_status as job_status', 'job_status.assetId', 'asset.id')
       .select(['asset.id'])
       .where('asset.visibility', '!=', AssetVisibility.Hidden)
       .where('asset.deletedAt', 'is', null)
       .where('asset.type', '=', AssetType.Image)
-      .$if(!force, (qb) =>
-        qb.where((eb) => eb.not((eb) => eb.exists(eb.selectFrom('smart_search').whereRef('assetId', '=', 'asset.id')))),
-      )
+      .$if(!force, (qb) => qb.where('job_status.embeddedAt', 'is', null))
       .stream();
   }
 
@@ -230,28 +225,6 @@ export class AssetJobRepository {
     return this.db
       .selectFrom('asset')
       .select(['asset.id', 'asset.visibility', 'asset.originalPath'])
-      .where('asset.id', '=', id)
-      .executeTakeFirst();
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID] })
-  getForDetectFacesJob(id: string) {
-    return this.db
-      .selectFrom('asset')
-      .select(['asset.id', 'asset.visibility'])
-      .$call(withExifInner)
-      .select((eb) => withFaces(eb, true, true))
-      .select((eb) =>
-        jsonObjectFrom(
-          eb
-            .selectFrom('asset_file')
-            .select(columns.assetFiles)
-            .whereRef('asset_file.assetId', '=', 'asset.id')
-            .where('asset_file.type', '=', sql.lit(AssetFileType.Preview))
-            .orderBy('asset_file.isEdited', 'desc')
-            .limit(sql.lit(1)),
-        ).as('previewFile'),
-      )
       .where('asset.id', '=', id)
       .executeTakeFirst();
   }
@@ -444,15 +417,6 @@ export class AssetJobRepository {
           ),
         ),
       )
-      .stream();
-  }
-
-  @GenerateSql({ params: [], stream: true })
-  streamForDetectFacesJob(force?: boolean) {
-    return this.assetsWithPreviews()
-      .$if(force === false, (qb) => qb.where('job_status.facesRecognizedAt', 'is', null))
-      .select(['asset.id'])
-      .orderBy('asset.fileCreatedAt', 'desc')
       .stream();
   }
 

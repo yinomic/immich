@@ -1,7 +1,7 @@
 import { ShallowDehydrateObject } from 'kysely';
 import { Mocked } from 'vitest';
-import { VECTOR_EXTENSIONS } from 'src/constants.js';
 import { AssetFile } from 'src/database.js';
+import { DatabaseExtension } from 'src/enum.js';
 import { UploadFieldName } from 'src/dtos/asset-media.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { SystemConfig } from 'src/dtos/config.dto.js';
@@ -209,8 +209,6 @@ export interface VideoInterfaces {
 export type ConcurrentQueueName = Exclude<
   QueueName,
   | QueueName.StorageTemplateMigration
-  | QueueName.FacialRecognition
-  | QueueName.DuplicateDetection
   | QueueName.BackupDatabase
 >;
 
@@ -227,11 +225,6 @@ export interface IDelayedJob extends IBaseJob {
 }
 
 export type JobSource = 'upload' | 'sidecar-write' | 'copy' | 'edit';
-export interface IPersonJob {
-  ownerId: string;
-  personGroupId: string;
-}
-
 export interface IEntityJob extends IBaseJob {
   id: string;
   source?: JobSource;
@@ -333,10 +326,6 @@ export interface IIntegrityPathWithChecksumJob {
   items: { path: string; reportId: string | null; checksum?: string | null }[];
 }
 
-export interface IFacialRecognitionQueueAll extends INightlyJob {
-  clusterGroupId?: string;
-}
-
 export interface JobCounts {
   active: number;
   completed: number;
@@ -373,7 +362,6 @@ export type JobItem =
   // Migration
   | { name: JobName.FileMigrationQueueAll; data?: IBaseJob }
   | { name: JobName.AssetFileMigration; data: IEntityJob }
-  | { name: JobName.PersonFileMigration; data: IPersonJob }
 
   // Metadata Extraction
   | { name: JobName.AssetExtractMetadataQueueAll; data: IBaseJob }
@@ -387,21 +375,12 @@ export type JobItem =
   | { name: JobName.SidecarCheck; data: IEntityJob }
   | { name: JobName.SidecarWrite; data: IEntityJob }
 
-  // Facial Recognition
-  | { name: JobName.AssetDetectFacesQueueAll; data: IBaseJob }
-  | { name: JobName.AssetDetectFaces; data: IEntityJob }
-  | { name: JobName.FacialRecognitionQueueAll; data: IFacialRecognitionQueueAll }
-  | { name: JobName.FacialRecognition; data: IDeferrableJob }
-  | { name: JobName.PersonGenerateThumbnail; data: IPersonJob }
-
   // Smart Search
   | { name: JobName.SmartSearchQueueAll; data: IBaseJob }
   | { name: JobName.SmartSearch; data: IEntityJob }
   | { name: JobName.AssetEmptyTrash; data?: IBaseJob }
 
   // Duplicate Detection
-  | { name: JobName.AssetDetectDuplicatesQueueAll; data: IBaseJob }
-  | { name: JobName.AssetDetectDuplicates; data: IEntityJob }
 
   // Memories
   | { name: JobName.MemoryCleanup; data?: IBaseJob }
@@ -418,7 +397,6 @@ export type JobItem =
   | { name: JobName.TagCleanup; data?: IBaseJob }
 
   // Asset Deletion
-  | { name: JobName.PersonCleanup; data?: IBaseJob }
   | { name: JobName.AssetDelete; data: IAssetDeleteJob }
   | { name: JobName.AssetDeleteCheck; data?: IBaseJob }
 
@@ -463,10 +441,9 @@ export type JobItem =
   // Editor
   | { name: JobName.AssetEditThumbnailGeneration; data: IEntityJob };
 
-export type VectorExtension = (typeof VECTOR_EXTENSIONS)[number];
 
 export interface ExtensionVersion {
-  name: VectorExtension;
+  name: DatabaseExtension;
   availableVersion: string | null;
   installedVersion: string | null;
 }
@@ -553,7 +530,6 @@ export type MediaLocation = { location: string };
 export interface SystemMetadata extends Record<SystemMetadataKey, Record<string, any>> {
   [SystemMetadataKey.AdminOnboarding]: { isOnboarded: boolean };
   [SystemMetadataKey.CloudSearchIndex]: { model: string; dimSize?: number };
-  [SystemMetadataKey.FacialRecognitionState]: { lastRun?: string };
   [SystemMetadataKey.License]: { licenseKey: string; activationKey: string; activatedAt: Date };
   [SystemMetadataKey.MaintenanceMode]: MaintenanceModeState;
   [SystemMetadataKey.MediaLocation]: MediaLocation;

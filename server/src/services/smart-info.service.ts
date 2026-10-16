@@ -100,6 +100,7 @@ export class SmartInfoService extends BaseService {
     });
 
     await this.vectorStoreRepository.upsert(asset.id, embedding);
+    await this.assetRepository.upsertJobStatus({ assetId: asset.id, embeddedAt: new Date() });
 
     return JobStatus.Success;
   }

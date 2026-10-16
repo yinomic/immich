@@ -70,7 +70,6 @@ export class AssetService extends BaseService {
     const asset = await this.assetRepository.getById(id, {
       exifInfo: true,
       owner: true,
-      faces: { person: true, viewingUserId: auth.user.id },
       stack: { assets: true },
       edits: true,
       tags: true,
@@ -88,10 +87,6 @@ export class AssetService extends BaseService {
 
     if (auth.sharedLink) {
       delete data.owner;
-    }
-
-    if (auth.sharedLink) {
-      data.people = [];
     }
 
     return data;
@@ -480,7 +475,6 @@ export class AssetService extends BaseService {
     for (const id of dto.assetIds) {
       switch (dto.name) {
         case AssetJobName.REFRESH_FACES: {
-          jobs.push({ name: JobName.AssetDetectFaces, data: { id } });
           break;
         }
 
