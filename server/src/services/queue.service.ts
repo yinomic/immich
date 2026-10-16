@@ -209,10 +209,6 @@ export class QueueService extends BaseService {
         return this.jobRepository.queue({ name: JobName.FileMigrationQueueAll });
       }
 
-      case QueueName.SmartSearch: {
-        return this.jobRepository.queue({ name: JobName.SmartSearchQueueAll, data: { force } });
-      }
-
       case QueueName.MetadataExtraction: {
         return this.jobRepository.queue({ name: JobName.AssetExtractMetadataQueueAll, data: { force } });
       }

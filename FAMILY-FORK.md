@@ -416,3 +416,10 @@ volumes:
 
 验证：`tsc` 绿、eslint（max-warnings 0）绿、83 文件 / 1548 用例全绿。
 **注意**：Redis 里若残留 `SmartSearchQueueAll` 作业，microservices 启动会因找不到 handler 而退出（`Failed to find job handler`），需要清理队列或先删掉该枚举与队列映射。
+
+**Round 17 追加（务必先做）**：`JobName.SmartSearch` / `SmartSearchQueueAll` / `QueueName.SmartSearch` 的枚举与队列映射必须删掉，否则 microservices 启动时会因 `Failed to find job handler for Job.SmartSearchQueueAll` 直接退出（handler 已随 smart-info.service 删除）。本轮已先移除 `QueueService.start()` 里的 `case QueueName.SmartSearch` 映射；剩余要删的位置：
+1. `src/enum.ts`：`JobName.SmartSearch='smartSearch'`、`JobName.SmartSearchQueueAll`、`QueueName.SmartSearch`
+2. `src/types.ts`：`JobItem` 联合类型里的 `{ name: JobName.SmartSearchQueueAll; data: IBaseJob }`
+3. `src/dtos/queue-legacy.dto.ts`：`[QueueName.SmartSearch]: QueueResponseLegacySchema`
+4. `src/services/job.service.ts:168`：`const jobs: JobItem[] = [{ name: JobName.SmartSearch, data: item.data }];` → `const jobs: JobItem[] = [];`
+   注意：直接删枚举值会让 `JobItem` 推断收窄，`job.repository.ts`（约 261 行）等出现批量类型错误；正确做法是显式标注 `JobItem[]` 并逐个修，别用正则批量删。
