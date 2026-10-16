@@ -162,3 +162,23 @@
 3. **HEIC 转码**：接受"上传时 HEIC→JPEG 全尺寸转码（多存一份）"吗？否则 iPhone 照片需要按需转码 + 缓存
 4. **云厂商最终二选一**：先按火山实现（TOS + 方舟 + VikingDB），腾讯适配器同步留接口？
 5. **向量库**：接受"先用 Postgres 跑通、拿到 key 后切 VikingDB"的两步走吗？
+
+---
+
+## 8. 进度日志
+
+### Round 1（P0 基线 + P1 基础设施 + P2 provider 骨架）
+- 分支 `family-album`；`pnpm install --frozen-lockfile`；确认 `@immich/sdk`/`@immich/plugin-sdk` 需先 build 才能 tsc
+- 删除 `machine-learning/`、compose ML 服务与 `model-cache` 卷、`hwaccel.ml.yml`、devcontainer 覆盖、CI ML 作业、renovate/labeler/CODEOWNERS/.dockerignore/mise 条目、ML 文档与 `_redirects`
+- 新增 `server/src/repositories/embedding/{embedding,ark-embedding,tencent-embedding,mock-embedding}.provider.ts`、`embedding.repository.ts`（DI 注册）、`scripts/verify-cloud-search.mjs`
+- 新增 env：`IMMICH_CLOUD_SEARCH_{ENABLED,PROVIDER,API_KEY,MODEL,BASE_URL,DIM,TIMEOUT_MS}` → `EnvData.search`
+- 验证：`docker compose config` × 4 通过；`tsc` 绿；eslint 绿；单测 105 文件 / 2340 用例全绿
+
+### Round 2（P2 搜索链路切换，去预览依赖）
+- `asset-job.repository.ts`：`streamForEncodeClip` 改为遍历原图（不再要求 preview 存在，且只索引图片）；`getForClipEncoding` 返回 `originalPath`
+- `smart-info.service.ts`：删除 CLIP 模型表校验，改为读 `EmbeddingRepository`（维度变更即重建索引）；`handleEncodeClip` 读**原图**字节 → 云端 embedding → 写入向量表（`JSON.stringify(vector)` 即 pgvector 字面量）
+- `search.service.ts`：`searchSmart`/`searchSmartV3` 用 `EmbeddingRepository.isEnabled()` 判定；文本查询走云端 embedding 并保留 LRU 缓存；以图搜图仍复用库内向量
+- `base.service.ts`/`repositories/index.ts`/`test/utils.ts`：注入与 mock 打通；重写 `smart-info.service.spec.ts`，更新 `search.service.spec.ts`
+- 验证：`tsc` 绿；单测 105 文件 / 2331 用例全绿；eslint 绿
+
+**下一步（Round 3+）**：删 `machine-learning.repository.ts` 及其消费者（`ocr.service`、`person.service`、`duplicate.service` 的向量部分）、12 张表与新迁移、`QueueName/JobName` 对应项与装饰器、`SystemConfig.machineLearning` 与 admin UI；随后进入 P3 云存储。

@@ -211,8 +211,14 @@ export class AssetJobRepository {
 
   @GenerateSql({ params: [], stream: true })
   streamForEncodeClip(force?: boolean) {
-    return this.assetsWithPreviews()
+    // NOTE (family fork): cloud search embeds the *original* file — no preview
+    // (thumbnail) is generated in this build, so we cannot require one to exist.
+    return this.db
+      .selectFrom('asset')
       .select(['asset.id'])
+      .where('asset.visibility', '!=', AssetVisibility.Hidden)
+      .where('asset.deletedAt', 'is', null)
+      .where('asset.type', '=', AssetType.Image)
       .$if(!force, (qb) =>
         qb.where((eb) => eb.not((eb) => eb.exists(eb.selectFrom('smart_search').whereRef('assetId', '=', 'asset.id')))),
       )
@@ -223,8 +229,7 @@ export class AssetJobRepository {
   getForClipEncoding(id: string) {
     return this.db
       .selectFrom('asset')
-      .select(['asset.id', 'asset.visibility'])
-      .select((eb) => withFiles(eb, AssetFileType.Preview))
+      .select(['asset.id', 'asset.visibility', 'asset.originalPath'])
       .where('asset.id', '=', id)
       .executeTakeFirst();
   }

@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { LRUMap } from 'mnemonist';
 import { AssetMapOptions, AssetResponseDto, MapAsset, mapAsset } from 'src/dtos/asset-response.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
-import { SystemConfig } from 'src/dtos/config.dto.js';
 import { PersonResponseDto, mapPerson } from 'src/dtos/person.dto.js';
 import {
   LargeAssetSearchDto,
@@ -27,7 +26,6 @@ import { AssetSearchScope } from 'src/repositories/search.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { requireElevatedPermission } from 'src/utils/access.js';
 import { getMyPartnerIds } from 'src/utils/asset.util.js';
-import { isSmartSearchEnabled } from 'src/utils/misc.js';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor.js';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter.js';
 
@@ -174,13 +172,12 @@ export class SearchService extends BaseService {
       requireElevatedPermission(auth);
     }
 
-    const { machineLearning } = await this.getConfig({ withCache: false });
-    if (!isSmartSearchEnabled(machineLearning)) {
+    if (!this.embeddingRepository.isEnabled()) {
       throw new BadRequestException('Smart search is not enabled');
     }
 
     const userIds = this.getUserIdsToSearch(auth, dto.visibility);
-    const embedding = await this.resolveEmbedding(auth, dto, machineLearning);
+    const embedding = await this.resolveEmbedding(auth, dto);
     const page = dto.page ?? 1;
     const size = dto.size;
     const { hasNextPage, items } = await this.searchRepository.searchSmart(
@@ -279,14 +276,13 @@ export class SearchService extends BaseService {
   }
 
   private async searchSmartV3(auth: AuthDto, dto: SmartSearchDto): Promise<SearchResponseDto> {
-    const { machineLearning } = await this.getConfig({ withCache: false });
-    if (!isSmartSearchEnabled(machineLearning)) {
+    if (!this.embeddingRepository.isEnabled()) {
       throw new BadRequestException('Smart search is not enabled');
     }
 
     const [{ filter, scope }, embedding] = await Promise.all([
       this.resolveSearchScopeV3(auth, dto),
-      this.resolveEmbedding(auth, dto, machineLearning),
+      this.resolveEmbedding(auth, dto),
     ]);
 
     // no cursor until a rank-aware pagination strategy for smart search is decided
@@ -322,19 +318,12 @@ export class SearchService extends BaseService {
     return { filter: effectiveFilter, scope: { userIds, lockedOwnerId: auth.user.id, viewingUserId: auth.user.id } };
   }
 
-  private async resolveEmbedding(
-    auth: AuthDto,
-    dto: SmartSearchDto,
-    machineLearning: SystemConfig['machineLearning'],
-  ): Promise<string> {
+  private async resolveEmbedding(auth: AuthDto, dto: SmartSearchDto): Promise<string> {
     if (dto.query) {
-      const key = machineLearning.clip.modelName + dto.query + dto.language;
+      const key = this.embeddingRepository.getModelName() + dto.query;
       let embedding = this.embeddingCache.get(key);
       if (!embedding) {
-        embedding = await this.machineLearningRepository.encodeText(dto.query, {
-          modelName: machineLearning.clip.modelName,
-          language: dto.language,
-        });
+        embedding = JSON.stringify(await this.embeddingRepository.embedText(dto.query));
         this.embeddingCache.set(key, embedding);
       }
       return embedding;

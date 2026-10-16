@@ -30,17 +30,17 @@ export class EmbeddingRepository {
     this.logger.setContext(EmbeddingRepository.name);
   }
 
-  get enabled(): boolean {
+  isEnabled(): boolean {
     return this.configRepository.getEnv().search.enabled;
   }
 
-  get modelName(): string {
+  getModelName(): string {
     const { provider, model } = this.configRepository.getEnv().search;
     return model ?? DEFAULT_MODELS[provider] ?? provider;
   }
 
   /** Configured dimension, if any. `undefined` means "trust the provider response". */
-  get dimSize(): number | undefined {
+  getDimSize(): number | undefined {
     return this.configRepository.getEnv().search.dimSize;
   }
 
@@ -58,7 +58,7 @@ export class EmbeddingRepository {
     }
 
     const { provider, apiKey, baseUrl, dimSize, timeoutMs } = this.configRepository.getEnv().search;
-    const model = this.modelName;
+    const model = this.getModelName();
 
     switch (provider) {
       case 'mock': {

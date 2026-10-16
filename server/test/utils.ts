@@ -37,6 +37,7 @@ import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
+import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -254,6 +255,7 @@ export type ServiceOverrides = {
   downloadRepository: DownloadRepository;
   duplicateRepository: DuplicateRepository;
   email: EmailRepository;
+  embedding: EmbeddingRepository;
   event: EventRepository;
   integrityReport: IntegrityRepository;
   job: JobRepository;
@@ -340,6 +342,7 @@ export const getMocks = () => {
     downloadRepository: automock(DownloadRepository, { strict: false }),
     duplicateRepository: automock(DuplicateRepository),
     email: automock(EmailRepository, { args: [loggerMock] }),
+    embedding: automock(EmbeddingRepository, { args: [configMock, loggerMock], strict: false }),
     // eslint-disable-next-line no-sparse-arrays
     event: automock(EventRepository, { args: [, , loggerMock], strict: false }),
     integrityReport: automock(IntegrityRepository, { strict: false }),
@@ -417,6 +420,7 @@ export const newTestService = <T extends BaseService>(
     overrides.downloadRepository || (mocks.downloadRepository as As<DownloadRepository>),
     overrides.duplicateRepository || (mocks.duplicateRepository as As<DuplicateRepository>),
     overrides.email || (mocks.email as As<EmailRepository>),
+    overrides.embedding || (mocks.embedding as As<EmbeddingRepository>),
     overrides.event || (mocks.event as As<EventRepository>),
     overrides.integrityReport || (mocks.integrityReport as As<IntegrityRepository>),
     overrides.job || (mocks.job as As<JobRepository>),

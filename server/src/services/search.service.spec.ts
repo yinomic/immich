@@ -241,11 +241,12 @@ describe(SearchService.name, () => {
       await expect(sut.searchRandom(auth, { size: 250, filter: {} })).resolves.toEqual([]);
 
       mocks.search.searchSmartV3.mockResolvedValue({ hasNextPage: false, items: [] });
-      mocks.machineLearning.encodeText.mockResolvedValue('[1, 2, 3]');
+      mocks.embedding.isEnabled.mockReturnValue(true);
+      mocks.embedding.embedText.mockResolvedValue([1, 2, 3]);
       await sut.searchSmart(auth, { size: 100, filter: {}, query: 'test' });
       expect(mocks.search.searchSmartV3).toHaveBeenCalledWith(
         { take: 100 },
-        expect.objectContaining({ embedding: '[1, 2, 3]' }),
+        expect.objectContaining({ embedding: '[1,2,3]' }),
         expect.objectContaining({ lockedOwnerId: expect.any(String) }),
       );
     });
@@ -298,42 +299,31 @@ describe(SearchService.name, () => {
   describe('searchSmart', () => {
     beforeEach(() => {
       mocks.search.searchSmart.mockResolvedValue({ hasNextPage: false, items: [] });
-      mocks.machineLearning.encodeText.mockResolvedValue('[1, 2, 3]');
+      mocks.embedding.isEnabled.mockReturnValue(true);
+      mocks.embedding.getModelName.mockReturnValue('mock-embedding');
+      mocks.embedding.embedText.mockResolvedValue([1, 2, 3]);
     });
 
-    it('should raise a BadRequestException if machine learning is disabled', async () => {
-      mocks.systemMetadata.get.mockResolvedValue({
-        machineLearning: { enabled: false },
-      });
+    it('should raise a BadRequestException if cloud search is disabled', async () => {
+      mocks.embedding.isEnabled.mockReturnValue(false);
 
       await expect(sut.searchSmart(authStub.user1, { size: 100, query: 'test' })).rejects.toThrowError(
         new BadRequestException('Smart search is not enabled'),
       );
-    });
 
-    it('should raise a BadRequestException if smart search is disabled', async () => {
-      mocks.systemMetadata.get.mockResolvedValue({
-        machineLearning: { clip: { enabled: false } },
-      });
-
-      await expect(sut.searchSmart(authStub.user1, { size: 100, query: 'test' })).rejects.toThrowError(
-        new BadRequestException('Smart search is not enabled'),
-      );
+      expect(mocks.embedding.embedText).not.toHaveBeenCalled();
     });
 
     it('should work', async () => {
       await sut.searchSmart(authStub.user1, { size: 100, query: 'test' });
 
-      expect(mocks.machineLearning.encodeText).toHaveBeenCalledWith(
-        'test',
-        expect.objectContaining({ modelName: expect.any(String) }),
-      );
+      expect(mocks.embedding.embedText).toHaveBeenCalledWith('test');
       expect(mocks.search.searchSmart).toHaveBeenCalledWith(
         { page: 1, size: 100 },
         {
           query: 'test',
           size: 100,
-          embedding: '[1, 2, 3]',
+          embedding: '[1,2,3]',
           userIds: [authStub.user1.user.id],
           viewingUserId: authStub.user1.user.id,
           visibility: 'not-locked',
@@ -344,35 +334,30 @@ describe(SearchService.name, () => {
     it('should consider page and size parameters', async () => {
       await sut.searchSmart(authStub.user1, { query: 'test', page: 2, size: 50 });
 
-      expect(mocks.machineLearning.encodeText).toHaveBeenCalledWith(
-        'test',
-        expect.objectContaining({ modelName: expect.any(String) }),
-      );
+      expect(mocks.embedding.embedText).toHaveBeenCalledWith('test');
       expect(mocks.search.searchSmart).toHaveBeenCalledWith(
         { page: 2, size: 50 },
-        expect.objectContaining({ query: 'test', embedding: '[1, 2, 3]', userIds: [authStub.user1.user.id] }),
+        expect.objectContaining({ query: 'test', embedding: '[1,2,3]', userIds: [authStub.user1.user.id] }),
       );
     });
 
-    it('should use clip model specified in config', async () => {
-      mocks.systemMetadata.get.mockResolvedValue({
-        machineLearning: { clip: { modelName: 'ViT-B-16-SigLIP__webli' } },
-      });
+    it('should cache text embeddings for repeated queries', async () => {
+      await sut.searchSmart(authStub.user1, { size: 100, query: 'baby' });
+      await sut.searchSmart(authStub.user1, { size: 100, query: 'baby' });
 
-      await sut.searchSmart(authStub.user1, { size: 100, query: 'test' });
-
-      expect(mocks.machineLearning.encodeText).toHaveBeenCalledWith(
-        'test',
-        expect.objectContaining({ modelName: 'ViT-B-16-SigLIP__webli' }),
-      );
+      expect(mocks.embedding.embedText).toHaveBeenCalledTimes(1);
     });
 
-    it('should use language specified in request', async () => {
-      await sut.searchSmart(authStub.user1, { size: 100, query: 'test', language: 'de' });
+    it('should reuse the stored embedding when searching by asset', async () => {
+      mocks.search.getEmbedding.mockResolvedValue({ assetId: 'asset-id', embedding: '[9,9,9]' });
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-id']));
 
-      expect(mocks.machineLearning.encodeText).toHaveBeenCalledWith(
-        'test',
-        expect.objectContaining({ language: 'de' }),
+      await sut.searchSmart(authStub.user1, { size: 100, queryAssetId: 'asset-id' });
+
+      expect(mocks.embedding.embedText).not.toHaveBeenCalled();
+      expect(mocks.search.searchSmart).toHaveBeenCalledWith(
+        { page: 1, size: 100 },
+        expect.objectContaining({ embedding: '[9,9,9]' }),
       );
     });
   });

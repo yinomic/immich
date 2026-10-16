@@ -24,6 +24,7 @@ import { DatabaseRepository } from 'src/repositories/database.repository.js';
 import { DownloadRepository } from 'src/repositories/download.repository.js';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository.js';
 import { EmailRepository } from 'src/repositories/email.repository.js';
+import { EmbeddingRepository } from 'src/repositories/embedding.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
 import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
@@ -93,6 +94,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   DownloadRepository,
   DuplicateRepository,
   EmailRepository,
+  EmbeddingRepository,
   EventRepository,
   IntegrityRepository,
   JobRepository,
@@ -156,6 +158,7 @@ export class BaseService {
     protected downloadRepository: DownloadRepository,
     protected duplicateRepository: DuplicateRepository,
     protected emailRepository: EmailRepository,
+    protected embeddingRepository: EmbeddingRepository,
     protected eventRepository: EventRepository,
     protected integrityRepository: IntegrityRepository,
     protected jobRepository: JobRepository,
@@ -228,6 +231,7 @@ export class BaseService {
       ctx.downloadRepository,
       ctx.duplicateRepository,
       ctx.emailRepository,
+      ctx.embeddingRepository,
       ctx.eventRepository,
       ctx.integrityRepository,
       ctx.jobRepository,
