@@ -35,9 +35,10 @@ const DELETE_BATCH_SIZE = 100;
  *   - delete `POST /api/collection/del_data`     {collection_name, primary_keys | del_all}
  *   - search `POST /api/index/search`            {collection_name, index_name, search: {...}}
  *
- * The response parsing is deliberately tolerant because the exact field names
- * differ between VikingDB generations; run `scripts/verify-vector-store.mjs`
- * with real credentials to confirm before relying on it.
+ * The request side is verified against the official algorithm (see
+ * volcengine-signer.spec.ts), but the *response* field names differ between
+ * VikingDB generations, so parsing stays tolerant and the first run against a
+ * real collection should be smoke tested (upsert one vector, search it back).
  */
 export class VikingVectorStore implements VectorStore {
   private readonly primaryKey: string;
