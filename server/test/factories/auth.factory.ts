@@ -1,14 +1,12 @@
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { ApiKeyFactory } from 'test/factories/api-key.factory.js';
 import { build } from 'test/factories/builder.factory.js';
-import { SharedLinkFactory } from 'test/factories/shared-link.factory.js';
-import { ApiKeyLike, FactoryBuilder, SharedLinkLike, UserLike } from 'test/factories/types.js';
+import { ApiKeyLike, FactoryBuilder, UserLike } from 'test/factories/types.js';
 import { UserFactory } from 'test/factories/user.factory.js';
 import { newUuid } from 'test/small.factory.js';
 
 export class AuthFactory {
   #user: UserFactory;
-  #sharedLink?: SharedLinkFactory;
   #apiKey?: ApiKeyFactory;
   #session?: AuthDto['session'];
 
@@ -29,11 +27,6 @@ export class AuthFactory {
     return this;
   }
 
-  sharedLink(dto: SharedLinkLike = {}, builder?: FactoryBuilder<SharedLinkFactory>) {
-    this.#sharedLink = build(SharedLinkFactory.from(dto), builder);
-    return this;
-  }
-
   session(dto: Partial<AuthDto['session']> = {}) {
     this.#session = { id: newUuid(), hasElevatedPermission: false, ...dto };
     return this;
@@ -51,7 +44,6 @@ export class AuthFactory {
         quotaUsageInBytes,
         quotaSizeInBytes,
       },
-      sharedLink: this.#sharedLink?.build(),
       apiKey: this.#apiKey?.build(),
       session: this.#session,
     };

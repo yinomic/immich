@@ -1,7 +1,6 @@
 import { Selectable } from 'kysely';
 import { AlbumUserRole, AssetOrder } from 'src/enum.js';
 import { AlbumTable } from 'src/schema/tables/album.table.js';
-import { SharedLinkTable } from 'src/schema/tables/shared-link.table.js';
 import { AlbumUserFactory } from 'test/factories/album-user.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { build } from 'test/factories/builder.factory.js';
@@ -11,7 +10,6 @@ import { newDate, newUuid, newUuidV7 } from 'test/small.factory.js';
 
 export class AlbumFactory {
   #owner!: UserFactory;
-  #sharedLinks: Selectable<SharedLinkTable>[] = [];
   #albumUsers: AlbumUserFactory[] = [];
   #assets: AssetFactory[] = [];
 
@@ -43,11 +41,6 @@ export class AlbumFactory {
     return this;
   }
 
-  sharedLinks() {
-    this.#sharedLinks = [];
-    return this;
-  }
-
   albumUser(dto: AlbumUserLike = {}, builder?: FactoryBuilder<AlbumUserFactory>) {
     const albumUser = build(AlbumUserFactory.from(dto), builder);
     this.#albumUsers.push(albumUser);
@@ -76,7 +69,6 @@ export class AlbumFactory {
       ...this.value,
       assets: this.#assets.map((asset) => asset.build()),
       albumUsers: this.#albumUsers.map((albumUser) => albumUser.build()),
-      sharedLinks: this.#sharedLinks,
     };
   }
 }

@@ -68,7 +68,6 @@ export class AlbumService extends BaseService {
 
     return albums.map((album) => ({
       ...mapAlbum(album),
-      sharedLinks: undefined,
       ...mapAlbumMetadata(albumMetadata[album.id]),
     }));
   }
@@ -78,9 +77,8 @@ export class AlbumService extends BaseService {
     await this.albumRepository.updateThumbnails();
     const album = await this.findOrFail(id, auth.user.id);
 
-    const hasSharedUsers = album.albumUsers && album.albumUsers.length > 1;
-    const hasSharedLink = album.sharedLinks && album.sharedLinks.length > 0;
-    const isShared = hasSharedUsers || hasSharedLink;
+    // NOTE (family fork): sharing was removed, so an album is never "shared"
+    const isShared = false;
 
     return {
       ...(await this.mapWithMetadata(album)),

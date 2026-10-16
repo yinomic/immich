@@ -7,7 +7,6 @@ import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { AlbumFactory } from 'test/factories/album.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { MemoryFactory } from 'test/factories/memory.factory.js';
-import { SharedLinkFactory } from 'test/factories/shared-link.factory.js';
 import { StackFactory } from 'test/factories/stack.factory.js';
 import { UserFactory } from 'test/factories/user.factory.js';
 import { newUuid } from 'test/small.factory.js';
@@ -55,7 +54,6 @@ export const getForAlbum = (album: ReturnType<AlbumFactory['build']>) => ({
     createdAt: albumUser.createdAt.toISOString(),
     user: getDehydrated(albumUser.user),
   })),
-  sharedLinks: album.sharedLinks.map((sharedLink) => getDehydrated(sharedLink)),
 });
 
 export const getForActivity = (activity: Selectable<ActivityTable> & { user: ReturnType<UserFactory['build']> }) => ({
@@ -168,17 +166,3 @@ export const getForDuplicate = (asset: ReturnType<AssetFactory['build']>) =>
     ...getDehydrated(asset),
     exifInfo: getDehydrated(asset.exifInfo),
   }) as unknown as MapAsset;
-
-export const getForSharedLink = (sharedLink: ReturnType<SharedLinkFactory['build']>) => ({
-  ...sharedLink,
-  assets: sharedLink.assets.map((asset) => ({
-    ...getDehydrated({ ...getForAsset(asset) }),
-    exifInfo: getDehydrated(asset.exifInfo),
-  })),
-  album: sharedLink.album
-    ? {
-        ...getDehydrated(sharedLink.album),
-        assets: sharedLink.album.assets.map((asset) => getDehydrated(asset)),
-      }
-    : null,
-});

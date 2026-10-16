@@ -51,8 +51,6 @@ import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table.js';
 import { PluginTable } from 'src/schema/tables/plugin.table.js';
 import { SessionTable } from 'src/schema/tables/session.table.js';
-import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table.js';
-import { SharedLinkTable } from 'src/schema/tables/shared-link.table.js';
 import { StackAuditTable } from 'src/schema/tables/stack-audit.table.js';
 import { StackTable } from 'src/schema/tables/stack.table.js';
 import { SessionSyncCheckpointTable } from 'src/schema/tables/sync-checkpoint.table.js';
@@ -108,8 +106,6 @@ export class ImmichDatabase {
     PartnerAuditTable,
     PartnerTable,
     SessionTable,
-    SharedLinkTable,
-    SharedLinkAssetTable,
     StackTable,
     StackAuditTable,
     SessionSyncCheckpointTable,
@@ -211,8 +207,6 @@ export interface DB {
   session: SessionTable;
   session_sync_checkpoint: SessionSyncCheckpointTable;
 
-  shared_link: SharedLinkTable;
-  shared_link_asset: SharedLinkAssetTable;
   stack: StackTable;
   stack_audit: StackAuditTable;
 

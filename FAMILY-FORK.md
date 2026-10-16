@@ -390,3 +390,12 @@ volumes:
 - 清理因此失效的用例与 mock（album/asset/asset-media/search 里的 "shared link" 用例）
 - 验证：`tsc` 绿、eslint（max-warnings 0）绿、87 文件 / **1589 用例**全绿
 - 说明：`shared_link*` 两张表目前只剩 `album.repository` 的 3 处引用（`withSharedLink` 与 isShared 判断），把它们一起改掉后即可删表 + 重新生成迁移（下一轮）
+
+### Round 16（删掉 shared_link 两张表 + 新迁移）
+- `album.repository`：删除 `withSharedLink` 投影与「是否被共享」判断里的 `shared_link` 存在性检查（相册响应不再有 `sharedLinks` 字段）
+- `album.service`：`isShared` 固定为 `false`（分享已移除）
+- 删除 `shared-link.table.ts` / `shared-link-asset.table.ts` 定义与 schema 注册、`test/factories/shared-link.factory.ts`、`test/fixtures/shared-link.stub.ts`，清理 mappers/factories 里的相关代码
+- 新增迁移 `1792191000000-DropSharedLinkTables`（`DROP TABLE shared_link_asset, shared_link`），并已在本机测试库执行成功
+- 验证：迁移后 `pg_tables` 中 `shared_link%` 数量 **0**；`tsc` 绿、eslint 绿、87 文件 / 1587 用例全绿；运行时登录/相册/时间线/搜索正常，作业 0 报错
+
+**注意**：迁移源码放在 `src/schema/migrations/`，但 `sql-tools migrations run` 默认读 `dist/`，所以改完迁移必须 `pnpm --filter immich build` 再跑。

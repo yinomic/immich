@@ -713,16 +713,6 @@ describe(AlbumService.name, () => {
       expect(mocks.access.album.checkOwnerAccess).toHaveBeenCalled();
       expect(mocks.access.album.checkSharedAlbumAccess).toHaveBeenCalled();
     });
-
-    it('should not allow unauthorized shared link access to the album', async () => {
-      const album = AlbumFactory.create();
-      const asset = AssetFactory.create();
-      mocks.album.getById.mockResolvedValue(getForAlbum(album));
-
-      await expect(
-        sut.addAssets(AuthFactory.from().sharedLink({ allowUpload: true }).build(), album.id, { ids: [asset.id] }),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
   });
 
   describe('addAssetsToAlbums', () => {
@@ -1087,23 +1077,6 @@ describe(AlbumService.name, () => {
       expect(mocks.album.addAssetIds).not.toHaveBeenCalled();
       expect(mocks.access.album.checkOwnerAccess).toHaveBeenCalled();
       expect(mocks.access.album.checkSharedAlbumAccess).toHaveBeenCalled();
-    });
-
-    it('should not allow unauthorized shared link access to the album', async () => {
-      const album1 = AlbumFactory.create();
-      const album2 = AlbumFactory.create();
-      const [asset1, asset2, asset3] = [AssetFactory.create(), AssetFactory.create(), AssetFactory.create()];
-      mocks.album.getById.mockResolvedValueOnce(getForAlbum(album1)).mockResolvedValueOnce(getForAlbum(album2));
-
-      await expect(
-        sut.addAssetsToAlbums(AuthFactory.from().sharedLink({ allowUpload: true }).build(), {
-          albumIds: [album1.id, album2.id],
-          assetIds: [asset1.id, asset2.id, asset3.id],
-        }),
-      ).resolves.toEqual({
-        success: false,
-        error: BulkIdErrorReason.NO_PERMISSION,
-      });
     });
   });
 

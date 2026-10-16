@@ -33,11 +33,6 @@ const withAlbumUsers = (authUserId?: string) => (eb: ExpressionBuilder<DB, 'albu
     .$notNull()
     .as('albumUsers');
 
-const withSharedLink = (eb: ExpressionBuilder<DB, 'album'>) =>
-  jsonArrayFrom(
-    eb.selectFrom('shared_link').selectAll('shared_link').whereRef('shared_link.albumId', '=', 'album.id'),
-  ).as('sharedLinks');
-
 const isAlbumOwned = (ownerId: string) => (eb: ExpressionBuilder<DB, 'album'>) =>
   eb.exists(
     eb
@@ -60,7 +55,6 @@ export class AlbumRepository {
       .where('album.id', '=', id)
       .where('album.deletedAt', 'is', null)
       .select(withAlbumUsers(authUserId))
-      .select(withSharedLink)
       .executeTakeFirst();
   }
 
@@ -164,7 +158,6 @@ export class AlbumRepository {
                 .whereRef('au.albumId', '=', 'album.id')
                 .where('au.role', '!=', sql.lit(AlbumUserRole.Owner)),
             ),
-            eb.exists(eb.selectFrom('shared_link').whereRef('shared_link.albumId', '=', 'album.id')),
           ]);
           return isShared ? isSharedAlbum : eb.not(isSharedAlbum);
         }),
@@ -179,7 +172,6 @@ export class AlbumRepository {
     return this.buildAlbumBaseQuery(ownerId, options)
       .selectAll('album')
       .select(withAlbumUsers(ownerId))
-      .select(withSharedLink)
       .$if(!!options.id, (qb) => qb.where('album.id', '=', options.id!))
       .$if(!!options.name, (qb) => qb.where('album.albumName', '=', options.name!))
       .orderBy('album.createdAt', 'desc')
@@ -325,7 +317,7 @@ export class AlbumRepository {
       .set(album)
       .where('album.id', '=', id)
       .returningAll('album')
-      .returning(withSharedLink)
+      .returningAll()
       .returning(withAlbumUsers(authUserId))
       .executeTakeFirstOrThrow();
   }
