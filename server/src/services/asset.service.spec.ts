@@ -17,7 +17,7 @@ import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
 import { getForAsset, getForAssetDeletion } from 'test/mappers.js';
-import { factory, newUuid } from 'test/small.factory.js';
+import { newUuid } from 'test/small.factory.js';
 import { ServiceMocks, makeStream, newTestService } from 'test/utils.js';
 
 const stats: AssetStats = {
@@ -671,45 +671,6 @@ describe(AssetService.name, () => {
       await expect(sut.handleAssetDeletion({ id: AssetFactory.create().id, deleteOnDisk: true })).resolves.toBe(
         JobStatus.Failed,
       );
-    });
-  });
-
-  describe('getOcr', () => {
-    it('should require asset read permission', async () => {
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set());
-
-      await expect(sut.getOcr(authStub.admin, 'asset-1')).rejects.toBeInstanceOf(BadRequestException);
-
-      expect(mocks.ocr.getByAssetId).not.toHaveBeenCalled();
-    });
-
-    it('should return OCR data for an asset', async () => {
-      const ocr1 = factory.assetOcr({ text: 'Hello World' });
-      const ocr2 = factory.assetOcr({ text: 'Test Image' });
-      const asset = AssetFactory.from().exif().build();
-
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.ocr.getByAssetId.mockResolvedValue([ocr1, ocr2]);
-      mocks.asset.getForOcr.mockResolvedValue({ edits: [], ...asset.exifInfo });
-
-      await expect(sut.getOcr(authStub.admin, asset.id)).resolves.toEqual([ocr1, ocr2]);
-
-      expect(mocks.access.asset.checkOwnerAccess).toHaveBeenCalledWith(
-        authStub.admin.user.id,
-        new Set([asset.id]),
-        undefined,
-      );
-      expect(mocks.ocr.getByAssetId).toHaveBeenCalledWith(asset.id);
-    });
-
-    it('should return empty array when no OCR data exists', async () => {
-      const asset = AssetFactory.from().exif().build();
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.ocr.getByAssetId.mockResolvedValue([]);
-      mocks.asset.getForOcr.mockResolvedValue({ edits: [], ...asset.exifInfo });
-      await expect(sut.getOcr(authStub.admin, asset.id)).resolves.toEqual([]);
-
-      expect(mocks.ocr.getByAssetId).toHaveBeenCalledWith(asset.id);
     });
   });
 

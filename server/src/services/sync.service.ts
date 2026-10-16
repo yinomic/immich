@@ -191,11 +191,12 @@ export class SyncService extends BaseService {
     const options: SyncQueryOptions = { nowId, userId: auth.user.id };
 
     const handlers: Record<SyncRequestType, () => Promise<void>> = {
-      // faces and people are not part of this build
+      // faces, people and OCR are not part of this build
       [SyncRequestType.AssetFacesV1]: removedSyncType,
       [SyncRequestType.AssetFacesV2]: removedSyncType,
       [SyncRequestType.AssetFacesV3]: removedSyncType,
       [SyncRequestType.PeopleV1]: removedSyncType,
+      [SyncRequestType.AssetOcrV1]: removedSyncType,
 
       // deprecated handlers
       [SyncRequestType.AssetsV1]: () => this.syncAssetsV1(),
@@ -227,7 +228,6 @@ export class SyncService extends BaseService {
       [SyncRequestType.StacksV1]: () => this.syncStackV1(options, response, checkpointMap),
       [SyncRequestType.PartnerStacksV1]: () => this.syncPartnerStackV1(options, response, checkpointMap, session.id),
       [SyncRequestType.UserMetadataV1]: () => this.syncUserMetadataV1(options, response, checkpointMap),
-      [SyncRequestType.AssetOcrV1]: () => this.syncAssetOcrV1(options, response, checkpointMap, auth),
     } as const;
 
     for (const type of SYNC_TYPES_ORDER) {
@@ -260,7 +260,6 @@ export class SyncService extends BaseService {
     await this.syncRepository.stack.cleanupAuditTable(pruneThreshold);
     await this.syncRepository.user.cleanupAuditTable(pruneThreshold);
     await this.syncRepository.userMetadata.cleanupAuditTable(pruneThreshold);
-    await this.syncRepository.assetOcr.cleanupAuditTable(pruneThreshold);
   }
 
   private needsFullSync(checkpointMap: CheckpointMap) {
@@ -951,33 +950,6 @@ export class SyncService extends BaseService {
 
     const upsertType = SyncEntityType.AssetMetadataV1;
     const upserts = this.syncRepository.assetMetadata.getUpserts(
-      { ...options, ack: checkpointMap[upsertType] },
-      auth.user.id,
-    );
-
-    for await (const { updateId, ...data } of upserts) {
-      await send(response, { type: upsertType, ids: [updateId], data });
-    }
-  }
-
-  private async syncAssetOcrV1(
-    options: SyncQueryOptions,
-    response: Writable,
-    checkpointMap: CheckpointMap,
-    auth: AuthDto,
-  ) {
-    const deleteType = SyncEntityType.AssetOcrDeleteV1;
-    const deletes = this.syncRepository.assetOcr.getDeletes(
-      { ...options, ack: checkpointMap[deleteType] },
-      auth.user.id,
-    );
-
-    for await (const row of deletes) {
-      await send(response, { type: deleteType, ids: [row.id], data: row });
-    }
-
-    const upsertType = SyncEntityType.AssetOcrV1;
-    const upserts = this.syncRepository.assetOcr.getUpserts(
       { ...options, ack: checkpointMap[upsertType] },
       auth.user.id,
     );

@@ -425,11 +425,7 @@ export class AssetJobRepository {
     return this.db
       .selectFrom('asset')
       .select(['asset.id'])
-      .$if(!force, (qb) =>
-        qb
-          .innerJoin('asset_job_status', 'asset_job_status.assetId', 'asset.id')
-          .where('asset_job_status.ocrAt', 'is', null),
-      )
+      .$if(!force, (qb) => qb.innerJoin('asset_job_status', 'asset_job_status.assetId', 'asset.id'))
       .where('asset.deletedAt', 'is', null)
       .where('asset.visibility', '!=', AssetVisibility.Hidden)
       .stream();

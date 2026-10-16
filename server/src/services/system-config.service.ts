@@ -25,9 +25,7 @@ export class SystemConfigService extends BaseService {
   }
 
   @OnEvent({ name: 'AppShutdown' })
-  onShutdown() {
-    this.machineLearningRepository.teardown();
-  }
+  onShutdown() {}
 
   async getAdminConfig(): Promise<AdminConfigDto> {
     const config = await this.getConfig({ withCache: false });
@@ -57,14 +55,12 @@ export class SystemConfigService extends BaseService {
   }
 
   @OnEvent({ name: 'ConfigInit', priority: -100 })
-  onConfigInit({ newConfig: { logging, machineLearning } }: ArgOf<'ConfigInit'>) {
+  onConfigInit({ newConfig: { logging } }: ArgOf<'ConfigInit'>) {
     const { logLevel: envLevel } = this.configRepository.getEnv();
     const configLevel = logging.enabled && logging.level;
     const level = envLevel ?? configLevel;
     this.logger.setLogLevel(level);
     this.logger.log(`LogLevel=${level} ${envLevel ? '(set via IMMICH_LOG_LEVEL)' : '(set via system config)'}`);
-
-    this.machineLearningRepository.setup(machineLearning);
   }
 
   @OnEvent({ name: 'ConfigUpdate', server: true })

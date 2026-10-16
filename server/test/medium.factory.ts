@@ -37,13 +37,11 @@ import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
 import { LibraryRepository } from 'src/repositories/library.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { MachineLearningRepository } from 'src/repositories/machine-learning.repository.js';
 import { MapRepository } from 'src/repositories/map.repository.js';
 import { MediaRepository } from 'src/repositories/media.repository.js';
 import { MemoryRepository } from 'src/repositories/memory.repository.js';
 import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
-import { OcrRepository } from 'src/repositories/ocr.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { SearchRepository } from 'src/repositories/search.repository.js';
@@ -454,7 +452,6 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case MemoryRepository:
     case LibraryRepository:
     case NotificationRepository:
-    case OcrRepository:
     case PartnerRepository:
     case SearchRepository:
     case SessionRepository:
@@ -522,7 +519,6 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case MemoryRepository:
     case IntegrityRepository:
     case NotificationRepository:
-    case OcrRepository:
     case PartnerRepository:
     case SessionRepository:
     case SyncRepository:
@@ -577,10 +573,6 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case LoggingRepository as unknown as ClassConstructor<T>: {
       const configMock = { getEnv: () => ({ noColor: false }) };
       return automock(LoggingRepository, { args: [undefined, configMock], strict: false });
-    }
-
-    case MachineLearningRepository: {
-      return automock(MachineLearningRepository, { args: [{ setContext: () => {} }] });
     }
 
     case StorageRepository: {

@@ -93,15 +93,6 @@ export const unsetDeep = (object: unknown, key: string) => {
   return isEmpty(object) ? undefined : object;
 };
 
-const isMachineLearningEnabled = (machineLearning: SystemConfig['machineLearning']) => machineLearning.enabled;
-export const isSmartSearchEnabled = (machineLearning: SystemConfig['machineLearning']) =>
-  isMachineLearningEnabled(machineLearning) && machineLearning.clip.enabled;
-export const isOcrEnabled = (machineLearning: SystemConfig['machineLearning']) =>
-  isMachineLearningEnabled(machineLearning) && machineLearning.ocr.enabled;
-export const isFacialRecognitionEnabled = (machineLearning: SystemConfig['machineLearning']) =>
-  isMachineLearningEnabled(machineLearning) && machineLearning.facialRecognition.enabled;
-export const isDuplicateDetectionEnabled = (machineLearning: SystemConfig['machineLearning']) =>
-  isSmartSearchEnabled(machineLearning) && machineLearning.duplicateDetection.enabled;
 export const isFaceImportEnabled = (metadata: SystemConfig['metadata']) => metadata.faces.import;
 
 export const handlePromiseError = <T>(promise: Promise<T>, logger: LoggingRepository): void => {

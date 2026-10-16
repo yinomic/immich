@@ -28,7 +28,6 @@ import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
 import { LibraryRepository } from 'src/repositories/library.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { MachineLearningRepository } from 'src/repositories/machine-learning.repository.js';
 import { MapRepository } from 'src/repositories/map.repository.js';
 import { MediaRepository } from 'src/repositories/media.repository.js';
 import { MemoryRepository } from 'src/repositories/memory.repository.js';
@@ -36,7 +35,6 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
-import { OcrRepository } from 'src/repositories/ocr.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
@@ -87,7 +85,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   IntegrityRepository,
   JobRepository,
   LibraryRepository,
-  MachineLearningRepository,
   MapRepository,
   MediaRepository,
   MemoryRepository,
@@ -95,7 +92,6 @@ export const BASE_SERVICE_DEPENDENCIES = [
   MoveRepository,
   NotificationRepository,
   OAuthRepository,
-  OcrRepository,
   PartnerRepository,
   PluginRepository,
   ProcessRepository,
@@ -148,7 +144,6 @@ export class BaseService {
     protected integrityRepository: IntegrityRepository,
     protected jobRepository: JobRepository,
     protected libraryRepository: LibraryRepository,
-    protected machineLearningRepository: MachineLearningRepository,
     protected mapRepository: MapRepository,
     protected mediaRepository: MediaRepository,
     protected memoryRepository: MemoryRepository,
@@ -156,7 +151,6 @@ export class BaseService {
     protected moveRepository: MoveRepository,
     protected notificationRepository: NotificationRepository,
     protected oauthRepository: OAuthRepository,
-    protected ocrRepository: OcrRepository,
     protected partnerRepository: PartnerRepository,
     protected pluginRepository: PluginRepository,
     protected processRepository: ProcessRepository,
@@ -217,7 +211,6 @@ export class BaseService {
       ctx.integrityRepository,
       ctx.jobRepository,
       ctx.libraryRepository,
-      ctx.machineLearningRepository,
       ctx.mapRepository,
       ctx.mediaRepository,
       ctx.memoryRepository,
@@ -225,7 +218,6 @@ export class BaseService {
       ctx.moveRepository,
       ctx.notificationRepository,
       ctx.oauthRepository,
-      ctx.ocrRepository,
       ctx.partnerRepository,
       ctx.pluginRepository,
       ctx.processRepository,

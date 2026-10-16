@@ -847,7 +847,6 @@ export enum QueueName {
   Library = 'library',
   Notification = 'notifications',
   BackupDatabase = 'backupDatabase',
-  Ocr = 'ocr',
   Workflow = 'workflow',
   IntegrityCheck = 'integrityCheck',
   Editor = 'editor',
@@ -929,8 +928,6 @@ export enum JobName {
   VersionCheck = 'VersionCheck',
 
   // OCR
-  OcrQueueAll = 'OcrQueueAll',
-  Ocr = 'Ocr',
 
   // Workflow
   WorkflowAssetTrigger = 'WorkflowAssetTrigger',

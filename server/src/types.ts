@@ -415,10 +415,6 @@ export type JobItem =
   // Version check
   | { name: JobName.VersionCheck; data: IBaseJob }
 
-  // OCR
-  | { name: JobName.OcrQueueAll; data: IBaseJob }
-  | { name: JobName.Ocr; data: IEntityJob }
-
   // Workflow
   | { name: JobName.WorkflowAssetTrigger; data: { workflowId: string; assetId: string } }
 

@@ -223,17 +223,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       RETURN NULL;
     END
   $$;`.execute(db);
-  await sql`CREATE OR REPLACE FUNCTION asset_ocr_delete_audit()
-  RETURNS TRIGGER
-  LANGUAGE PLPGSQL
-  AS $$
-    BEGIN
-      INSERT INTO asset_ocr_audit ("assetId")
-      SELECT "assetId"
-      FROM OLD;
-      RETURN NULL;
-    END
-  $$;`.execute(db);
   await sql`CREATE TYPE "album_user_role_enum" AS ENUM ('owner','editor','viewer');`.execute(db);
   await sql`CREATE TYPE "assets_status_enum" AS ENUM ('active','trashed','deleted');`.execute(db);
   await sql`CREATE TYPE "asset_visibility_enum" AS ENUM ('archive','timeline','hidden','locked');`.execute(db);
@@ -666,7 +655,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   "facesRecognizedAt" timestamp with time zone,
   "metadataExtractedAt" timestamp with time zone,
   "duplicatesDetectedAt" timestamp with time zone,
-  "ocrAt" timestamp with time zone,
   "embeddedAt" timestamp with time zone,
   CONSTRAINT "asset_job_status_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "asset" ("id") ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT "asset_job_status_pkey" PRIMARY KEY ("assetId")
@@ -700,46 +688,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   EXECUTE FUNCTION asset_metadata_audit();`.execute(db);
   await sql`CREATE OR REPLACE TRIGGER "asset_metadata_updated_at"
   BEFORE UPDATE ON "asset_metadata"
-  FOR EACH ROW
-  EXECUTE FUNCTION updated_at();`.execute(db);
-  await sql`CREATE TABLE "asset_ocr_audit" (
-  "id" uuid NOT NULL DEFAULT immich_uuid_v7(),
-  "assetId" uuid NOT NULL,
-  "deletedAt" timestamp with time zone NOT NULL DEFAULT clock_timestamp(),
-  CONSTRAINT "asset_ocr_audit_pkey" PRIMARY KEY ("id")
-);`.execute(db);
-  await sql`CREATE INDEX "asset_ocr_audit_assetId_idx" ON "asset_ocr_audit" ("assetId");`.execute(db);
-  await sql`CREATE INDEX "asset_ocr_audit_deletedAt_idx" ON "asset_ocr_audit" ("deletedAt");`.execute(db);
-  await sql`CREATE TABLE "asset_ocr" (
-  "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-  "assetId" uuid NOT NULL,
-  "x1" real NOT NULL,
-  "y1" real NOT NULL,
-  "x2" real NOT NULL,
-  "y2" real NOT NULL,
-  "x3" real NOT NULL,
-  "y3" real NOT NULL,
-  "x4" real NOT NULL,
-  "y4" real NOT NULL,
-  "boxScore" real NOT NULL,
-  "textScore" real NOT NULL,
-  "text" text NOT NULL,
-  "isVisible" boolean NOT NULL DEFAULT true,
-  "updatedAt" timestamp with time zone NOT NULL DEFAULT now(),
-  "updateId" uuid NOT NULL DEFAULT immich_uuid_v7(),
-  CONSTRAINT "asset_ocr_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "asset" ("id") ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT "asset_ocr_pkey" PRIMARY KEY ("id")
-);`.execute(db);
-  await sql`CREATE INDEX "asset_ocr_assetId_idx" ON "asset_ocr" ("assetId");`.execute(db);
-  await sql`CREATE INDEX "asset_ocr_updateId_idx" ON "asset_ocr" ("updateId");`.execute(db);
-  await sql`CREATE OR REPLACE TRIGGER "asset_ocr_delete_audit"
-  AFTER DELETE ON "asset_ocr"
-  REFERENCING OLD TABLE AS "old"
-  FOR EACH STATEMENT
-  WHEN (pg_trigger_depth() = 0)
-  EXECUTE FUNCTION asset_ocr_delete_audit();`.execute(db);
-  await sql`CREATE OR REPLACE TRIGGER "asset_ocr_updatedAt"
-  BEFORE UPDATE ON "asset_ocr"
   FOR EACH ROW
   EXECUTE FUNCTION updated_at();`.execute(db);
   await sql`CREATE TABLE "geodata_places" (
@@ -888,13 +836,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   BEFORE UPDATE ON "notification"
   FOR EACH ROW
   EXECUTE FUNCTION updated_at();`.execute(db);
-  await sql`CREATE TABLE "ocr_search" (
-  "assetId" uuid NOT NULL,
-  "text" text NOT NULL,
-  CONSTRAINT "ocr_search_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "asset" ("id") ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT "ocr_search_pkey" PRIMARY KEY ("assetId")
-);`.execute(db);
-  await sql`CREATE INDEX "idx_ocr_search_text" ON "ocr_search" USING gin (f_unaccent("text") gin_trgm_ops);`.execute(db);
   await sql`CREATE TABLE "partner_audit" (
   "id" uuid NOT NULL DEFAULT immich_uuid_v7(),
   "sharedById" uuid NOT NULL,
@@ -1277,7 +1218,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('function_asset_edit_insert', '{"type":"function","name":"asset_edit_insert","sql":"CREATE OR REPLACE FUNCTION asset_edit_insert()\\n  RETURNS TRIGGER\\n  LANGUAGE PLPGSQL\\n  AS $$\\n    BEGIN\\n      UPDATE asset\\n      SET \\"isEdited\\" = true\\n      FROM inserted_edit\\n      WHERE asset.id = inserted_edit.\\"assetId\\" AND NOT asset.\\"isEdited\\";\\n      RETURN NULL;\\n    END\\n  $$;"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('function_asset_edit_delete', '{"type":"function","name":"asset_edit_delete","sql":"CREATE OR REPLACE FUNCTION asset_edit_delete()\\n  RETURNS TRIGGER\\n  LANGUAGE PLPGSQL\\n  AS $$\\n    BEGIN\\n      UPDATE asset\\n      SET \\"isEdited\\" = false\\n      FROM deleted_edit\\n      WHERE asset.id = deleted_edit.\\"assetId\\" AND asset.\\"isEdited\\"\\n        AND NOT EXISTS (SELECT FROM asset_edit edit WHERE edit.\\"assetId\\" = asset.id);\\n      RETURN NULL;\\n    END\\n  $$;"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('function_asset_edit_audit', '{"type":"function","name":"asset_edit_audit","sql":"CREATE OR REPLACE FUNCTION asset_edit_audit()\\n  RETURNS TRIGGER\\n  LANGUAGE PLPGSQL\\n  AS $$\\n    BEGIN\\n      INSERT INTO asset_edit_audit (\\"editId\\", \\"assetId\\")\\n      SELECT \\"id\\", \\"assetId\\"\\n      FROM OLD;\\n      RETURN NULL;\\n    END\\n  $$;"}'::jsonb);`.execute(db);
-  await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('function_asset_ocr_delete_audit', '{"type":"function","name":"asset_ocr_delete_audit","sql":"CREATE OR REPLACE FUNCTION asset_ocr_delete_audit()\\n  RETURNS TRIGGER\\n  LANGUAGE PLPGSQL\\n  AS $$\\n    BEGIN\\n      INSERT INTO asset_ocr_audit (\\"assetId\\")\\n      SELECT \\"assetId\\"\\n      FROM OLD;\\n      RETURN NULL;\\n    END\\n  $$;"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_user_delete_audit', '{"type":"trigger","name":"user_delete_audit","sql":"CREATE OR REPLACE TRIGGER \\"user_delete_audit\\"\\n  AFTER DELETE ON \\"user\\"\\n  REFERENCING OLD TABLE AS \\"old\\"\\n  FOR EACH STATEMENT\\n  WHEN (pg_trigger_depth() = 0)\\n  EXECUTE FUNCTION user_delete_audit();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_user_updatedAt', '{"type":"trigger","name":"user_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"user_updatedAt\\"\\n  BEFORE UPDATE ON \\"user\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_library_updatedAt', '{"type":"trigger","name":"library_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"library_updatedAt\\"\\n  BEFORE UPDATE ON \\"library\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
@@ -1311,8 +1251,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_asset_file_updatedAt', '{"type":"trigger","name":"asset_file_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"asset_file_updatedAt\\"\\n  BEFORE UPDATE ON \\"asset_file\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_asset_metadata_audit', '{"type":"trigger","name":"asset_metadata_audit","sql":"CREATE OR REPLACE TRIGGER \\"asset_metadata_audit\\"\\n  AFTER DELETE ON \\"asset_metadata\\"\\n  REFERENCING OLD TABLE AS \\"old\\"\\n  FOR EACH STATEMENT\\n  WHEN (pg_trigger_depth() = 0)\\n  EXECUTE FUNCTION asset_metadata_audit();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_asset_metadata_updated_at', '{"type":"trigger","name":"asset_metadata_updated_at","sql":"CREATE OR REPLACE TRIGGER \\"asset_metadata_updated_at\\"\\n  BEFORE UPDATE ON \\"asset_metadata\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
-  await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_asset_ocr_delete_audit', '{"type":"trigger","name":"asset_ocr_delete_audit","sql":"CREATE OR REPLACE TRIGGER \\"asset_ocr_delete_audit\\"\\n  AFTER DELETE ON \\"asset_ocr\\"\\n  REFERENCING OLD TABLE AS \\"old\\"\\n  FOR EACH STATEMENT\\n  WHEN (pg_trigger_depth() = 0)\\n  EXECUTE FUNCTION asset_ocr_delete_audit();"}'::jsonb);`.execute(db);
-  await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_asset_ocr_updatedAt', '{"type":"trigger","name":"asset_ocr_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"asset_ocr_updatedAt\\"\\n  BEFORE UPDATE ON \\"asset_ocr\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('index_IDX_geodata_gist_earthcoord', '{"type":"index","name":"IDX_geodata_gist_earthcoord","sql":"CREATE INDEX \\"IDX_geodata_gist_earthcoord\\" ON \\"geodata_places\\" (ll_to_earth_public(latitude, longitude));"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('index_idx_geodata_places_name', '{"type":"index","name":"idx_geodata_places_name","sql":"CREATE INDEX \\"idx_geodata_places_name\\" ON \\"geodata_places\\" USING gin (f_unaccent(\\"name\\") gin_trgm_ops);"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('index_idx_geodata_places_admin2_name', '{"type":"index","name":"idx_geodata_places_admin2_name","sql":"CREATE INDEX \\"idx_geodata_places_admin2_name\\" ON \\"geodata_places\\" USING gin (f_unaccent(\\"admin2Name\\") gin_trgm_ops);"}'::jsonb);`.execute(db);
@@ -1323,7 +1261,6 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_memory_asset_delete_audit', '{"type":"trigger","name":"memory_asset_delete_audit","sql":"CREATE OR REPLACE TRIGGER \\"memory_asset_delete_audit\\"\\n  AFTER DELETE ON \\"memory_asset\\"\\n  REFERENCING OLD TABLE AS \\"old\\"\\n  FOR EACH STATEMENT\\n  WHEN (pg_trigger_depth() <= 1)\\n  EXECUTE FUNCTION memory_asset_delete_audit();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_memory_asset_updatedAt', '{"type":"trigger","name":"memory_asset_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"memory_asset_updatedAt\\"\\n  BEFORE UPDATE ON \\"memory_asset\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_notification_updatedAt', '{"type":"trigger","name":"notification_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"notification_updatedAt\\"\\n  BEFORE UPDATE ON \\"notification\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
-  await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('index_idx_ocr_search_text', '{"type":"index","name":"idx_ocr_search_text","sql":"CREATE INDEX \\"idx_ocr_search_text\\" ON \\"ocr_search\\" USING gin (f_unaccent(\\"text\\") gin_trgm_ops);"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_partner_delete_audit', '{"type":"trigger","name":"partner_delete_audit","sql":"CREATE OR REPLACE TRIGGER \\"partner_delete_audit\\"\\n  AFTER DELETE ON \\"partner\\"\\n  REFERENCING OLD TABLE AS \\"old\\"\\n  FOR EACH STATEMENT\\n  WHEN (pg_trigger_depth() = 0)\\n  EXECUTE FUNCTION partner_delete_audit();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_partner_updatedAt', '{"type":"trigger","name":"partner_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"partner_updatedAt\\"\\n  BEFORE UPDATE ON \\"partner\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
   await sql`INSERT INTO "migration_overrides" ("name", "value") VALUES ('trigger_session_updatedAt', '{"type":"trigger","name":"session_updatedAt","sql":"CREATE OR REPLACE TRIGGER \\"session_updatedAt\\"\\n  BEFORE UPDATE ON \\"session\\"\\n  FOR EACH ROW\\n  EXECUTE FUNCTION updated_at();"}'::jsonb);`.execute(db);
@@ -1356,7 +1293,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DROP TRIGGER "asset_exif_updatedAt" ON "asset_exif";`.execute(db);
   await sql`DROP TRIGGER "asset_file_updatedAt" ON "asset_file";`.execute(db);
   await sql`DROP TRIGGER "asset_metadata_updated_at" ON "asset_metadata";`.execute(db);
-  await sql`DROP TRIGGER "asset_ocr_updatedAt" ON "asset_ocr";`.execute(db);
   await sql`DROP TRIGGER "memory_updatedAt" ON "memory";`.execute(db);
   await sql`DROP TRIGGER "memory_asset_updatedAt" ON "memory_asset";`.execute(db);
   await sql`DROP TRIGGER "notification_updatedAt" ON "notification";`.execute(db);
@@ -1398,8 +1334,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DROP FUNCTION asset_edit_delete;`.execute(db);
   await sql`DROP TRIGGER "asset_edit_audit" ON "asset_edit";`.execute(db);
   await sql`DROP FUNCTION asset_edit_audit;`.execute(db);
-  await sql`DROP TRIGGER "asset_ocr_delete_audit" ON "asset_ocr";`.execute(db);
-  await sql`DROP FUNCTION asset_ocr_delete_audit;`.execute(db);
   await sql`ALTER TABLE "stack" DROP CONSTRAINT "stack_primaryAssetId_fkey";`.execute(db);
   await sql`ALTER TABLE "asset" DROP CONSTRAINT "asset_livePhotoVideoId_fkey";`.execute(db);
   await sql`ALTER TABLE "session" DROP CONSTRAINT "session_parentId_fkey";`.execute(db);
@@ -1418,9 +1352,7 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DROP TABLE "asset_file";`.execute(db);
   await sql`DROP TABLE "asset_job_status";`.execute(db);
   await sql`DROP TABLE "asset_metadata";`.execute(db);
-  await sql`DROP TABLE "asset_ocr";`.execute(db);
   await sql`DROP TABLE "memory_asset";`.execute(db);
-  await sql`DROP TABLE "ocr_search";`.execute(db);
   await sql`DROP TABLE "tag_asset";`.execute(db);
   await sql`DROP TABLE "video_stream_segment";`.execute(db);
   await sql`DROP TABLE "video_stream_variant";`.execute(db);
@@ -1454,7 +1386,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DROP TABLE "asset_audit";`.execute(db);
   await sql`DROP TABLE "asset_edit_audit";`.execute(db);
   await sql`DROP TABLE "asset_metadata_audit";`.execute(db);
-  await sql`DROP TABLE "asset_ocr_audit";`.execute(db);
   await sql`DROP TABLE "geodata_places";`.execute(db);
   await sql`DROP TABLE "memory_audit";`.execute(db);
   await sql`DROP TABLE "move_history";`.execute(db);
@@ -1487,7 +1418,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'function_asset_edit_insert';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'function_asset_edit_delete';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'function_asset_edit_audit';`.execute(db);
-  await sql`DELETE FROM "migration_overrides" WHERE "name" = 'function_asset_ocr_delete_audit';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_user_delete_audit';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_user_updatedAt';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_library_updatedAt';`.execute(db);
@@ -1521,8 +1451,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_asset_file_updatedAt';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_asset_metadata_audit';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_asset_metadata_updated_at';`.execute(db);
-  await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_asset_ocr_delete_audit';`.execute(db);
-  await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_asset_ocr_updatedAt';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'index_IDX_geodata_gist_earthcoord';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'index_idx_geodata_places_name';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'index_idx_geodata_places_admin2_name';`.execute(db);
@@ -1533,7 +1461,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_memory_asset_delete_audit';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_memory_asset_updatedAt';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_notification_updatedAt';`.execute(db);
-  await sql`DELETE FROM "migration_overrides" WHERE "name" = 'index_idx_ocr_search_text';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_partner_delete_audit';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_partner_updatedAt';`.execute(db);
   await sql`DELETE FROM "migration_overrides" WHERE "name" = 'trigger_session_updatedAt';`.execute(db);

@@ -13,7 +13,7 @@ import { ImagePathOptions, StorageCore, ThumbnailPathEntity } from 'src/cores/st
 import { AssetFile } from 'src/database.js';
 import { OnEvent, OnJob } from 'src/decorators.js';
 import { ConfigFFmpegDto, SystemConfig } from 'src/dtos/config.dto.js';
-import { AssetEditAction, CropParameters } from 'src/dtos/editing.dto.js';
+import { CropParameters } from 'src/dtos/editing.dto.js';
 import {
   AssetFileType,
   AssetType,
@@ -34,10 +34,8 @@ import {
   VideoContainer,
 } from 'src/enum.js';
 import { AssetJobRepository } from 'src/repositories/asset-job.repository.js';
-import { BoundingBox } from 'src/repositories/machine-learning.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { getAssetFile, getDimensions } from 'src/utils/asset.util.js';
-import { checkOcrVisibility } from 'src/utils/editor.js';
 import { BaseConfig, ThumbnailConfig } from 'src/utils/media.js';
 import { mimeTypes } from 'src/utils/mime-types.js';
 import { batched, clamp } from 'src/utils/misc.js';
@@ -53,6 +51,8 @@ interface UpsertFileOptions {
 }
 
 type ThumbnailAsset = NonNullable<Awaited<ReturnType<AssetJobRepository['getForGenerateThumbnailJob']>>>;
+
+type BoundingBox = { x1: number; y1: number; x2: number; y2: number };
 
 @Injectable()
 export class MediaService extends BaseService {
@@ -735,22 +735,6 @@ export class MediaService extends BaseService {
     }
 
     const generated = asset.edits.length > 0 ? await this.generateImageThumbnails(asset, config, true) : undefined;
-
-    const crop = asset.edits.find((e) => e.action === AssetEditAction.Crop);
-    const cropBox = crop
-      ? {
-          x1: crop.parameters.x,
-          y1: crop.parameters.y,
-          x2: crop.parameters.x + crop.parameters.width,
-          y2: crop.parameters.y + crop.parameters.height,
-        }
-      : undefined;
-
-    const originalDimensions = getDimensions(asset.exifInfo!);
-    const ocrData = await this.ocrRepository.getByAssetId(asset.id, {});
-
-    const ocrStatuses = checkOcrVisibility(ocrData, originalDimensions, cropBox);
-    await this.ocrRepository.updateOcrVisibilities(asset.id, ocrStatuses.visible, ocrStatuses.hidden);
 
     return generated;
   }

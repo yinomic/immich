@@ -41,7 +41,6 @@ import { IntegrityRepository } from 'src/repositories/integrity.repository.js';
 import { JobRepository } from 'src/repositories/job.repository.js';
 import { LibraryRepository } from 'src/repositories/library.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
-import { MachineLearningRepository } from 'src/repositories/machine-learning.repository.js';
 import { MapRepository } from 'src/repositories/map.repository.js';
 import { MediaRepository } from 'src/repositories/media.repository.js';
 import { MemoryRepository } from 'src/repositories/memory.repository.js';
@@ -49,7 +48,6 @@ import { MetadataRepository } from 'src/repositories/metadata.repository.js';
 import { MoveRepository } from 'src/repositories/move.repository.js';
 import { NotificationRepository } from 'src/repositories/notification.repository.js';
 import { OAuthRepository } from 'src/repositories/oauth.repository.js';
-import { OcrRepository } from 'src/repositories/ocr.repository.js';
 import { PartnerRepository } from 'src/repositories/partner.repository.js';
 import { PluginRepository } from 'src/repositories/plugin.repository.js';
 import { ProcessRepository } from 'src/repositories/process.repository.js';
@@ -255,14 +253,12 @@ export type ServiceOverrides = {
   job: JobRepository;
   library: LibraryRepository;
   logger: LoggingRepository;
-  machineLearning: MachineLearningRepository;
   map: MapRepository;
   media: MediaRepository;
   memory: MemoryRepository;
   metadata: MetadataRepository;
   move: MoveRepository;
   notification: NotificationRepository;
-  ocr: OcrRepository;
   oauth: OAuthRepository;
   partner: PartnerRepository;
   plugin: PluginRepository;
@@ -340,14 +336,12 @@ export const getMocks = () => {
     job: newJobRepositoryMock(),
     apiKey: automock(ApiKeyRepository),
     library: automock(LibraryRepository, { strict: false }),
-    machineLearning: automock(MachineLearningRepository, { args: [loggerMock], strict: false }),
     map: automock(MapRepository, { args: [undefined, undefined, { setContext: () => {} }] }),
     media: newMediaRepositoryMock(),
     memory: automock(MemoryRepository),
     metadata: newMetadataRepositoryMock(),
     move: automock(MoveRepository, { strict: false }),
     notification: automock(NotificationRepository),
-    ocr: automock(OcrRepository, { strict: false }),
     oauth: automock(OAuthRepository, { args: [loggerMock] }),
     partner: automock(PartnerRepository, { strict: false }),
     plugin: automock(PluginRepository, { strict: true, args: [databaseMock, loggerMock] }),
@@ -410,7 +404,6 @@ export const newTestService = <T extends BaseService>(
     overrides.integrityReport || (mocks.integrityReport as As<IntegrityRepository>),
     overrides.job || (mocks.job as As<JobRepository>),
     overrides.library || (mocks.library as As<LibraryRepository>),
-    overrides.machineLearning || (mocks.machineLearning as As<MachineLearningRepository>),
     overrides.map || (mocks.map as As<MapRepository>),
     overrides.media || (mocks.media as As<MediaRepository>),
     overrides.memory || (mocks.memory as As<MemoryRepository>),
@@ -418,7 +411,6 @@ export const newTestService = <T extends BaseService>(
     overrides.move || (mocks.move as As<MoveRepository>),
     overrides.notification || (mocks.notification as As<NotificationRepository>),
     overrides.oauth || (mocks.oauth as As<OAuthRepository>),
-    overrides.ocr || (mocks.ocr as As<OcrRepository>),
     overrides.partner || (mocks.partner as As<PartnerRepository>),
     overrides.plugin || (mocks.plugin as As<PluginRepository>),
     overrides.process || (mocks.process as As<ProcessRepository>),

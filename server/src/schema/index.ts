@@ -6,7 +6,6 @@ import {
   album_user_delete_audit,
   asset_delete_audit,
   asset_metadata_audit,
-  asset_ocr_delete_audit,
   f_concat_ws,
   f_unaccent,
   immich_uuid_v7,
@@ -36,8 +35,6 @@ import { AssetFileTable } from 'src/schema/tables/asset-file.table.js';
 import { AssetJobStatusTable } from 'src/schema/tables/asset-job-status.table.js';
 import { AssetMetadataAuditTable } from 'src/schema/tables/asset-metadata-audit.table.js';
 import { AssetMetadataTable } from 'src/schema/tables/asset-metadata.table.js';
-import { AssetOcrAuditTable } from 'src/schema/tables/asset-ocr-audit.table.js';
-import { AssetOcrTable } from 'src/schema/tables/asset-ocr.table.js';
 import { AssetTable } from 'src/schema/tables/asset.table.js';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table.js';
 import { IntegrityReportTable } from 'src/schema/tables/integrity-report.table.js';
@@ -49,7 +46,6 @@ import { MemoryTable } from 'src/schema/tables/memory.table.js';
 import { MoveTable } from 'src/schema/tables/move.table.js';
 import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-countries.table.js';
 import { NotificationTable } from 'src/schema/tables/notification.table.js';
-import { OcrSearchTable } from 'src/schema/tables/ocr-search.table.js';
 import { PartnerAuditTable } from 'src/schema/tables/partner-audit.table.js';
 import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table.js';
@@ -96,8 +92,6 @@ export class ImmichDatabase {
     AssetMetadataTable,
     AssetMetadataAuditTable,
     AssetJobStatusTable,
-    AssetOcrTable,
-    AssetOcrAuditTable,
     AssetTable,
     AssetFileTable,
     AssetExifTable,
@@ -111,7 +105,6 @@ export class ImmichDatabase {
     MoveTable,
     NaturalEarthCountriesTable,
     NotificationTable,
-    OcrSearchTable,
     PartnerAuditTable,
     PartnerTable,
     SessionTable,
@@ -154,7 +147,6 @@ export class ImmichDatabase {
     stack_delete_audit,
     user_metadata_audit,
     asset_metadata_audit,
-    asset_ocr_delete_audit,
     album_user_delete,
   ];
 
@@ -190,12 +182,9 @@ export interface DB {
   asset_metadata: AssetMetadataTable;
   asset_metadata_audit: AssetMetadataAuditTable;
   asset_job_status: AssetJobStatusTable;
-  asset_ocr: AssetOcrTable;
-  asset_ocr_audit: AssetOcrAuditTable;
   asset_audio: AssetAudioTable;
   asset_video: AssetVideoTable;
   asset_keyframe: AssetKeyframeTable;
-  ocr_search: OcrSearchTable;
 
   geodata_places: GeodataPlacesTable;
 

@@ -446,11 +446,7 @@ export function searchAssetBuilderLegacy(kysely: Kysely<DB>, options: AssetSearc
         .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
         .where(sql`f_unaccent(asset_exif.description)`, 'ilike', sql`'%' || f_unaccent(${options.description}) || '%'`),
     )
-    .$if(!!options.ocr, (qb) =>
-      qb
-        .innerJoin('ocr_search', 'asset.id', 'ocr_search.assetId')
-        .where(() => sql`f_unaccent(ocr_search.text) %>> f_unaccent(${tokenizeForSearch(options.ocr!).join(' ')})`),
-    )
+    .$if(!!options.ocr, (qb) => qb)
     .$if(!!options.type, (qb) => qb.where('asset.type', '=', options.type!))
     .$if(options.isFavorite !== undefined, (qb) => qb.where('asset.isFavorite', '=', options.isFavorite!))
     .$if(options.isOffline !== undefined, (qb) => qb.where('asset.isOffline', '=', options.isOffline!))
@@ -665,18 +661,6 @@ function branchPredicates(eb: AssetExpressionBuilder, branch: SearchFilterBranch
     ...stringPatternPredicates(eb, 'asset_exif.description', branch.description),
     ...stringPatternPredicates(eb, 'asset.originalFileName', branch.originalFileName),
     ...stringPatternPredicates(eb, 'asset.originalPath', branch.originalPath),
-    ...(branch.ocr
-      ? [
-          eb.exists(
-            eb
-              .selectFrom('ocr_search')
-              .whereRef('ocr_search.assetId', '=', 'asset.id')
-              .where(
-                sql<SqlBool>`f_unaccent(ocr_search.text) %>> f_unaccent(${tokenizeForSearch(branch.ocr.matches).join(' ')})`,
-              ),
-          ),
-        ]
-      : []),
     ...comparisonPredicates(eb, 'asset_exif.rating', branch.rating),
     ...comparisonPredicates(eb, 'asset_exif.fileSizeInByte', branch.fileSizeInBytes),
     ...comparisonPredicates(eb, 'asset.fileCreatedAt', branch.takenAt),

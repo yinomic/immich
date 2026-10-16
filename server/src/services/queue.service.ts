@@ -233,10 +233,6 @@ export class QueueService extends BaseService {
         return this.jobRepository.queue({ name: JobName.DatabaseBackup, data: { force } });
       }
 
-      case QueueName.Ocr: {
-        return this.jobRepository.queue({ name: JobName.OcrQueueAll, data: { force } });
-      }
-
       default: {
         throw new BadRequestException(`Invalid job name: ${name}`);
       }

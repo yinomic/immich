@@ -232,3 +232,10 @@
 - 单测/测试夹具尚未跟上删除：`pnpm --filter immich check` 目前会报 spec 相关错误（源码 `src/` 单独 typecheck 通过）；需清理 `test/utils.ts`、`test/medium.factory.ts`、`test/mappers.ts`、`test/factories/*` 以及各 spec 里对应已删功能的用例
 - OCR 与 `machine-learning.repository.ts` 尚未删除（OCR 仍会调用 ML 仓库；下一轮与 schema 一起清掉，并再次重生成迁移）
 - 云存储（TOS/COS）、无缩略图、单账号/无分享仍是未开工的大块（P3/P4）
+
+### Round 5（删除 OCR 与 machine-learning 仓库；测试夹具补齐；迁移重生成）
+- 删除 CLI/服务/仓库/表：`ocr.service`、`ocr.repository`、`machine-learning.repository`、`dtos/ocr.dto`、`asset_ocr`/`asset_ocr_audit`/`ocr_search` 三张表、`asset_ocr_delete_audit` 函数、`asset_job_status.ocrAt` 列、`JobName.Ocr*`/`QueueName.Ocr`、资产的 OCR 接口与 `search.dto` 的 ocr 过滤、同步里的 OCR 实体、`utils/{editor,transform}` 里的 OCR 辅助
+- 删除配置里的 `machineLearning` 整块（DTO、默认值、`MachineLearningConfig`、`utils/misc` 的 4 个判定函数），`getFeatures()` 改为：`smartSearch` 取云端搜索开关，`facialRecognition/duplicateDetection/ocr` 恒为 false，并移除 `ServerConfigDto.minFaces`
+- 测试夹具与用例全部跟上：`tsc` 0 错、eslint `--max-warnings 0` 通过、单测 95 文件 / 1699 用例全绿
+- 迁移再次重生成：`1792179586372-FamilyAlbumInitialSchema.ts`，58 张表（比上轮少 3 张）、无 OCR/向量相关对象；在 stock `postgres:16` 上 `migrations run` 成功且 `migrations generate` 再次返回 **No changes detected**
+- 运行时冒烟复测（stock PG + Redis，无 ML 容器，mock 云端向量）：`smartSearch:true / ocr:false / facialRecognition:false`；上传 → SmartSearch 作业 0 报错 → 向量落库 → `embeddedAt` 写入 → 文本搜索命中 1 张
