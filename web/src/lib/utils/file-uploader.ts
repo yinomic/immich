@@ -16,7 +16,6 @@ import { addAssetsToAlbums } from '$lib/services/album.service';
 import { uploadAssetsStore } from '$lib/stores/upload';
 import { UploadState } from '$lib/types';
 import { uploadRequest } from '$lib/utils';
-import { asQueryString } from '$lib/utils';
 import { ExecutorQueue } from '$lib/utils/executor-queue';
 import { handleError } from './handle-error';
 

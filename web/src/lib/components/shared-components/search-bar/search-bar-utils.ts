@@ -4,7 +4,6 @@ import { t } from 'svelte-i18n';
 import type { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 import { MediaType } from '$lib/constants';
-import { handleError } from '$lib/utils/handle-error';
 
 export enum SearchDatePreset {
   ThisYear,

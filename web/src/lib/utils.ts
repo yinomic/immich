@@ -22,7 +22,6 @@ import { DateTime } from 'luxon';
 import { init, register, t } from 'svelte-i18n';
 import { derived, get } from 'svelte/store';
 import { defaultLang, locales } from '$lib/constants';
-import { authManager } from '$lib/managers/auth-manager.svelte';
 import { alwaysLoadOriginalFile, lang, locale } from '$lib/stores/preferences.store';
 import { isWebCompatibleImage } from '$lib/utils/asset-utils';
 import { handleError } from '$lib/utils/handle-error';

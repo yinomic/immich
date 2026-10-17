@@ -1,7 +1,6 @@
 import { getAssetInfo, type AssetResponseDto } from '@immich/sdk';
 import type { ZoomImageWheelState } from '@zoom-image/core';
 import { cubicOut } from 'svelte/easing';
-import { authManager } from '$lib/managers/auth-manager.svelte';
 import { userPreferencesManager } from '$lib/managers/user-preferences-manager.svelte';
 import type { ImageLoaderStatus } from '$lib/utils/adaptive-image-loader.svelte';
 import { canCopyImageToClipboard } from '$lib/utils/asset-utils';

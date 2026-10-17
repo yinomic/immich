@@ -23,7 +23,6 @@ import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager
 import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
 import { locale } from '$lib/stores/preferences.store';
 import { downloadUrlPost, withError } from '$lib/utils';
-import { asQueryString } from '$lib/utils';
 import { getByteUnitString } from '$lib/utils/byte-units';
 import { getFormatter } from '$lib/utils/i18n';
 import { navigate } from '$lib/utils/navigation';
