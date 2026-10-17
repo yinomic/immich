@@ -50,6 +50,13 @@ export class ObjectStorageRepository implements ObjectStorage {
   }
 
   delete(keys: string[]): Promise<void> {
+    // NOTE (family fork): the objects are the family's photos — with soft delete only
+    // (the default) they are never removed from the bucket.
+    if (this.configRepository.getEnv().storage.softDeleteOnly) {
+      this.logger.log(`Soft delete only: keeping ${keys.length} object(s) in the bucket`);
+      return Promise.resolve();
+    }
+
     return this.getStorage().delete(keys);
   }
 

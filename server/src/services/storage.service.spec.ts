@@ -27,6 +27,7 @@ describe(StorageService.name, () => {
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'cache',
             backend: 'local',
+            softDeleteOnly: true,
             s3: {
               endpoint: '',
               region: 'auto',
@@ -103,6 +104,7 @@ describe(StorageService.name, () => {
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'cache',
             backend: 'local',
+            softDeleteOnly: true,
             s3: {
               endpoint: '',
               region: 'auto',
@@ -192,6 +194,7 @@ describe(StorageService.name, () => {
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'cache',
             backend: 'local',
+            softDeleteOnly: true,
             s3: {
               endpoint: '',
               region: 'auto',

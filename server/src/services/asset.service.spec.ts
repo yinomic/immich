@@ -17,6 +17,7 @@ import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
 import { getForAsset, getForAssetDeletion } from 'test/mappers.js';
+import { mockEnvData } from 'test/repositories/config.repository.mock.js';
 import { newUuid } from 'test/small.factory.js';
 import { ServiceMocks, makeStream, newTestService } from 'test/utils.js';
 
@@ -448,6 +449,32 @@ describe(AssetService.name, () => {
       });
       expect(mocks.asset.updateDateTimeOriginal).toHaveBeenCalledWith(['asset-1'], dateTimeRelative, timeZone);
       expect(mocks.job.queueAll).toHaveBeenCalledWith([{ name: JobName.SidecarWrite, data: { id: 'asset-1' } }]);
+    });
+  });
+
+  describe('soft delete only (fork default)', () => {
+    beforeEach(() => {
+      mocks.config.getEnv.mockReturnValue(
+        mockEnvData({ storage: { ...mockEnvData({}).storage, softDeleteOnly: true } }),
+      );
+    });
+
+    it('should keep the asset and its files instead of deleting them', async () => {
+      await expect(sut.handleAssetDeletion({ id: 'asset-1', deleteOnDisk: true })).resolves.toBe(JobStatus.Skipped);
+
+      expect(mocks.asset.remove).not.toHaveBeenCalled();
+      expect(mocks.job.queue).not.toHaveBeenCalled();
+    });
+
+    it('should downgrade a permanent delete to a trash operation', async () => {
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset1']));
+
+      await sut.deleteAll(authStub.user1, { ids: ['asset1'], force: true });
+
+      expect(mocks.asset.updateAll).toHaveBeenCalledWith(['asset1'], {
+        deletedAt: expect.any(Date),
+        status: AssetStatus.Trashed,
+      });
     });
   });
 

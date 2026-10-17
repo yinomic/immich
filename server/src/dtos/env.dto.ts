@@ -63,6 +63,7 @@ export const EnvSchema = z
     IMMICH_LOG_LEVEL: LogLevelSchema.optional(),
     IMMICH_LOG_FORMAT: LogFormatSchema.optional(),
     IMMICH_CACHE_LOCATION: absolutePath,
+    IMMICH_SOFT_DELETE_ONLY: stringBool.optional(),
     IMMICH_STORAGE_BACKEND: StorageBackendSchema.optional(),
     IMMICH_MEDIA_LOCATION: absolutePath,
     IMMICH_THUMBNAILS: ThumbnailModeSchema.optional(),

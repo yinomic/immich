@@ -88,6 +88,7 @@ export const envData: EnvData = {
     cacheLocation: '/tmp/immich-cache',
     thumbnails: 'cache',
     backend: 'local',
+    softDeleteOnly: false,
     s3: {
       endpoint: 'http://localhost:9000',
       region: 'auto',

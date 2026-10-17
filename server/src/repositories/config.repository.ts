@@ -117,6 +117,8 @@ export interface EnvData {
     /** `off` serves originals instead of cached thumbnails */
     thumbnails: 'cache' | 'off';
     backend: 'local' | 's3';
+    /** never remove assets or objects: deletion only moves them to the trash */
+    softDeleteOnly: boolean;
     s3: {
       endpoint: string;
       region: string;
@@ -356,6 +358,7 @@ const getEnv = (): EnvData => {
       cacheLocation: dto.IMMICH_CACHE_LOCATION ?? join(tmpdir(), 'immich-cache'),
       thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
       backend: dto.IMMICH_STORAGE_BACKEND ?? 'local',
+      softDeleteOnly: dto.IMMICH_SOFT_DELETE_ONLY ?? true,
       s3: {
         endpoint: dto.S3_ENDPOINT ?? '',
         region: dto.S3_REGION ?? 'auto',

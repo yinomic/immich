@@ -292,6 +292,14 @@ export class AssetService extends BaseService {
   async handleAssetDeletion(job: JobOf<JobName.AssetDelete>): Promise<JobStatus> {
     const { id, deleteOnDisk: isDeleteOnDiskRequest } = job;
 
+    // NOTE (family fork): with IMMICH_SOFT_DELETE_ONLY (the default) nothing is ever
+    // removed for good — assets stay in the trash and their files stay in the store,
+    // so an accidental delete can always be undone.
+    if (this.configRepository.getEnv().storage.softDeleteOnly) {
+      this.logger.log(`Soft delete only: keeping asset ${id} (and its files) instead of deleting it`);
+      return JobStatus.Skipped;
+    }
+
     const asset = await this.assetJobRepository.getForAssetDeletion(id);
 
     if (!asset) {
@@ -362,7 +370,9 @@ export class AssetService extends BaseService {
   }
 
   async deleteAll(auth: AuthDto, dto: AssetBulkDeleteDto): Promise<void> {
-    const { ids, force } = dto;
+    const { ids } = dto;
+    // NOTE (family fork): soft delete only downgrades a permanent delete to a trash
+    const force = dto.force && !this.configRepository.getEnv().storage.softDeleteOnly;
 
     await this.requireAccess({ auth, permission: Permission.AssetDelete, ids });
     await this.assetRepository.updateAll(ids, {

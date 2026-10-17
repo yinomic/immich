@@ -47,6 +47,12 @@ export class TrashService extends BaseService {
 
   @OnJob({ name: JobName.AssetEmptyTrash, queue: QueueName.BackgroundTask })
   async handleEmptyTrash() {
+    if (this.configRepository.getEnv().storage.softDeleteOnly) {
+      // NOTE (family fork): emptying the trash would remove the assets for good
+      this.logger.log('Soft delete only: skipping trash cleanup, nothing is ever removed');
+      return JobStatus.Skipped;
+    }
+
     let count = 0;
     for await (const assets of batched(this.trashRepository.getDeletedIds())) {
       await this.jobRepository.queueAll(

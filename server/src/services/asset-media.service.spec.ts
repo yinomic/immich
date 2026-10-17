@@ -592,6 +592,7 @@ describe(AssetMediaService.name, () => {
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'off',
             backend: 'local',
+            softDeleteOnly: true,
             s3: {
               endpoint: '',
               region: 'auto',
