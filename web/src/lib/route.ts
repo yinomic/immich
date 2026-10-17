@@ -56,8 +56,7 @@ export const Route = {
   // buy
   buy: () => '/buy',
 
-  // explore
-  explore: () => '/explore',
+  // places
   places: () => '/places',
 
   // folders
@@ -83,7 +82,6 @@ export const Route = {
   viewMemoryAsset: ({ id, assetId, ...params }: { id: string; assetId: string; isSaved?: boolean }) =>
     `/memories/${id}/photos/${assetId}` + asQueryString({ assetId, ...params }),
 
-
   // people
   people: () => '/people',
   viewPerson: ({ id }: { id: string }, params?: { previousRoute?: string; action?: 'merge' }) =>
@@ -105,7 +103,6 @@ export const Route = {
     const query = Object.keys(metadata).length === 0 ? undefined : JSON.stringify(metadata);
     return `/search` + asQueryString({ query });
   },
-
 
   // shared links
   sharedLinks: (params?: { filter?: SharedLinkTab }) => '/shared-links' + asQueryString(params),
@@ -134,7 +131,6 @@ export const Route = {
 
   // utilities
   utilities: () => '/utilities',
-  duplicatesUtility: (params?: { index?: number }) => '/utilities/duplicates' + asQueryString(params),
   largeFileUtility: () => '/utilities/large-files',
   geolocationUtility: () => '/utilities/geolocation',
 

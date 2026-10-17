@@ -656,3 +656,42 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 
 修后实测：新上传视频 `duration=2000ms`、`96x64` 元数据正确；`/thumbnail` **200**；`/assets/:id/video/playback` **302 → TOS 预签名**；作业 0 报错。（播放路由是 `/video/playback`，不是 `/video`。）
 **注意**：修复前上传的旧视频元数据是空的，需要跑一次强制重新抽取：`PUT /api/jobs/metadataExtraction {"command":"start","force":true}`，之后缩略图才会补上。
+
+### Round 34（用户反馈：web 上还有三个删不掉的死功能 → 探索 / 共享 / 检查重复项）
+用户在 docker compose 部署后指出：**探索**、**共享**、**实用工具 → 检查重复项** 三个入口还在，但点了不能用。本轮清掉。
+
+**根因**：这三个入口都还在客户端，而服务端接口早已删除（`/people`、`/partners`、`/cluster-groups`、`/duplicates`），所以点开必然 404/报错。之所以没被编译期发现，是因为 **`packages/sdk/src/fetch-client.ts` 是提交进仓库的生成物，且 docker 构建只对它跑 `tsc`、不会重新生成**（见 `server/Dockerfile` 的 `sdk` stage），于是 `getAllPeople` / `getPartners` / `getAssetDuplicates` 这些早已不存在的函数仍然“合法”，tsc 假通过。
+
+**本轮改动（全部在 `web/`）**
+1. **探索**
+   - 删除路由目录 `routes/(user)/explore/**`
+   - 侧边栏入口 `UserSidebar.svelte`（`featureFlagsManager.value.search` 那个 `NavbarItem`）
+   - 命令面板 `lib/commands.ts` 的「探索」项、`Route.explore()`
+   - 两处 `/` 快捷键（`GalleryViewer`、`TimelineKeyboardActions`）改为打开仍然可用的搜索页 `Route.search()`
+   - 搜索页里 `previousRoute` 的默认值/相册回退从 `Route.explore()` 改为 `Route.photos()`
+2. **共享**（用户设置里的「共享」折叠面板）
+   - 删除 `routes/(user)/user-settings/SharingSettings.svelte`（伙伴共享 + 集群组 + 人脸重算）
+   - 删除随之失去引用的三个弹窗：`ClusterGroupUsersModal`、`ClusterGroupUserSelectionModal`、`PartnerSelectionModal`
+   - `UserSettingsList.svelte` 去掉该折叠面板与相关 import
+   - `OpenQueryParam.SHARING` 删除；`NotificationPanel.svelte` 里指向它的 `ClusterGroupRequest` 分支（服务端已无该通知类型）一并删除
+3. **检查重复项**
+   - 删除路由目录 `routes/(user)/utilities/duplicates/**`（6 个文件）
+   - `UtilitiesMenu.svelte` 与 `lib/commands.ts` 去掉入口，`Route.duplicatesUtility()` 删除
+
+**验证（本机）**
+- `pnpm --filter immich-web check:typescript` → 0 错
+- `pnpm --filter immich-web check:svelte --fail-on-warnings` → **0 错 0 警告**
+- `pnpm --filter immich-web test --run` → 58 文件 / **555 用例全绿**（1 skipped）
+- `pnpm --filter immich-web build` → 成功（adapter-static）
+- 产物里 `'/explore'`、`utilities/duplicates` 出现次数 **0**
+- `prettier --check .` 全绿（顺手修掉两处此前遗留的格式问题：`FilingInfo.svelte`、`admin/system-settings/+page.svelte`）
+- ⚠️ `pnpm --filter immich-web lint` 在本机**崩溃**，与本次改动无关：`@koddsson/eslint-plugin-tscompat` 在 ESLint 10.12 + TS 6 下对**未改动的** `src/hooks.client.ts` 抛 `TypeError: Cannot read properties of undefined (reading 'Class')`。单独 lint 该文件同样崩溃。
+
+**同时产出：死代码全量清单（用于后续清理）**
+用服务端控制器重新导出 openapi（160 paths）后与已提交的 SDK 对比：**52 个 SDK 函数指向的接口已不存在**，web 仍有引用，主要集中在：
+- 点赞/评论：`activity-manager.svelte.ts`、`ActivityViewer.svelte`
+- 人脸/人物：`faces-page/**`、`PersonSidePanel`、`CreateFaceModal`、`PeoplePickerModal`、`PeopleSearch`、`AssetCacheManager`
+- 分享链接：`shared-link.service.ts`、`SharedLinkPage`、`AlbumSharedLink`、`RemoveFromSharedLinkAction`、`AlbumOptionsModal`、`ProductTour`
+- 其他：`searchSmart`、`searchPerson`、`getNotificationTemplateAdmin`、`PreloadManager`
+
+处理这批需要先重新生成 `open-api` + SDK（配方见 Round 20），分支 `sdk-regen-wip` 上已完成了大部分（web tsc 已归零，svelte-check 仍有约 182 项），后续把该分支与 `family-album` 合并收口。**注意：只要 SDK 不重新生成，这类"界面还在但接口已删"的死入口就会继续存在。**

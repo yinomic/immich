@@ -114,7 +114,7 @@
 
     const shortcuts: ShortcutOptions[] = [
       { shortcut: { key: '?', shift: true }, onShortcut: handleOpenShortcutModal },
-      { shortcut: { key: '/' }, onShortcut: () => goto(Route.explore()) },
+      { shortcut: { key: '/' }, onShortcut: () => goto(Route.search()) },
       { shortcut: { key: 'A', ctrl: true }, onShortcut: () => selectAllAssets(timelineManager, assetInteraction) },
       { shortcut: { key: 'ArrowRight' }, onShortcut: () => setFocusTo('earlier', 'asset') },
       { shortcut: { key: 'ArrowLeft' }, onShortcut: () => setFocusTo('later', 'asset') },

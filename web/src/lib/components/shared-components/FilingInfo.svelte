@@ -8,7 +8,9 @@
    * or the generated SDK. When the values are absent the component renders nothing.
    */
   const readMeta = (name: string) =>
-    typeof document === 'undefined' ? undefined : document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content;
+    typeof document === 'undefined'
+      ? undefined
+      : document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content;
 
   const info = readMeta('immich-filing-info');
   const url = readMeta('immich-filing-url') || 'https://beian.miit.gov.cn/';

@@ -11,7 +11,6 @@
   import { oauth } from '$lib/utils';
   import { type ApiKeyResponseDto, type SessionResponseDto } from '@immich/sdk';
   import {
-    mdiAccountGroupOutline,
     mdiAccountOutline,
     mdiApi,
     mdiBellOutline,
@@ -31,7 +30,6 @@
   import ChangePasswordSettings from './ChangePasswordSettings.svelte';
   import DeviceList from './DeviceList.svelte';
   import OauthSettings from './OauthSettings.svelte';
-  import SharingSettings from './SharingSettings.svelte';
   import UserApiKeyList from './UserApiKeyList.svelte';
   import UserProfileSettings from './UserProfileSettings.svelte';
 
@@ -147,13 +145,4 @@
   autoScrollTo={true}
 >
   <UserPurchaseSettings />
-</SettingAccordion>
-
-<SettingAccordion
-  icon={mdiAccountGroupOutline}
-  key={OpenQueryParam.SHARING}
-  title={$t('sharing')}
-  subtitle={$t('manage_sharing_with_other_users')}
->
-  <SharingSettings />
 </SettingAccordion>

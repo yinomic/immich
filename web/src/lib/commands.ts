@@ -5,7 +5,6 @@ import {
   mdiArchiveArrowDownOutline,
   mdiBookshelf,
   mdiCog,
-  mdiContentDuplicate,
   mdiCrosshairsGps,
   mdiFolderOutline,
   mdiHeartOutline,
@@ -81,13 +80,6 @@ export const getPagesProvider = ($t: MessageFormatter) => {
       icon: mdiImageMultipleOutline,
       onAction: () => goto(Route.photos()),
     },
-    {
-      title: $t('explore'),
-      icon: mdiMagnify,
-      onAction: () => goto(Route.explore()),
-      $if: () => authManager.authenticated && featureFlagsManager.value.search,
-    },
-
     {
       title: $t('map'),
       icon: mdiMapOutline,
@@ -165,11 +157,6 @@ export const getPagesProvider = ($t: MessageFormatter) => {
   ].map((route) => ({ $if: () => authManager.authenticated, ...route }));
 
   const utilityPages: ActionItem[] = [
-    {
-      title: $t('review_duplicates'),
-      icon: mdiContentDuplicate,
-      onAction: () => goto(Route.duplicatesUtility()),
-    },
     {
       title: $t('review_large_files'),
       icon: mdiImageSizeSelectLarge,

@@ -51,7 +51,7 @@
   // The GalleryViewer pushes it's own history state, which causes weird
   // behavior for history.back(). To prevent that we store the previous page
   // manually and navigate back to that.
-  let previousRoute = $state<string>(Route.explore());
+  let previousRoute = $state<string>(Route.photos());
 
   let nextPage = $state(1);
   let searchResultAlbums: AlbumResponseDto[] = $state([]);
@@ -91,7 +91,7 @@
     }
 
     if (isAlbumsRoute(route)) {
-      previousRoute = Route.explore();
+      previousRoute = Route.photos();
     }
 
     tick()
