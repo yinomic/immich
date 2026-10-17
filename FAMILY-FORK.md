@@ -617,3 +617,27 @@ cd server && set -a && . <(grep '^TOS_' ../docker/.env) && set +a && node script
 
 **已确认**：网络可达、endpoint/region 正确、AK/SK 有效、签名算法正确、预签名 URL 结构正确（`TOS4-HMAC-SHA256` + virtual-hosted 域名）。
 **未确认**：具体桶名，以及该密钥是否被授予目标桶的 `PutObject`/`GetObject`（对已存在的三个桶都是 403，可能是策略未覆盖，或目标桶不在这批候选里）。所有 PUT 探测均被拒绝，因此**没有往任何桶里写入东西**。
+
+### Round 32（真实 TOS 桶 `hyc` 端到端验证 ✅）
+
+**连通性（`scripts/verify-object-storage.mjs`，真实桶）**
+```
+ok PUT object (1861ms) / ok HEAD object (52ms) 53 bytes / ok GET object (71ms) bytes match
+ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
+5/5 checks passed
+```
+
+**应用级链路（服务以 `IMMICH_STORAGE_BACKEND=tos` 启动，日志 `Using Volcengine TOS bucket "hyc"`）**
+| 步骤 | 结果 |
+|---|---|
+| 上传照片 | `201`；数据库存的是对象 key `upload/<user>/d8/ef/<uuid>.png`；本地暂存目录已清空 |
+| 桶中对象 | `headObject` 命中：3458 bytes，`image/png` |
+| `GET /assets/:id/original` | `302` → `https://hyc.tos-cn-beijing.volces.com/upload/...` 预签名 → 拉取 **200（3458 字节）**，与原文件 **逐字节一致** |
+| `GET /assets/:id/thumbnail` | `200 image/webp`（缩略图由**桶里的原图**临时落地后生成 → 证明 `withLocalCopy` 在 TOS 下工作） |
+| 作业报错 | 0 |
+
+**软删除验证（真实桶）**：`DELETE /api/assets` 带 `force:true` → `204`；数据库行为 `trashed`；**桶里的对象仍在** → 永久删除被正确降级为回收站。
+
+**清理**：验证脚本自己删掉了探测对象；测试上传的 `upload/...png` 我也用 SDK 显式删除，最后桶内对象数 = **0**（不留垃圾）。
+
+**结论**：火山 TOS 后端 + 软删除开关，全部需求在真实桶上验证通过。
