@@ -150,16 +150,6 @@ export interface AssetSearchBuilderV3Options {
   order?: SearchOrder;
 }
 
-export type SmartSearchOptions = SearchDateOptions &
-  SearchEmbeddingOptions &
-  SearchExifOptions &
-  SearchOneToOneRelationOptions &
-  Omit<SearchStatusOptions, 'visibility'> &
-  SearchUserIdOptions &
-  SearchPeopleOptions &
-  SearchTagOptions &
-  SearchOcrOptions & { visibility?: AssetVisibility | 'not-locked'; viewingUserId?: string };
-
 export type LargeAssetSearchOptions = AssetSearchOptions & { minFileSize?: number };
 
 export interface AssetDuplicateResult {
@@ -300,22 +290,6 @@ export class SearchRepository {
       },
     ],
   })
-  /**
-   * Fetch the assets for a set of candidate ids produced by the vector store.
-   * Ranking (and paging) happens in the caller, which knows the similarity order.
-   */
-  async searchSmartByIds(options: Omit<SmartSearchOptions, 'embedding'> & { assetIds: string[] }) {
-    const { assetIds, ...rest } = options;
-    if (assetIds.length === 0) {
-      return [];
-    }
-
-    return searchAssetBuilderLegacy(this.db, rest)
-      .select(columns.searchAsset)
-      .where('asset.id', '=', anyUuid(assetIds))
-      .execute();
-  }
-
   @GenerateSql({ params: [DummyValue.STRING] })
   searchPlaces(placeName: string) {
     return this.db
@@ -474,22 +448,6 @@ export class SearchRepository {
   }
 
   // TODO(v4): drop the V3 suffix once the legacy methods are removed
-  /** See `searchSmartByIds`: the vector store provides the ids and their order. */
-  async searchSmartV3ByIds(
-    options: Omit<AssetSearchBuilderV3Options, 'order'>,
-    scope: AssetSearchScope,
-    assetIds: string[],
-  ) {
-    if (assetIds.length === 0) {
-      return [];
-    }
-
-    return searchAssetBuilder(this.db, options, scope)
-      .select(columns.searchAsset)
-      .where('asset.id', '=', anyUuid(assetIds))
-      .execute();
-  }
-
   // TODO(v4): drop the V3 suffix once the legacy methods are removed
   @GenerateSql(...searchStatisticsV3Examples)
   searchStatisticsV3(options: AssetSearchBuilderV3Options, scope: AssetSearchScope) {

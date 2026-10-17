@@ -356,7 +356,6 @@ export const StorageFolderSchema = z.enum(StorageFolder).describe('Storage folde
 
 export enum SystemMetadataKey {
   MediaLocation = 'MediaLocation',
-  CloudSearchIndex = 'cloud-search-index',
   ReverseGeocodingState = 'reverse-geocoding-state',
   FacialRecognitionState = 'facial-recognition-state',
   MemoriesState = 'memories-state',

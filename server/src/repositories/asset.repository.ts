@@ -362,7 +362,6 @@ export class AssetRepository {
               duplicatesDetectedAt: eb.ref('excluded.duplicatesDetectedAt'),
               facesRecognizedAt: eb.ref('excluded.facesRecognizedAt'),
               metadataExtractedAt: eb.ref('excluded.metadataExtractedAt'),
-              embeddedAt: eb.ref('excluded.embeddedAt'),
             },
             values[0],
           ),

@@ -14,8 +14,4 @@ export class AssetJobStatusTable {
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   duplicatesDetectedAt!: Timestamp | null;
-
-  /** when the cloud embedding for this asset was last refreshed */
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  embeddedAt!: Timestamp | null;
 }

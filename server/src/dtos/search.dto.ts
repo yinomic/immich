@@ -387,22 +387,10 @@ const StatisticsSearchSchema = withShapeExclusivity(
   }),
 ).meta({ id: 'StatisticsSearchDto' });
 
-const SmartSearchSchema = withShapeExclusivity(
-  BaseSearchWithResultsSchema.extend({
-    size: z.int().min(1).max(1000).default(100).describe('Number of results to return'),
-    query: z.string().trim().optional().describe('Natural language search query'),
-    queryAssetId: z.uuidv4().optional().describe('Asset ID to use as search reference'),
-    language: z.string().optional().describe('Search language code'),
-    page: z.int().min(1).optional().describe('Page number').meta(DEPRECATED_FLAT_FIELD),
-    filter: filterField,
-  }),
-).meta({ id: 'SmartSearchDto' });
-
 export class RandomSearchDto extends createZodDto(RandomSearchSchema) {}
 export class LargeAssetSearchDto extends createZodDto(LargeAssetSearchSchema) {}
 export class MetadataSearchDto extends createZodDto(MetadataSearchSchema) {}
 export class StatisticsSearchDto extends createZodDto(StatisticsSearchSchema) {}
-export class SmartSearchDto extends createZodDto(SmartSearchSchema) {}
 export class SearchPlacesDto extends createZodDto(SearchPlacesSchema) {}
 export class SearchPeopleDto extends createZodDto(SearchPeopleSchema) {}
 export class PlacesResponseDto extends createZodDto(PlacesResponseSchema) {}

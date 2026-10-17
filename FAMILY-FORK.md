@@ -334,6 +334,7 @@
 - **Redis / Valkey**（任务队列 + 多实例事件）
 - **不需要** machine-learning 容器
 - 对象存储：火山 TOS / 腾讯 COS / MinIO（S3 兼容）；本地文件系统也仍可用（默认）
+- **不需要搜索相关服务**：语义搜索与向量库已在 Round 17-19 全部移除（只保留本地关系型的元数据搜索，零额外成本）
 
 ### 9.2 compose（推荐写法）
 ```yaml
@@ -366,16 +367,10 @@ volumes:
 | `S3_PREFIX` / `S3_PRESIGN_TTL` | 可选：对象前缀、预签名有效期（默认 3600s） |
 | `IMMICH_CACHE_LOCATION` | 派生文件缓存目录（可随时删除，会自动重建） |
 | `IMMICH_THUMBNAILS` | `cache`（默认）/ `off` |
-| `IMMICH_CLOUD_SEARCH_ENABLED` | 打开云端语义搜索 |
-| `IMMICH_CLOUD_SEARCH_PROVIDER` | `ark`（火山方舟）/ `tencent` / `mock` |
-| `IMMICH_CLOUD_SEARCH_API_KEY` / `_MODEL` / `_BASE_URL` / `_DIM` | 云端 embedding 配置 |
-| `IMMICH_VECTOR_STORE` | `file`（默认，本地）/ `vikingdb`（火山云向量库） |
-| `VIKINGDB_*` | 火山向量库：`HOST/REGION/COLLECTION/INDEX/ACCESS_KEY/SECRET_KEY/API_KEY/...` |
 
 ### 9.4 上线前验证步骤
 1. 用真实 key 跑 `node scripts/verify-cloud-search.mjs --image <一张宝宝照片>`：确认返回维度、图文是否同一向量空间、单图延迟与计费口径
 2. 启动服务后确认日志出现 `Using S3 object storage (...)`，上传一张照片，`GET /assets/:id/original` 应返回 **302 到预签名 URL**
-3. 触发一次 `PUT /api/jobs/smartSearch {"command":"start","force":true}`，确认向量库有条目、搜索能命中
 4. 检查桶里**只有** `upload/`（原图/边车）等，没有 `thumbs/`（缩略图在本地 `/cache`）
 
 ### 9.5 已知遗留
@@ -423,3 +418,10 @@ volumes:
 3. `src/dtos/queue-legacy.dto.ts`：`[QueueName.SmartSearch]: QueueResponseLegacySchema`
 4. `src/services/job.service.ts:168`：`const jobs: JobItem[] = [{ name: JobName.SmartSearch, data: item.data }];` → `const jobs: JobItem[] = [];`
    注意：直接删枚举值会让 `JobItem` 推断收窄，`job.repository.ts`（约 261 行）等出现批量类型错误；正确做法是显式标注 `JobItem[]` 并逐个修，别用正则批量删。
+
+### 9.6 Round 19 收尾：搜索残留清理
+- 删除 `JobName.SmartSearch*` / `QueueName.SmartSearch` / `JobItem` 联合成员 / legacy 队列 DTO 条目 / 缩略图生成后入队的 smart search 作业
+- 删除被 `@Post('smart')` 孤儿装饰器"劫持"的 `searchSmart` 路由（当时 `POST /search/smart` 会错误地走到 explore 逻辑）
+- 删除 `asset_job_status.embeddedAt` 列（迁移 `1792192000000-DropEmbeddedAt`，已在本机库执行）、`SystemMetadataKey.CloudSearchIndex`、`SmartSearchDto`、`searchSmartByIds`/`searchSmartV3ByIds`/`SmartSearchOptions`
+- 运行时验证：登录 ✅、上传 201 ✅、缩略图 200 ✅、时间线新增桶 ✅、`POST /search/smart` **404** ✅、作业报错 0 ✅、找不到 handler 0 ✅
+- 检查：`tsc` 绿、eslint 绿、83 文件 / 1548 用例全绿

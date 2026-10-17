@@ -203,32 +203,6 @@ export class AssetJobRepository {
       .stream();
   }
 
-  @GenerateSql({ params: [], stream: true })
-  streamForEncodeClip(force?: boolean) {
-    // NOTE (family fork): cloud search embeds the *original* file — no preview
-    // (thumbnail) is generated in this build, so we cannot require one to exist.
-    // "already embedded" is tracked in `asset_job_status.embeddedAt` because the
-    // vectors themselves live in the vector store, not in Postgres.
-    return this.db
-      .selectFrom('asset')
-      .innerJoin('asset_job_status as job_status', 'job_status.assetId', 'asset.id')
-      .select(['asset.id'])
-      .where('asset.visibility', '!=', AssetVisibility.Hidden)
-      .where('asset.deletedAt', 'is', null)
-      .where('asset.type', '=', AssetType.Image)
-      .$if(!force, (qb) => qb.where('job_status.embeddedAt', 'is', null))
-      .stream();
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID] })
-  getForClipEncoding(id: string) {
-    return this.db
-      .selectFrom('asset')
-      .select(['asset.id', 'asset.visibility', 'asset.originalPath'])
-      .where('asset.id', '=', id)
-      .executeTakeFirst();
-  }
-
   @GenerateSql({ params: [DummyValue.UUID] })
   getForOcr(id: string) {
     return this.db
