@@ -750,3 +750,39 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 
 **e2e 里发现的、需要你定夺的问题**：`album.e2e-spec.ts` 有 4 处断言 `contributorCounts`，但 `album.service.ts` 现在把 `isShared` 硬编码为 `false`，所以该字段恒为 `undefined` —— 看起来是服务端遗留，不是本轮引入的，我没有在 e2e 里掩盖它。
 
+### Round 36（用户确认「未上线、不存在迁移问题」→ 清完剩余服务端残留）
+上一轮列出的「保留项」本轮全部清掉，分两次提交。
+
+**批次 A：共享链接认证层 + explore 端点**（提交 `646fbfa4b`）
+- 分享链接的表和接口早在 Round 15/16 就删了，但**认证管线还挂在整个 API 上**：本轮删除 `AuthDto.sharedLink`、`auth.guard` 的 `sharedLinkRoute` 元数据与分支、`SharedLinkRoute` 装饰器选项（**16 个控制器**）、两个 `ImmichQuery` swagger 参数，以及 search/asset/asset-media/timeline/album 服务与仓储里所有 `if (auth.sharedLink)` 分支
+- 删除 `SharedLinkType` / `SharedLinksResponse` / `SharedLinksUpdate` schema、`ImmichCookie`/`ImmichHeader`/`ImmichQuery` 里的分享链接条目、`sharedLinks` 用户偏好（update + response + 下载偏好）
+- 删除 `GET /search/explore` 与 `SearchExploreResponseDto`（含 2 个仓储查询与 `SearchService.getExploreData`）
+- 删除 `album.hasSharedLink` 与 `sharedLinks` 投影，`shared` 现在只由协作者推导
+
+**批次 B：activity + partner 及其表**（提交 `0c4e9d3b4`）
+- **activity（点赞/评论）**：删表、`dtos/activity.dto.ts`、`activity.factory.ts`、mappers 帮手；从 `album` 表、相册 create/update/response DTO、两个 sync album schema 与 sync 投影里删掉 `isActivityEnabled`
+- **partner（伙伴共享）**：删 `partner` / `partner_audit` 表、`partner_delete_audit` 触发器函数、DTO 与 factory、**4 个 sync 仓储类**、**5 个 sync service 方法**、asset/timeline 的 `checkPartnerAccess`、`utils/access` 里的 `isPartner` 合并、map / time-bucket DTO 与服务的 `withPartners`、`database.ts` 里的 partner 列
+  - sync 的 5 个 partner 请求类型**保留枚举**并指向 fork 既有的 `removedSyncType`（沿用 Round 17-19 对 faces/people/OCR 的做法），旧客户端会拿到明确的「本版本已移除」错误而不是静默失败
+- 顺手删掉只服务已删作业的仓储方法（`streamForSearchDuplicates`、`getForSearchDuplicatesJob`、`streamForOcrJob`、`getForOcr`）与**恒为 undefined 的 `contributorCounts`**
+- 新增迁移 `1792193000000-DropActivityAndPartnerTables`（沿用 Round 16/19 的 drop 迁移惯例）
+
+**验证（本机实跑）**
+| 检查 | 结果 |
+|---|---|
+| 迁移在**空库**从零跑通 | 4 个迁移全部成功；`pg_tables` 中 activity/partner/partner_audit **均为 0**，`partner_delete_audit` 函数 **0**，`album.isActivityEnabled` / `asset_job_status.facesRecognizedAt` / `duplicatesDetectedAt` **均为 0**；`asset`/`album`/`album_user`/`asset_job_status` 仍在 |
+| `migrations verify-order` | `ORDER is consistent (4 migrations)` |
+| 服务端对着该库**实跑** | 注册/登录 ✅、`GET /timeline/buckets` **200**、建相册 ✅、`GET /albums/:id` 返回字段里 **没有** `isActivityEnabled`/`hasSharedLink`/`contributorCounts`、`albumUsers` 只有 owner、`POST /search/metadata` **200**、`GET /map/markers` **200**、`GET /search/explore` **404** ✅、`?withPartners=true` 不再报错 ✅ |
+| partner sync 类型 | `PartnersV1`/`PartnerAssetsV1`/`PartnerAssetsV2`/`PartnerStacksV1`/`PartnerAssetExifsV1` 都返回 `This sync type was removed in this build (no faces, people, OCR or partner sharing).`；`AuthUsersV2`/`AlbumsV2` 仍正常推流 ✅ |
+| server | `tsc` 绿、`eslint --max-warnings 0` 绿、**1555 用例全绿** |
+| web | `check:typescript` 绿、`check:svelte` **0 错 0 警告**、**494 用例全绿**、`build` 成功、`prettier --check` 绿 |
+| e2e / CLI | e2e `tsc`+`eslint`+`prettier` 全绿；`@immich/cli check` 0 错 |
+| docker 镜像 | 重建成功；产物内 `/explore`、`/people`、`/shared-links`、`/utilities/duplicates` **均为 0**，`/photos`、`/search`、`/albums`、`/map` 仍在；镜像里带上新迁移 `.js` |
+
+**顺带清掉的 web 侧**（由一个子代理并行完成，仅动 `web/`）：地图设置里的「包含共享的伙伴资产」开关、`mapSettings.withPartners`、`Map.svelte` / `MapTimelinePanel` / photos / recently-added / geolocation / album 页里的 `withPartners`、timeline-manager 里的伙伴判断。
+
+**仍然保留的（有意为之）**：
+- **相册协作**（`album_user`、`AddUsersModal`、Owner/Editor/Viewer 角色）：这是**可用功能而不是死代码**，而且它需要第二个用户才有意义。应用目前是单账号，要不要连它一起删由你决定——告诉我一声我就清。
+- `asset.duplicateId`：仍挂在 `PUT /assets` 的批量更新 DTO 与搜索结果投影上，删它属于 API 变更而非死代码清理。
+- 各语言 `i18n/*.json` 里那些已不再被引用的 key（如 `include_shared_partner_assets`、`review_duplicates`）：只影响打包体积，且上游工具会参与校验，未动。
+
+
