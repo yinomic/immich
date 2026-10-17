@@ -22,6 +22,7 @@ allowBuilds:
   msgpackr-extract: false
   protobufjs: false
   sharp: true
+  tos-crc64-js: true
   ssh2: false
   utimes: false
   '@tailwindcss/oxide': true

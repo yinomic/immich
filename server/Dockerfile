@@ -77,14 +77,14 @@ COPY ./packages/plugin-core/mise.toml ./packages/plugin-core/
 ENV MISE_TRUSTED_CONFIG_PATHS=/usr/src/app/mise.toml
 ENV MISE_DATA_DIR=/buildcache/mise
 ENV MISE_DISABLE_TOOLS=flutter
-RUN --mount=type=cache,id=mise-tools-${TARGETPLATFORM},target=/buildcache/mise \
+RUN --mount=type=cache,id=mise-tools-v2-${TARGETPLATFORM},target=/buildcache/mise \
   mise install --locked
 
 COPY ./packages/plugin-core ./packages/plugin-core/
 
 # Build plugins
 RUN --mount=type=cache,id=pnpm,target=/buildcache/pnpm-store \
-  --mount=type=cache,id=mise-tools-${TARGETPLATFORM},target=/buildcache/mise \
+  --mount=type=cache,id=mise-tools-v2-${TARGETPLATFORM},target=/buildcache/mise \
   mise //:plugins
 
 FROM ghcr.io/immich-app/base-server-prod:202610131110@sha256:9d4ce4bfd72d77edddd3072fbca78b7f4307a32c8cbe75276349944dd6405be3
