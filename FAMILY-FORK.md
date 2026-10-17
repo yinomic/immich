@@ -425,3 +425,25 @@ volumes:
 - 删除 `asset_job_status.embeddedAt` 列（迁移 `1792192000000-DropEmbeddedAt`，已在本机库执行）、`SystemMetadataKey.CloudSearchIndex`、`SmartSearchDto`、`searchSmartByIds`/`searchSmartV3ByIds`/`SmartSearchOptions`
 - 运行时验证：登录 ✅、上传 201 ✅、缩略图 200 ✅、时间线新增桶 ✅、`POST /search/smart` **404** ✅、作业报错 0 ✅、找不到 handler 0 ✅
 - 检查：`tsc` 绿、eslint 绿、83 文件 / 1548 用例全绿
+
+### Round 20（SDK/openapi 重新生成的**可复现配方** + 待删清单）
+本轮把重新生成的流程跑通了，但**没有提交**：新 SDK 会暴露 web 端约 70 处死代码引用，我在原地批量修时把情况弄得更糟（72 处），已全部回滚，保持仓库绿色。配方与清单如下，下一轮按它执行。
+
+**配方（本机已验证）**
+```bash
+# 1. 用服务端控制器重新导出 openapi（160 paths；已无 smart search / person）
+cd server && node dist/bin/sync-open-api.js
+# 2. 重新生成 TS 客户端（oazapfts 7.5.0）
+npx --yes oazapfts@7.5.0 --optimistic --argumentStyle=object --useEnumType \
+  --allSchemas open-api/immich-openapi-specs.json packages/sdk/src/fetch-client.ts
+# 3. 关键：web 解析的是 @immich/sdk 的 dist，必须重建，否则 tsc 会拿旧类型"假通过"
+pnpm --filter @immich/sdk build
+```
+
+**新 SDK 暴露的 web 死代码（按删除优先级）**
+1. `web/src/lib/services/shared-link.service.ts`（10 处）
+2. `web/src/lib/managers/activity-manager.svelte.ts` + `.spec.ts`（13 处）
+3. `web/src/lib/services/person-user.service.ts`、`person.service.ts`、`web/src/lib/utils/person.ts`(+spec)、`web/src/lib/stores/face.svelte.ts`、`web/src/test-data/factories/shared-link-factory.ts`（约 20 处）
+4. 逐个手修（**不要用正则整块删**，本轮就是这么把错误数从 33 弄到 72 的）：
+   `services/queue.service.ts`（SmartSearch/DuplicateDetection/FaceDetection/FacialRecognition/Ocr 队列项）、`components/shared-components/search-bar/search-bar-utils.ts`（人物建议）、`managers/AssetCacheManager.svelte.ts`（ocr/faces）、`managers/event-manager.svelte.ts`（Person/SharedLink 事件）、`components/asset-viewer/PreloadManager.svelte.ts`、`lib/route.ts` + `managers/search-manager.svelte.ts`（SmartSearchDto）、`services/asset.service.ts`（`features.smartSearch`）、`utils/timeline-util.ts`、`utils.ts`
+5. 每改一个文件后跑一次 `pnpm --filter immich-web check:typescript` + `check:svelte`，确认再继续
