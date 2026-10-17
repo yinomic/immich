@@ -39,7 +39,9 @@ const asNotification = (
 export class VersionService extends BaseService {
   @OnEvent({ name: 'AppBootstrap', workers: [ImmichWorker.Microservices] })
   async onBootstrap(): Promise<void> {
-    const hasLock = await this.databaseRepository.tryLock(DatabaseLock.VersionCheck);
+    // NOTE (family fork): no outbound version check unless explicitly enabled
+    const versionCheckDisabled = this.configRepository.getEnv().storage.disableVersionCheck;
+    const hasLock = !versionCheckDisabled && (await this.databaseRepository.tryLock(DatabaseLock.VersionCheck));
     if (hasLock) {
       await this.handleVersionCheck();
 
@@ -94,12 +96,20 @@ export class VersionService extends BaseService {
   }
 
   async handleQueueVersionCheck() {
+    if (this.configRepository.getEnv().storage.disableVersionCheck) {
+      return;
+    }
+
     await this.jobRepository.queue({ name: JobName.VersionCheck, data: {} });
   }
 
   @OnJob({ name: JobName.VersionCheck, queue: QueueName.BackgroundTask })
   async handleVersionCheck(): Promise<JobStatus> {
     try {
+      if (this.configRepository.getEnv().storage.disableVersionCheck) {
+        return JobStatus.Skipped;
+      }
+
       if (!this.configRepository.isProduction()) {
         return JobStatus.Skipped;
       }

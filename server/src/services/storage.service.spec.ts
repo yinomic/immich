@@ -28,6 +28,8 @@ describe(StorageService.name, () => {
             thumbnails: 'cache',
             backend: 'local',
             softDeleteOnly: true,
+            disableVersionCheck: false,
+            filing: { url: 'https://beian.miit.gov.cn/' },
             tos: {
               endpoint: 'tos-cn-beijing.volces.com',
               region: 'cn-beijing',
@@ -104,6 +106,8 @@ describe(StorageService.name, () => {
             thumbnails: 'cache',
             backend: 'local',
             softDeleteOnly: true,
+            disableVersionCheck: false,
+            filing: { url: 'https://beian.miit.gov.cn/' },
             tos: {
               endpoint: 'tos-cn-beijing.volces.com',
               region: 'cn-beijing',
@@ -193,6 +197,8 @@ describe(StorageService.name, () => {
             thumbnails: 'cache',
             backend: 'local',
             softDeleteOnly: true,
+            disableVersionCheck: false,
+            filing: { url: 'https://beian.miit.gov.cn/' },
             tos: {
               endpoint: 'tos-cn-beijing.volces.com',
               region: 'cn-beijing',

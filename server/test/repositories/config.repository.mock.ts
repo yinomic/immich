@@ -89,6 +89,8 @@ export const envData: EnvData = {
     thumbnails: 'cache',
     backend: 'local',
     softDeleteOnly: false,
+    disableVersionCheck: false,
+    filing: { url: 'https://beian.miit.gov.cn/' },
     tos: {
       endpoint: 'tos-cn-beijing.volces.com',
       region: 'cn-beijing',

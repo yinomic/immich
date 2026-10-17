@@ -593,6 +593,8 @@ describe(AssetMediaService.name, () => {
             thumbnails: 'off',
             backend: 'local',
             softDeleteOnly: true,
+            disableVersionCheck: false,
+            filing: { url: 'https://beian.miit.gov.cn/' },
             tos: {
               endpoint: 'tos-cn-beijing.volces.com',
               region: 'cn-beijing',

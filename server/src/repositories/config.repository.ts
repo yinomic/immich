@@ -119,6 +119,10 @@ export interface EnvData {
     backend: 'local' | 'tos';
     /** never remove assets or objects: deletion only moves them to the trash */
     softDeleteOnly: boolean;
+    /** do not contact GitHub to look for new releases */
+    disableVersionCheck: boolean;
+    /** ICP filing text and link shown at the bottom of the auth pages */
+    filing: { info?: string; url: string };
     tos: {
       endpoint: string;
       region: string;
@@ -358,6 +362,11 @@ const getEnv = (): EnvData => {
       thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
       backend: dto.IMMICH_STORAGE_BACKEND ?? 'local',
       softDeleteOnly: dto.IMMICH_SOFT_DELETE_ONLY ?? true,
+      disableVersionCheck: dto.IMMICH_DISABLE_VERSION_CHECK ?? true,
+      filing: {
+        info: dto.IMMICH_FILING_INFO,
+        url: dto.IMMICH_FILING_URL ?? 'https://beian.miit.gov.cn/',
+      },
       tos: {
         endpoint: dto.TOS_ENDPOINT ?? 'tos-cn-beijing.volces.com',
         region: dto.TOS_REGION ?? 'cn-beijing',

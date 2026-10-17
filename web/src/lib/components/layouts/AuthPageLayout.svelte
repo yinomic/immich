@@ -1,4 +1,5 @@
 <script lang="ts">
+  import FilingInfo from '$lib/components/shared-components/FilingInfo.svelte';
   import { Card, CardBody, CardHeader, Heading, immichLogo, Logo, VStack } from '@immich/ui';
   import type { Snippet } from 'svelte';
   interface Props {
@@ -39,4 +40,6 @@
       {@render children?.()}
     </CardBody>
   </Card>
+
+  <FilingInfo />
 </section>
