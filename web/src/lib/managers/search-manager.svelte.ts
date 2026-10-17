@@ -35,7 +35,7 @@ class SearchManager {
 
   #fromQuery(searchQuery: MetadataSearchDto): SearchFilter {
     let query = '';
-    let queryType = query ? QueryType.SMART : this.#defaultQueryType();
+    let queryType = this.#defaultQueryType();
 
     if ('originalFileName' in searchQuery && searchQuery.originalFileName) {
       query = searchQuery.originalFileName;
@@ -55,7 +55,6 @@ class SearchManager {
     return {
       query,
       queryType,
-      personIds: new SvelteSet<string>(),
       tagIds:
         'tagIds' in searchQuery
           ? searchQuery.tagIds === null
@@ -120,7 +119,6 @@ class SearchManager {
       visibility: this.filter.display.isArchive ? AssetVisibility.Archive : undefined,
       isFavorite: this.filter.display.isFavorite || undefined,
       isNotInAlbum: this.filter.display.isNotInAlbum || undefined,
-      personIds: this.filter.personIds.size > 0 ? [...this.filter.personIds] : undefined,
       tagIds: this.filter.tagIds === null ? null : this.filter.tagIds.size > 0 ? [...this.filter.tagIds] : undefined,
       type,
       rating: this.filter.rating,
@@ -141,7 +139,7 @@ class SearchManager {
 
   #defaultQueryType(): QueryType {
     const storedQueryType = localStorage.getItem(QUERY_TYPE_STORAGE_KEY) as QueryType;
-    return validQueryTypes.has(storedQueryType) ? storedQueryType : QueryType.SMART;
+    return validQueryTypes.has(storedQueryType) ? storedQueryType : QueryType.METADATA;
   }
 }
 

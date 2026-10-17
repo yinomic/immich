@@ -6,7 +6,6 @@ import { assetFactory } from '@test-data/factories/asset-factory';
 
 vi.mock('$lib/utils/navigation', () => ({
   currentUrlReplaceAssetId: vi.fn(),
-  isSharedLinkRoute: vi.fn().mockReturnValue(false),
 }));
 
 vi.hoisted(() => {

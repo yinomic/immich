@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AssetCover from '$lib/components/sharedlinks-page/covers/AssetCover.svelte';
-  import NoCover from '$lib/components/sharedlinks-page/covers/NoCover.svelte';
+  import { cleanClass } from '$lib';
+  import BrokenAsset from '$lib/components/assets/BrokenAsset.svelte';
   import { getAssetMediaUrl } from '$lib/utils';
   import { type AlbumResponseDto } from '@immich/sdk';
   import { t } from 'svelte-i18n';
@@ -17,10 +17,31 @@
   let thumbnailUrl = $derived(
     album.albumThumbnailAssetId ? getAssetMediaUrl({ id: album.albumThumbnailAssetId }) : null,
   );
+  let isBroken = $state(false);
 </script>
 
 {#if thumbnailUrl}
-  <AssetCover {alt} class={className} src={thumbnailUrl} {preload} />
+  {#if isBroken}
+    <BrokenAsset hideMessage class="aspect-square rounded-xl" />
+  {:else}
+    <img
+      {alt}
+      onerror={() => (isBroken = true)}
+      class={cleanClass('size-full rounded-xl object-cover aspect-square', className)}
+      data-testid="album-image"
+      draggable="false"
+      loading={preload ? 'eager' : 'lazy'}
+      src={thumbnailUrl}
+    />
+  {/if}
 {:else}
-  <NoCover {alt} class={className} {preload} />
+  <enhanced:img
+    {alt}
+    class={cleanClass('size-full rounded-xl object-cover aspect-square', className)}
+    data-testid="album-image"
+    draggable="false"
+    loading={preload ? 'eager' : 'lazy'}
+    sizes="min(271px,186px)"
+    src="$lib/assets/no-thumbnail.png"
+  />
 {/if}

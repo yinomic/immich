@@ -67,7 +67,6 @@
       unarchive
       onArchive={(ids, visibility) => timelineManager.update(ids, (asset) => (asset.visibility = visibility))}
     />
-    <ActionButton action={Actions.CreateSharedLink} />
     <SelectAllAssets {timelineManager} assetInteraction={assetMultiSelectManager} />
     <ActionButton action={Actions.AddToAlbum} />
     <FavoriteAction

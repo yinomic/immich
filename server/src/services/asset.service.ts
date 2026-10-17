@@ -448,10 +448,6 @@ export class AssetService extends BaseService {
 
     for (const id of dto.assetIds) {
       switch (dto.name) {
-        case AssetJobName.REFRESH_FACES: {
-          break;
-        }
-
         case AssetJobName.REFRESH_METADATA: {
           jobs.push({ name: JobName.AssetExtractMetadata, data: { id } });
           break;

@@ -23,10 +23,10 @@ import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager
 import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
 import { locale } from '$lib/stores/preferences.store';
 import { downloadUrlPost, withError } from '$lib/utils';
+import { asQueryString } from '$lib/utils';
 import { getByteUnitString } from '$lib/utils/byte-units';
 import { getFormatter } from '$lib/utils/i18n';
 import { navigate } from '$lib/utils/navigation';
-import { asQueryString } from '$lib/utils';
 import { toTimelineAsset } from '$lib/utils/timeline-util';
 import { handleError } from './handle-error';
 
@@ -54,7 +54,7 @@ export const removeTag = async ({
 export const downloadArchive = async (fileName: string, options: Omit<DownloadInfoDto, 'archiveSize'>) => {
   const archiveSize = authManager.authenticated ? authManager.preferences.download.archiveSize : undefined;
   const dto = { ...options, archiveSize };
-  const [error, downloadInfo] = await withError(() => getDownloadInfo({ ...authManager.params, downloadInfoDto: dto }));
+  const [error, downloadInfo] = await withError(() => getDownloadInfo({ downloadInfoDto: dto }));
   if (error) {
     const $t = get(t);
     handleError(error, $t('errors.unable_to_download_files'));
@@ -69,7 +69,7 @@ export const downloadArchive = async (fileName: string, options: Omit<DownloadIn
     const archive = downloadInfo.archives[index];
     const suffix = downloadInfo.archives.length > 1 ? `+${index + 1}` : '';
     const archiveName = `${fileName}${suffix}-${DateTime.now().toFormat('yyyyLLdd_HHmmss')}`;
-    const queryParams = asQueryString(authManager.params);
+    const queryParams = '';
 
     const downloadKey =
       downloadInfo.archives.length > 1

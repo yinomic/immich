@@ -695,3 +695,58 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 - 其他：`searchSmart`、`searchPerson`、`getNotificationTemplateAdmin`、`PreloadManager`
 
 处理这批需要先重新生成 `open-api` + SDK（配方见 Round 20），分支 `sdk-regen-wip` 上已完成了大部分（web tsc 已归零，svelte-check 仍有约 182 项），后续把该分支与 `family-album` 合并收口。**注意：只要 SDK 不重新生成，这类"界面还在但接口已删"的死入口就会继续存在。**
+
+### Round 35（用户要求「一次性清理完」：重新生成 SDK + 清掉全部死入口）
+用户拍板「一次性清理完」。本轮把 Round 34 里点出的整批死代码一次清完。
+
+**方法（关键）**：先把 `sdk-regen-wip` 分支合并进来（只 1 处冲突：`explore/+page.ts` 我们已删、它改过 → 保留删除），再用**重新生成的 SDK 让编译器把死引用全暴露出来**，然后逐文件清。
+- `oazapfts@7.5.0` 可由当前 spec **逐字节复现** `packages/sdk/src/fetch-client.ts`（已 diff 验证为 0），所以重新生成是安全可复现的。
+- 交叉核对脚本（SDK 函数 URL ↔ 服务端 spec paths）确认：**web 已不再调用任何服务端不存在的接口**。
+
+**web 侧删除（42 个文件）**
+| 家族 | 删掉的东西 |
+|---|---|
+| 人脸/人物 | `faces-page/**`、`face-editor/FaceEditor`、`DetailPanelPeople`、`CreateFaceModal`、`PeopleFilterModal(UserPicker)`、`PeoplePickerModal`、`PeopleSelectionModal`、`PersonBulkShareModal`、`PersonEditAccessModal`、`PersonEditModal`、`PersonMergeSuggestionModal`、`SearchPeopleSection` |
+| 点赞/评论 | `ActivityViewer`、`ActivityStatus`、`managers/activity-manager`，以及 AssetViewer / 相册页里的活动面板、`album.isActivityEnabled` 开关 |
+| 分享链接 | `SharedLinkPage`、`SharedLinkErrorPage`、`share-page/**`、`sharedlinks-page/**`、`SharedLinkFormFields`、`SharedLinkExpiration`、`AlbumSharedLink`、`RemoveFromSharedLinkAction`、`SharedLinkCreateModal`、`AlbumViewer`（旧分享页用的相册浏览器，已无引用）、`shared-link.service`、`utils/shared-links` |
+| OCR | `OcrButton`、`OcrBoundingBox`、`stores/ocr`、`utils/ocr-utils` |
+| 语义搜索 | 搜索页与搜索栏的 smart/ocr 分支、`QueryType.SMART`/`OCR`、`SmartSearchDto`、`QueryType` 默认值改为 metadata |
+| 其余死代码 | `stores/drag-and-drop-files.store`（只服务分享链接上传）、`Route.people/viewPerson/sharedLinks/editSharedLink/viewSharedLink`、`SharedLinkTab`、`maximumLengthSearchPeople` |
+
+**顺带清掉的"分享链接管道"**（本轮把整条链路拔掉，不再残留永远为 false 的判断）：
+- `authManager.isSharedLink` / `authManager.params`（**27 处调用点**全部改成普通调用，single-account 下这两个东西已无意义）
+- `utils/navigation` 的 `isSharedLinkRoute` / `isSharedLinkSlugRoute` / `isPeopleRoute`，`(user)/+layout.ts` 的 `public` 分支
+- `Thumbnail`、`DetailPanelStarRating`、`DetailPanelTags`、`file-uploader`、`DragAndDropUploadOverlay` 里的 `isSharedLink` 条件
+- `assetViewerManager` 的人脸/活动状态（`isFaceEditMode`、`isEditFacesPanelOpen`、`highlightedFaces`、`isShowActivityPanel` 等）
+
+**管理端死入口（用户可见）**：
+- `实用工具`/系统设置里的 `SmartSearch`、`FaceDetection`、`FacialRecognition`、`DuplicateDetection`、`Ocr` 队列项全部删除（`JobSettings`、`QueuePanel`）
+- 「创建作业」弹窗里的**「人物清理」**：服务端 `ManualJobName.PersonCleanup` 没有 handler，点了会走进 `default` 抛 `Invalid job name` → 两边一起删除
+- 用户设置里的「人物」与「分享链接」两个折叠面板（`minFaces` 在 `ServerConfigDto` 里已不存在）
+
+**服务端**：
+- 删除 `AssetJobName.REFRESH_FACES`（无 handler，且 web 的 `Record<AssetJobName, string>` 需要它消失才自洽）
+- 删除 `ManualJobName.PersonCleanup`
+- 删除 15 个死权限：`Activity*`、`Duplicate*`、`Partner*`、`PersonReassign`、`SharedLink*`；连带删掉 `utils/access.ts` 里 4 个分支、`access.repository.ts` 里 `ActivityAccess`/`DuplicateAccess`/`PartnerAccess` 三个类与 mock 条目，并把两个 spec 改用真实权限
+- 重新导出 `open-api/immich-openapi-specs.json` 并用 oazapfts 7.5.0 重新生成 `packages/sdk/src/fetch-client.ts`（两次各只减 1 行 / 18 行，diff 很小）
+
+**e2e**：删除 7 个已失效文件（person / shared-link ×2 / ocr / face-editor 的 spec 与 mock 网络层），10 个文件里摘掉 shared-link / partner / person / machineLearning 的用例与字段；顺带修掉 `resetDatabase()` 里对 5 张已不存在表的 `TRUNCATE`（多表 TRUNCATE 遇到缺失关系会整体失败，等于所有 e2e 都会挂）。
+
+**验证（全部本机实跑）**
+| 检查 | 结果 |
+|---|---|
+| `immich-web check:svelte --fail-on-warnings` | **156 → 0 错 0 警告** |
+| `immich-web check:typescript` | 0 错 |
+| `immich-web test --run` | 49 文件 / **494 用例全绿** |
+| `immich-web build` + `prettier --check .` | 通过 / 全绿 |
+| `immich check`（tsc）+ `eslint --max-warnings 0` | 绿 / 绿 |
+| `immich test`（server） | 85 文件 / **1563 用例全绿** |
+| `@immich/cli check` | 0 错 |
+| `e2e` tsc / prettier / eslint | **26 → 0 错** / 全绿 / 绿 |
+| docker 镜像重建 | 成功（`ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest`） |
+| 镜像内产物自检 | `/explore`、`/utilities/duplicates`、`/people`、`/shared-links`、`cluster-group`、`activity-panel`、`face-edit` 命中数均为 **0**；`/photos`、`/search`、`/utilities/large-files` 仍在 |
+
+**仍保留（无 UI 入口，故未动）**：`GET /search/explore` 端点（Explore 页已删，但 mobile 可能用）、`activity` / `partner` / `partner_audit` 三张表与 `database.ts` 里的 `SharedLink`/`AuthSharedLink` 类型、`album.hasSharedLink`（恒为 false）、`AlbumResponseDto.albumUsers`（相册协作仍可用）。这些要清需要新的删表迁移，风险与收益不成正比。
+
+**e2e 里发现的、需要你定夺的问题**：`album.e2e-spec.ts` 有 4 处断言 `contributorCounts`，但 `album.service.ts` 现在把 `isShared` 硬编码为 `false`，所以该字段恒为 `undefined` —— 看起来是服务端遗留，不是本轮引入的，我没有在 e2e 里掩盖它。
+

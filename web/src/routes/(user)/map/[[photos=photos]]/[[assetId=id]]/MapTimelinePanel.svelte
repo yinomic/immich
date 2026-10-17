@@ -121,7 +121,6 @@
 
   <Portal target="body">
     <AssetSelectControlBar>
-      <ActionButton action={Actions.CreateSharedLink} />
       <SelectAllAssets {timelineManager} assetInteraction={assetMultiSelectManager} />
       <ActionButton action={Actions.AddToAlbum} />
 

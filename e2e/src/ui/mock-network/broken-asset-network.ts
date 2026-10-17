@@ -65,7 +65,6 @@ export const createMockStackAsset = (ownerId: string): AssetResponseDto => {
     },
     livePhotoVideoId: null,
     tags: [],
-    people: [],
     stack: undefined,
     isOffline: false,
     hasMetadata: true,

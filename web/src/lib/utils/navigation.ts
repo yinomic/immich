@@ -9,19 +9,15 @@ export type AssetGridRouteSearchParams = {
 };
 
 export const isPhotosRoute = (route?: string | null) => !!route?.startsWith('/(user)/photos/[[assetId=id]]');
-const isSharedLinkSlugRoute = (route?: string | null) => !!route?.startsWith('/(user)/s/[slug]');
-export const isSharedLinkRoute = (route?: string | null) =>
-  !!route?.startsWith('/(user)/share/[key]') || isSharedLinkSlugRoute(route);
 export const isAlbumsRoute = (route?: string | null) => !!route?.startsWith('/(user)/albums/[albumId=id]');
-export const isPeopleRoute = (route?: string | null) => !!route?.startsWith('/(user)/people/[personId]');
 export const isLockedFolderRoute = (route?: string | null) => !!route?.startsWith('/(user)/locked');
 
 export const isAssetViewerRoute = (
   target?: { route?: { id?: RouteId | null }; params?: Record<string, string> | null } | null,
 ) => !!(target?.route?.id?.endsWith('/[[assetId=id]]') && 'assetId' in (target?.params || {}));
 
-export function getAssetInfoFromParam({ assetId, slug, key }: { assetId?: string; key?: string; slug?: string }) {
-  return assetId ? assetCacheManager.getAsset({ id: assetId, slug, key }, false) : undefined;
+export function getAssetInfoFromParam({ assetId }: { assetId?: string }) {
+  return assetId ? assetCacheManager.getAsset(assetId, false) : undefined;
 }
 
 function currentUrlWithoutAsset() {
@@ -30,9 +26,7 @@ function currentUrlWithoutAsset() {
   if (isPhotosRoute(page.route.id)) {
     return Route.photos() + page.url.search;
   }
-  return isSharedLinkSlugRoute(page.route.id)
-    ? Route.viewSharedLink({ slug: page.data.slug, key: page.data.key }) + page.url.search
-    : page.url.pathname.replace(/(\/photos.*)$/, '') + page.url.search;
+  return page.url.pathname.replace(/(\/photos.*)$/, '') + page.url.search;
 }
 
 export function currentUrlReplaceAssetId(assetId: string) {

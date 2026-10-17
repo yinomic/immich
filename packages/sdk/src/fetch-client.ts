@@ -6791,11 +6791,6 @@ export enum BulkIdErrorReason {
 }
 export enum Permission {
     All = "all",
-    ActivityCreate = "activity.create",
-    ActivityRead = "activity.read",
-    ActivityUpdate = "activity.update",
-    ActivityDelete = "activity.delete",
-    ActivityStatistics = "activity.statistics",
     ApiKeyCreate = "apiKey.create",
     ApiKeyRead = "apiKey.read",
     ApiKeyUpdate = "apiKey.update",
@@ -6839,8 +6834,6 @@ export enum Permission {
     AdminConfigRead = "adminConfig.read",
     AdminConfigUpdate = "adminConfig.update",
     UserConfigRead = "userConfig.read",
-    DuplicateRead = "duplicate.read",
-    DuplicateDelete = "duplicate.delete",
     FolderRead = "folder.read",
     JobCreate = "job.create",
     JobRead = "job.read",
@@ -6865,11 +6858,6 @@ export enum Permission {
     NotificationRead = "notification.read",
     NotificationUpdate = "notification.update",
     NotificationDelete = "notification.delete",
-    PartnerCreate = "partner.create",
-    PartnerRead = "partner.read",
-    PartnerUpdate = "partner.update",
-    PartnerDelete = "partner.delete",
-    PersonReassign = "person.reassign",
     PinCodeCreate = "pinCode.create",
     PinCodeUpdate = "pinCode.update",
     PinCodeDelete = "pinCode.delete",
@@ -6890,10 +6878,6 @@ export enum Permission {
     SessionUpdate = "session.update",
     SessionDelete = "session.delete",
     SessionLock = "session.lock",
-    SharedLinkCreate = "sharedLink.create",
-    SharedLinkRead = "sharedLink.read",
-    SharedLinkUpdate = "sharedLink.update",
-    SharedLinkDelete = "sharedLink.delete",
     StackCreate = "stack.create",
     StackRead = "stack.read",
     StackUpdate = "stack.update",
@@ -6964,7 +6948,6 @@ export enum AssetRejectReason {
     UnsupportedFormat = "unsupported-format"
 }
 export enum AssetJobName {
-    RefreshFaces = "refresh-faces",
     RefreshMetadata = "refresh-metadata",
     RegenerateThumbnail = "regenerate-thumbnail",
     TranscodeVideo = "transcode-video"
@@ -6991,7 +6974,6 @@ export enum AssetMediaSize {
     Thumbnail = "thumbnail"
 }
 export enum ManualJobName {
-    PersonCleanup = "person-cleanup",
     TagCleanup = "tag-cleanup",
     UserCleanup = "user-cleanup",
     MemoryCleanup = "memory-cleanup",

@@ -15,7 +15,7 @@
 </script>
 
 <div>
-  {#await getAlbumInfo({ ...authManager.params, id: albumId })}
+  {#await getAlbumInfo({ id: albumId })}
     <LoadingSpinner />
   {:then album}
     <div class="flex gap-2">

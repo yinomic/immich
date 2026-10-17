@@ -1,5 +1,4 @@
 import { getAssetInfo } from '@immich/sdk';
-import { authManager } from '$lib/managers/auth-manager.svelte';
 import { eventManager } from '$lib/managers/event-manager.svelte';
 
 const defaultSerializer = <K>(params: K) => JSON.stringify(params);
@@ -49,35 +48,20 @@ class AssetCacheManager {
     });
   }
 
-  async getAsset({ id, key, slug }: { id: string; key?: string; slug?: string }, updateCache = true) {
-    return this.#assetCache.getOrFetch({ id, key, slug }, updateCache);
-  }
-
-  async getAssetOcr(id: string) {
-  }
-
-  async getAssetFaces(id: string) {
+  async getAsset(id: string, updateCache = true) {
+    return this.#assetCache.getOrFetch({ id }, updateCache);
   }
 
   invalidateAsset(id: string) {
-    const { key, slug } = authManager.params;
-    this.#assetCache.clearKey({ id, key, slug });
+    this.#assetCache.clearKey({ id });
   }
 
   clearAssetCache() {
     this.#assetCache.clear();
   }
 
-  clearOcrCache() {
-  }
-
-  clearFaceCache() {
-  }
-
   invalidate() {
     this.clearAssetCache();
-    this.clearOcrCache();
-    this.clearFaceCache();
   }
 }
 

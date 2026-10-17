@@ -16,8 +16,8 @@ import { addAssetsToAlbums } from '$lib/services/album.service';
 import { uploadAssetsStore } from '$lib/stores/upload';
 import { UploadState } from '$lib/types';
 import { uploadRequest } from '$lib/utils';
-import { ExecutorQueue } from '$lib/utils/executor-queue';
 import { asQueryString } from '$lib/utils';
+import { ExecutorQueue } from '$lib/utils/executor-queue';
 import { handleError } from './handle-error';
 
 export const uploadExecutionQueue = new ExecutorQueue({ concurrency: 2 });
@@ -175,29 +175,27 @@ async function fileUploader({
     }
 
     let responseData: { id: string; status: AssetMediaStatus; isTrashed?: boolean } | undefined;
-    if (!authManager.isSharedLink) {
-      uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_hashing') });
-      await tick();
-      try {
-        const checksum = await hashFile(assetFile);
+    uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_hashing') });
+    await tick();
+    try {
+      const checksum = await hashFile(assetFile);
 
-        const {
-          results: [checkUploadResult],
-        } = await checkBulkUpload({ assetBulkUploadCheckDto: { assets: [{ id: assetFile.name, checksum }] } });
-        if (checkUploadResult.action === AssetUploadAction.Reject && checkUploadResult.assetId) {
-          responseData = {
-            status: AssetMediaStatus.Duplicate,
-            id: checkUploadResult.assetId,
-            isTrashed: checkUploadResult.isTrashed,
-          };
-        }
-      } catch (error) {
-        console.error(`Error calculating sha1 file=${assetFile.name})`, error);
+      const {
+        results: [checkUploadResult],
+      } = await checkBulkUpload({ assetBulkUploadCheckDto: { assets: [{ id: assetFile.name, checksum }] } });
+      if (checkUploadResult.action === AssetUploadAction.Reject && checkUploadResult.assetId) {
+        responseData = {
+          status: AssetMediaStatus.Duplicate,
+          id: checkUploadResult.assetId,
+          isTrashed: checkUploadResult.isTrashed,
+        };
       }
+    } catch (error) {
+      console.error(`Error calculating sha1 file=${assetFile.name})`, error);
     }
 
     if (!responseData) {
-      const queryParams = asQueryString(authManager.params);
+      const queryParams = '';
 
       uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_uploading') });
       const response = await uploadRequest<AssetMediaResponseDto>({
@@ -219,7 +217,7 @@ async function fileUploader({
       uploadAssetsStore.track('success');
     }
 
-    if (albumId && !authManager.isSharedLink) {
+    if (albumId) {
       uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_adding_to_album') });
       await addAssetsToAlbums([albumId], [responseData.id], { notify: false });
       uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_added_to_album') });

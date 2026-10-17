@@ -11,11 +11,9 @@ import {
   ManualJobName,
   MetadataSearchDto,
   Permission,
-  PersonCreateDto,
   QueueCommandDto,
   QueueName,
   QueuesResponseLegacyDto,
-  SharedLinkCreateDto,
   UpdateLibraryDto,
   UserAdminCreateDto,
   UserPreferencesUpdateDto,
@@ -24,9 +22,6 @@ import {
   createApiKey,
   createJob,
   createLibrary,
-  createPartner,
-  createPerson,
-  createSharedLink,
   createStack,
   createUserAdmin,
   deleteAssets,
@@ -82,7 +77,6 @@ type FileData = { bytes?: Buffer; filename: string };
 
 const dbUrl = `postgres://postgres:postgres@${playwrightDbHost}:5435/immich`;
 export const baseUrl = playwriteBaseUrl;
-export const shareUrl = `${baseUrl}/share`;
 export const app = `${baseUrl}/api`;
 // TODO move test assets into e2e/assets
 export const testAssetDir = resolve(import.meta.dirname, '../test-assets');
@@ -182,13 +176,8 @@ export const utils = {
       // TODO e2e test for deleting a stack, since it is quite complex
       'stack',
       'library',
-      'shared_link',
-      'person',
-      'person_group',
-      'cluster_group',
       'album',
       'asset',
-      'asset_face',
       'activity',
       'api_key',
       'session',
@@ -429,34 +418,6 @@ export const utils = {
   deleteAssets: (accessToken: string, ids: string[]) =>
     deleteAssets({ assetBulkDeleteDto: { ids } }, { headers: asBearerAuth(accessToken) }),
 
-  createPerson: async (accessToken: string, dto?: PersonCreateDto) => {
-    const person = await createPerson({ personCreateDto: dto || {} }, { headers: asBearerAuth(accessToken) });
-    await utils.setPersonThumbnail(person.id);
-
-    return person;
-  },
-
-  createFace: async ({ assetId, personGroupId }: { assetId: string; personGroupId: string }) => {
-    if (!client) {
-      return;
-    }
-
-    await client.query('INSERT INTO asset_face ("assetId", "personGroupId") VALUES ($1, $2)', [assetId, personGroupId]);
-  },
-
-  setPersonThumbnail: async (personId: string) => {
-    if (!client) {
-      return;
-    }
-
-    await client.query(`UPDATE "person" set "thumbnailPath" = '/my/awesome/thumbnail.jpg' where "personGroupId" = $1`, [
-      personId,
-    ]);
-  },
-
-  createSharedLink: (accessToken: string, dto: SharedLinkCreateDto) =>
-    createSharedLink({ sharedLinkCreateDto: dto }, { headers: asBearerAuth(accessToken) }),
-
   createLibrary: (accessToken: string, dto: CreateLibraryDto) =>
     createLibrary({ createLibraryDto: dto }, { headers: asBearerAuth(accessToken) }),
 
@@ -465,9 +426,6 @@ export const utils = {
 
   updateLibrary: (accessToken: string, id: string, dto: UpdateLibraryDto) =>
     updateLibrary({ id, updateLibraryDto: dto }, { headers: asBearerAuth(accessToken) }),
-
-  createPartner: (accessToken: string, id: string) =>
-    createPartner({ partnerCreateDto: { sharedWithId: id } }, { headers: asBearerAuth(accessToken) }),
 
   updateMyPreferences: (accessToken: string, userPreferencesUpdateDto: UserPreferencesUpdateDto) =>
     updateMyPreferences({ userPreferencesUpdateDto }, { headers: asBearerAuth(accessToken) }),

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import AlbumSharedLink from '$lib/components/album-page/AlbumSharedLink.svelte';
   import HeaderActionButton from '$lib/components/HeaderActionButton.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
   import UserAvatar from '$lib/components/shared-components/UserAvatar.svelte';
@@ -9,17 +8,8 @@
     handleUpdateAlbum,
     handleUpdateUserAlbumRole,
   } from '$lib/services/album.service';
-  import {
-    AlbumUserRole,
-    AssetOrder,
-    getAlbumInfo,
-    getAllSharedLinks,
-    type AlbumResponseDto,
-    type SharedLinkResponseDto,
-    type UserResponseDto,
-  } from '@immich/sdk';
-  import { Field, HStack, Modal, ModalBody, Select, Stack, Switch, Text, type SelectOption } from '@immich/ui';
-  import { onMount } from 'svelte';
+  import { AlbumUserRole, AssetOrder, getAlbumInfo, type AlbumResponseDto, type UserResponseDto } from '@immich/sdk';
+  import { Field, HStack, Modal, ModalBody, Select, Stack, Text, type SelectOption } from '@immich/ui';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -48,30 +38,10 @@
     await refreshAlbum();
   };
 
-  const onSharedLinkCreate = (sharedLink: SharedLinkResponseDto) => {
-    sharedLinks.push(sharedLink);
-  };
-
-  const onSharedLinkDelete = (sharedLink: SharedLinkResponseDto) => {
-    sharedLinks = sharedLinks.filter(({ id }) => sharedLink.id !== id);
-  };
-
-  const { AddUsers, CreateSharedLink } = $derived(getAlbumActions($t, album));
-
-  let sharedLinks: SharedLinkResponseDto[] = $state([]);
-
-  onMount(async () => {
-    sharedLinks = await getAllSharedLinks({ albumId: album.id });
-  });
+  const { AddUsers } = $derived(getAlbumActions($t, album));
 </script>
 
-<OnEvents
-  {onAlbumUserDelete}
-  onAlbumShare={refreshAlbum}
-  {onSharedLinkCreate}
-  {onSharedLinkDelete}
-  onAlbumUpdate={(newAlbum) => (album = newAlbum)}
-/>
+<OnEvents {onAlbumUserDelete} onAlbumShare={refreshAlbum} onAlbumUpdate={(newAlbum) => (album = newAlbum)} />
 
 <Modal title={readOnly ? $t('album') : $t('options')} {onClose} size="small">
   <ModalBody>
@@ -91,12 +61,6 @@
               />
             </Field>
           {/if}
-          <Field label={$t('comments_and_likes')} description={$t('let_others_respond')} disabled={readOnly}>
-            <Switch
-              checked={album.isActivityEnabled}
-              onCheckedChange={(checked) => handleUpdateAlbum(album, { isActivityEnabled: checked })}
-            />
-          </Field>
         </div>
       </div>
 
@@ -132,22 +96,6 @@
           {/each}
         </div>
       </div>
-      {#if !readOnly}
-        <div class="mb-4">
-          <HStack class="mb-2 justify-between">
-            <Text size="medium" fontWeight="semi-bold">{$t('shared_links')}</Text>
-            <HeaderActionButton action={CreateSharedLink} />
-          </HStack>
-
-          <div class="ps-2">
-            <Stack gap={4}>
-              {#each sharedLinks as sharedLink (sharedLink.id)}
-                <AlbumSharedLink {album} {sharedLink} />
-              {/each}
-            </Stack>
-          </div>
-        </div>
-      {/if}
     </Stack>
   </ModalBody>
 </Modal>

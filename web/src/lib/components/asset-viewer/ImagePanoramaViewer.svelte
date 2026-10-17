@@ -15,7 +15,7 @@
   const assetId = $derived(asset.id);
 
   const loadAssetData = async (id: string) => {
-    const data = await viewAsset({ ...authManager.params, id, size: AssetMediaSize.Preview });
+    const data = await viewAsset({ id, size: AssetMediaSize.Preview });
     return URL.createObjectURL(data);
   };
 </script>

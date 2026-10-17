@@ -24,7 +24,7 @@
   };
 </script>
 
-{#if !authManager.isSharedLink && authManager.authenticated && authManager.preferences.ratings.enabled}
+{#if authManager.authenticated && authManager.preferences.ratings.enabled}
   <section class="px-4 pt-4">
     <StarRating {rating} readOnly={!isOwner} onRating={(rating) => handlePromiseError(handleChangeRating(rating))} />
   </section>

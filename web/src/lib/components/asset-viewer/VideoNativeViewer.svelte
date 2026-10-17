@@ -1,5 +1,4 @@
 <script lang="ts">
-  import FaceEditor from '$lib/components/asset-viewer/face-editor/FaceEditor.svelte';
   import VideoRemoteViewer from '$lib/components/asset-viewer/VideoRemoteViewer.svelte';
   import { assetViewerFadeDuration } from '$lib/constants';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
@@ -154,11 +153,6 @@
     useMediaCapabilities: false,
     xhrSetup: (xhr: XMLHttpRequest, url: string) => {
       const authenticatedUrl = new URL(url, location.origin);
-      for (const [key, value] of Object.entries(authManager.params)) {
-        if (value) {
-          authenticatedUrl.searchParams.set(key, value as string);
-        }
-      }
       xhr.open('GET', authenticatedUrl.href);
     },
   };
@@ -317,12 +311,6 @@
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
-
-  $effect(() => {
-    if (assetViewerManager.isFaceEditMode) {
-      videoPlayer?.pause();
-    }
-  });
 
   // The time is only refreshed on HLS fragment decode by default,
   // so manually emit events on seek to update it immediately.
@@ -491,10 +479,6 @@
         <div class="absolute flex place-content-center place-items-center">
           <LoadingSpinner />
         </div>
-      {/if}
-
-      {#if assetViewerManager.isFaceEditMode && videoPlayer && hasLoadedMetadata}
-        <FaceEditor htmlElement={videoPlayer} {containerWidth} {containerHeight} {assetId} />
       {/if}
     {/if}
   </div>

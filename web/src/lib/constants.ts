@@ -11,8 +11,6 @@ export enum AssetAction {
   RATING = 'rating',
 }
 
-export type SharedLinkTab = 'all' | 'album' | 'individual';
-
 export enum ProjectionType {
   EQUIRECTANGULAR = 'EQUIRECTANGULAR',
   CUBEMAP = 'CUBEMAP',
@@ -76,8 +74,6 @@ export enum OpenQueryParam {
   PURCHASE_SETTINGS = 'user-purchase-settings',
 }
 
-export const maximumLengthSearchPeople = 100;
-
 // time to load the map before displaying the loading spinner
 export const timeToLoadTheMap: number = 100;
 
@@ -91,20 +87,12 @@ export const fallbackLocale = {
 };
 
 export enum QueryType {
-  SMART = 'smart',
   METADATA = 'metadata',
   DESCRIPTION = 'description',
   FULL_PATH = 'fullPath',
-  OCR = 'ocr',
 }
 
-export const validQueryTypes = new Set([
-  QueryType.SMART,
-  QueryType.METADATA,
-  QueryType.DESCRIPTION,
-  QueryType.FULL_PATH,
-  QueryType.OCR,
-]);
+export const validQueryTypes = new Set([QueryType.METADATA, QueryType.DESCRIPTION, QueryType.FULL_PATH]);
 
 export const locales = [
   { code: 'af-ZA', name: 'Afrikaans (South Africa)' },

@@ -57,7 +57,7 @@
     try {
       loading = true;
       const stillResponse = await updateAsset({ id: still.id, updateAssetDto: { livePhotoVideoId: null } });
-      const motionResponse = await getAssetInfo({ ...authManager.params, id: motionId });
+      const motionResponse = await getAssetInfo({ id: motionId });
       onUnlink({ still: toTimelineAsset(stillResponse), motion: toTimelineAsset(motionResponse) });
       assetMultiSelectManager.clear();
     } catch (error) {

@@ -36,7 +36,7 @@
 
 <OnEvents {onAssetsTag} />
 
-{#if isOwner && !authManager.isSharedLink}
+{#if isOwner}
   <section class="mt-4 px-4">
     <div class="flex h-10 w-full items-center justify-between text-sm">
       <Text color="muted">{$t('tags')}</Text>

@@ -16949,7 +16949,6 @@
       "AssetJobName": {
         "description": "Job name",
         "enum": [
-          "refresh-faces",
           "refresh-metadata",
           "regenerate-thumbnail",
           "transcode-video"
@@ -19088,7 +19087,6 @@
       "ManualJobName": {
         "description": "Manual job name",
         "enum": [
-          "person-cleanup",
           "tag-cleanup",
           "user-cleanup",
           "memory-cleanup",
@@ -20786,11 +20784,6 @@
         "description": "List of permissions",
         "enum": [
           "all",
-          "activity.create",
-          "activity.read",
-          "activity.update",
-          "activity.delete",
-          "activity.statistics",
           "apiKey.create",
           "apiKey.read",
           "apiKey.update",
@@ -20834,8 +20827,6 @@
           "adminConfig.read",
           "adminConfig.update",
           "userConfig.read",
-          "duplicate.read",
-          "duplicate.delete",
           "folder.read",
           "job.create",
           "job.read",
@@ -20860,11 +20851,6 @@
           "notification.read",
           "notification.update",
           "notification.delete",
-          "partner.create",
-          "partner.read",
-          "partner.update",
-          "partner.delete",
-          "person.reassign",
           "pinCode.create",
           "pinCode.update",
           "pinCode.delete",
@@ -20885,10 +20871,6 @@
           "session.update",
           "session.delete",
           "session.lock",
-          "sharedLink.create",
-          "sharedLink.read",
-          "sharedLink.update",
-          "sharedLink.delete",
           "stack.create",
           "stack.read",
           "stack.update",

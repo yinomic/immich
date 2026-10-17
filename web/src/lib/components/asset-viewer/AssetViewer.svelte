@@ -9,18 +9,14 @@
   import { preloadManager } from '$lib/components/asset-viewer/PreloadManager.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
   import { AssetAction, ProjectionType } from '$lib/constants';
-  import { activityManager } from '$lib/managers/activity-manager.svelte';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
-  import { authManager } from '$lib/managers/auth-manager.svelte';
   import { editManager, EditToolType } from '$lib/managers/edit/edit-manager.svelte';
   import { eventManager } from '$lib/managers/event-manager.svelte';
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
   import { getAssetActions } from '$lib/services/asset.service';
-  import { faceManager } from '$lib/stores/face.svelte';
-  import { ocrManager } from '$lib/stores/ocr.svelte';
   import { alwaysLoadOriginalVideo } from '$lib/stores/preferences.store';
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
-  import { getSharedLink, handlePromiseError } from '$lib/utils';
+  import { handlePromiseError } from '$lib/utils';
   import type { OnUndoDelete } from '$lib/utils/actions';
   import { navigateToAsset } from '$lib/utils/asset-utils';
   import { handleError } from '$lib/utils/handle-error';
@@ -34,7 +30,6 @@
     getStack,
     type AlbumResponseDto,
     type AssetResponseDto,
-    type PersonResponseDto,
     type StackResponseDto,
   } from '@immich/sdk';
   import { CommandPaletteDefaultProvider } from '@immich/ui';
@@ -43,13 +38,10 @@
   import { t } from 'svelte-i18n';
   import { fly } from 'svelte/transition';
   import Thumbnail from '../assets/thumbnail/Thumbnail.svelte';
-  import ActivityStatus from './ActivityStatus.svelte';
-  import ActivityViewer from './ActivityViewer.svelte';
   import DetailPanel from './DetailPanel.svelte';
   import EditorPanel from './editor/EditorPanel.svelte';
   import CropArea from './editor/transform-tool/CropArea.svelte';
   import ImagePanoramaViewer from './ImagePanoramaViewer.svelte';
-  import OcrButton from './OcrButton.svelte';
   import PhotoViewer from './PhotoViewer.svelte';
   import SlideshowBar from './SlideshowBar.svelte';
   import SlideshowMetadataOverlay from './SlideshowMetadataOverlay.svelte';
@@ -65,9 +57,7 @@
     cursor: AssetCursor;
     showNavigation?: boolean;
     withStacked?: boolean;
-    isShared?: boolean;
     album?: AlbumResponseDto;
-    person?: PersonResponseDto;
     onAssetChange?: (asset: AssetResponseDto) => void;
     preAction?: PreAction;
     onAction?: OnAction;
@@ -80,9 +70,7 @@
     cursor,
     showNavigation = true,
     withStacked = false,
-    isShared = false,
     album,
-    person,
     onAssetChange,
     preAction,
     onAction,
@@ -109,7 +97,6 @@
   const asset = $derived(previewStackedAsset ?? cursor.current);
   const nextAsset = $derived(cursor.nextAsset);
   const previousAsset = $derived(cursor.previousAsset);
-  let sharedLink = getSharedLink();
   let fullscreenElement = $state<Element>();
 
   let isPlayingOriginalVideo = $state($alwaysLoadOriginalVideo);
@@ -120,7 +107,7 @@
   };
 
   const refreshStack = async () => {
-    if (authManager.isSharedLink || !withStacked) {
+    if (!withStacked) {
       return;
     }
 
@@ -130,18 +117,6 @@
 
     if (!stack?.assets.some(({ id }) => id === asset.id)) {
       stack = undefined;
-    }
-  };
-
-  const handleFavorite = async () => {
-    if (!album || !album.isActivityEnabled) {
-      return;
-    }
-
-    try {
-      await activityManager.toggleLike();
-    } catch (error) {
-      handleError(error, $t('errors.unable_to_change_favorite'));
     }
   };
 
@@ -178,14 +153,6 @@
     }
   };
 
-  const onPersonThumbnailReady = async ({ id: personId }: { id: string }) => {
-    if (person && person.id !== personId) {
-      return;
-    }
-    faceManager.clear();
-    await faceManager.getAssetFaces(asset.id);
-  };
-
   onMount(() => {
     syncAssetViewerOpenClass(true);
     const slideshowStateUnsubscribe = slideshowState.subscribe((value) => {
@@ -214,7 +181,6 @@
   });
 
   onDestroy(() => {
-    activityManager.reset();
     assetViewerManager.resetPanelState();
     syncAssetViewerOpenClass(false);
     preloadManager.destroy();
@@ -379,17 +345,6 @@
 
   let isFullScreen = $derived(!!fullscreenElement);
 
-  $effect(() => {
-    if (album && !album.isActivityEnabled && activityManager.commentCount === 0) {
-      assetViewerManager.closeActivityPanel();
-    }
-  });
-  $effect(() => {
-    if (album && isShared && asset.id) {
-      handlePromiseError(activityManager.init(album.id, asset.id));
-    }
-  });
-
   const syncAssetViewerOpenClass = (isOpen: boolean) => {
     if (browser) {
       document.body.classList.toggle('asset-viewer-open', isOpen);
@@ -398,16 +353,6 @@
 
   const refresh = async () => {
     await refreshStack();
-    ocrManager.clear();
-    faceManager.clear();
-    if (!sharedLink) {
-      if (previewStackedAsset) {
-        await ocrManager.getAssetOcr(previewStackedAsset.id);
-        await faceManager.getAssetFaces(previewStackedAsset.id);
-      }
-      await ocrManager.getAssetOcr(asset.id);
-      await faceManager.getAssetFaces(asset.id);
-    }
   };
 
   $effect(() => {
@@ -453,21 +398,7 @@
     return 'PhotoViewer';
   });
 
-  const showActivityStatus = $derived(
-    $slideshowState === SlideshowState.None &&
-      isShared &&
-      ((album && album.isActivityEnabled) || activityManager.commentCount > 0) &&
-      !activityManager.isLoading,
-  );
-
-  const showOcrButton = $derived(
-    $slideshowState === SlideshowState.None &&
-      asset.type === AssetTypeEnum.Image &&
-      !assetViewerManager.isShowEditor &&
-      ocrManager.hasOcrData,
-  );
-
-  const { Tag, TagPeople } = $derived(getAssetActions($t, asset));
+  const { Tag } = $derived(getAssetActions($t, asset));
   const showDetailPanel = $derived(
     asset.hasMetadata &&
       $slideshowState === SlideshowState.None &&
@@ -480,10 +411,6 @@
       return;
     }
 
-    if (ocrManager.showOverlay) {
-      return;
-    }
-
     if (event.detail.direction === 'left') {
       navigateAsset('next');
     } else if (event.detail.direction === 'right') {
@@ -492,15 +419,8 @@
   };
 </script>
 
-<CommandPaletteDefaultProvider name={$t('assets')} actions={[Tag, TagPeople]} />
-<OnEvents
-  {onAssetUpdate}
-  {onAssetsUndoArchive}
-  {onStackCreate}
-  onStackDelete={() => closeViewer()}
-  {onStackUpdate}
-  {onPersonThumbnailReady}
-/>
+<CommandPaletteDefaultProvider name={$t('assets')} actions={[Tag]} />
+<OnEvents {onAssetUpdate} {onAssetsUndoArchive} {onStackCreate} onStackDelete={() => closeViewer()} {onStackUpdate} />
 
 <svelte:document
   bind:fullscreenElement
@@ -522,7 +442,6 @@
       <AssetViewerNavBar
         {asset}
         {album}
-        {person}
         {stack}
         preAction={handlePreAction}
         onAction={handleAction}
@@ -547,7 +466,7 @@
     </div>
   {/if}
 
-  {#if $slideshowState === SlideshowState.None && showNavigation && !assetViewerManager.isShowEditor && !assetViewerManager.isFaceEditMode && previousAsset}
+  {#if $slideshowState === SlideshowState.None && showNavigation && !assetViewerManager.isShowEditor && previousAsset}
     <div class="col-span-1 col-start-1 row-span-full row-start-1 my-auto justify-self-start">
       <PreviousAssetAction onPreviousAsset={() => navigateAsset('previous')} />
     </div>
@@ -585,7 +504,7 @@
     {:else if viewerKind === 'CropArea'}
       <CropArea {asset} />
     {:else if viewerKind === 'PhotoViewer'}
-      <PhotoViewer cursor={{ ...cursor, current: asset }} {sharedLink} {onSwipe} />
+      <PhotoViewer cursor={{ ...cursor, current: asset }} {onSwipe} />
     {:else if viewerKind === 'VideoViewer'}
       <VideoViewer
         {asset}
@@ -602,30 +521,12 @@
       />
     {/if}
 
-    {#if showActivityStatus}
-      <div class="absolute inset-e-0 bottom-0 me-8 mb-20">
-        <ActivityStatus
-          disabled={!album?.isActivityEnabled}
-          isLiked={activityManager.isLiked}
-          numberOfComments={activityManager.commentCount}
-          numberOfLikes={activityManager.likeCount}
-          onFavorite={handleFavorite}
-        />
-      </div>
-    {/if}
-
-    {#if showOcrButton}
-      <div class="absolute inset-e-0 bottom-0 me-6 mb-6 drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]">
-        <OcrButton />
-      </div>
-    {/if}
-
     {#if $slideshowState !== SlideshowState.None}
       <SlideshowMetadataOverlay {asset} />
     {/if}
   </div>
 
-  {#if $slideshowState === SlideshowState.None && showNavigation && !assetViewerManager.isShowEditor && !assetViewerManager.isFaceEditMode && nextAsset}
+  {#if $slideshowState === SlideshowState.None && showNavigation && !assetViewerManager.isShowEditor && nextAsset}
     <div class="col-span-1 col-start-4 row-span-full row-start-1 my-auto justify-self-end">
       <NextAssetAction onNextAsset={() => navigateAsset('next')} />
     </div>
@@ -681,23 +582,6 @@
           </div>
         {/each}
       </div>
-    </div>
-  {/if}
-
-  {#if isShared && album && assetViewerManager.isShowActivityPanel && authManager.authenticated}
-    <div
-      transition:fly={{ duration: 150 }}
-      id="activity-panel"
-      class="row-span-5 row-start-1 w-90 overflow-y-auto transition-all md:w-115 dark:border-l dark:border-s-immich-dark-gray"
-      translate="yes"
-    >
-      <ActivityViewer
-        disabled={!album.isActivityEnabled}
-        assetType={asset.type}
-        albumUsers={album.albumUsers}
-        albumId={album.id}
-        assetId={asset.id}
-      />
     </div>
   {/if}
 </section>

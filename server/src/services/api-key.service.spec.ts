@@ -100,7 +100,7 @@ describe(ApiKeyService.name, () => {
     it('should update permissions', async () => {
       const auth = AuthFactory.create();
       const apiKey = ApiKeyFactory.create({ userId: auth.user.id });
-      const newPermissions = [Permission.ActivityCreate, Permission.ActivityRead, Permission.ActivityUpdate];
+      const newPermissions = [Permission.AssetRead, Permission.AssetUpload, Permission.AssetUpdate];
 
       mocks.apiKey.getById.mockResolvedValue(apiKey);
       mocks.apiKey.update.mockResolvedValue(apiKey);

@@ -19,8 +19,8 @@
 
   let contextMenuAnchor: HTMLDivElement | undefined = $state();
   const items = $derived.by(() => {
-    const { Edit, Share, Download, Leave, Delete } = getAlbumActions($t, album);
-    return [Edit, Share, Download, Leave, Delete];
+    const { Edit, Download, Leave, Delete } = getAlbumActions($t, album);
+    return [Edit, Download, Leave, Delete];
   });
 
   const dateLocaleString = (dateString: string) => {

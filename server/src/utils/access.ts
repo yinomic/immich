@@ -59,18 +59,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
   const { auth, permission, ids } = request;
 
   switch (permission) {
-    // uses album id
-    case Permission.ActivityCreate: {
-      return await access.activity.checkCreateAccess(auth.user.id, ids);
-    }
-
-    // uses activity id
-    case Permission.ActivityDelete: {
-      const isOwner = await access.activity.checkOwnerAccess(auth.user.id, ids);
-      const isAlbumOwner = await access.activity.checkAlbumOwnerAccess(auth.user.id, ids.difference(isOwner));
-      return isOwner.union(isAlbumOwner);
-    }
-
     case Permission.AssetRead: {
       const isOwner = await access.asset.checkOwnerAccess(auth.user.id, ids, auth.session?.hasElevatedPermission);
       const isAlbum = await access.asset.checkAlbumAccess(auth.user.id, ids.difference(isOwner));
@@ -212,11 +200,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
       return ids.has(auth.user.id) ? new Set([auth.user.id]) : new Set();
     }
 
-    case Permission.DuplicateRead:
-    case Permission.DuplicateDelete: {
-      return access.duplicate.checkOwnerAccess(auth.user.id, ids);
-    }
-
     case Permission.AuthDeviceDelete: {
       return await access.authDevice.checkOwnerAccess(auth.user.id, ids);
     }
@@ -254,10 +237,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
 
     case Permission.MemoryDelete: {
       return access.memory.checkOwnerAccess(auth.user.id, ids);
-    }
-
-    case Permission.PartnerUpdate: {
-      return access.partner.checkUpdateAccess(auth.user.id, ids);
     }
 
     case Permission.SessionRead:

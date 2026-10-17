@@ -1,9 +1,9 @@
 import { authenticate } from '$lib/utils/auth';
-import { getAssetInfoFromParam, isSharedLinkRoute } from '$lib/utils/navigation';
+import { getAssetInfoFromParam } from '$lib/utils/navigation';
 import type { LayoutLoad } from './$types';
 
-export const load = (async ({ url, params, route }) => {
-  await authenticate(url, { public: isSharedLinkRoute(route.id) });
+export const load = (async ({ url, params }) => {
+  await authenticate(url);
   const asset = await getAssetInfoFromParam(params);
 
   return {

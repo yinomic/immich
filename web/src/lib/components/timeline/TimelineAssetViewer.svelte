@@ -14,7 +14,7 @@
   import { handleErrorAsync } from '$lib/utils/handle-error';
   import { navigate } from '$lib/utils/navigation';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
-  import { type AlbumResponseDto, type AssetResponseDto, type PersonResponseDto, getAssetInfo } from '@immich/sdk';
+  import { type AlbumResponseDto, type AssetResponseDto, getAssetInfo } from '@immich/sdk';
   import { onDestroy, onMount } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -22,9 +22,7 @@
     timelineManager: TimelineManager;
     invisible: boolean;
     withStacked?: boolean;
-    isShared?: boolean;
     album?: AlbumResponseDto;
-    person?: PersonResponseDto;
     removeAction?: AssetAction.UNARCHIVE | AssetAction.ARCHIVE | AssetAction.SET_VISIBILITY_TIMELINE | null;
   }
 
@@ -34,16 +32,11 @@
     invisible = $bindable(false),
     removeAction,
     withStacked = false,
-    isShared = false,
     album,
-    person,
   }: Props = $props();
 
   const getAsset = (id: string) => {
-    return handleErrorAsync(
-      () => assetCacheManager.getAsset({ ...authManager.params, id }),
-      $t('error_retrieving_asset_information'),
-    );
+    return handleErrorAsync(() => assetCacheManager.getAsset(id), $t('error_retrieving_asset_information'));
   };
 
   const getNextAsset = async (currentAsset: AssetResponseDto) => {
@@ -155,7 +148,7 @@
     }
 
     const restoredAsset = assets[0];
-    const asset = await getAssetInfo({ ...authManager.params, id: restoredAsset.id });
+    const asset = await getAssetInfo({ id: restoredAsset.id });
     assetViewerManager.setAsset(asset);
     await navigate({ targetRoute: 'current', assetId: restoredAsset.id });
   };
@@ -189,9 +182,7 @@
   <AssetViewer
     {withStacked}
     cursor={assetCursor}
-    {isShared}
     {album}
-    {person}
     onAssetChange={(asset) => {
       timelineManager?.upsertAssets([toTimelineAsset(asset)]);
     }}

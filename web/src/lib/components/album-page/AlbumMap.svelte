@@ -43,7 +43,7 @@
     cancelable = new AbortController();
 
     try {
-      return await getAlbumMapMarkers({ ...authManager.params, id: album.id }, { signal: cancelable.signal });
+      return await getAlbumMapMarkers({ id: album.id }, { signal: cancelable.signal });
     } catch (error) {
       handleError(error, $t('errors.something_went_wrong'));
       return [];

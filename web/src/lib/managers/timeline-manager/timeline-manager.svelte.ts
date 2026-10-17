@@ -286,7 +286,6 @@ export class TimelineManager extends VirtualScrollManager {
 
   async #initializeTimelineMonths() {
     const timebuckets = await getTimeBuckets({
-      ...authManager.params,
       ...this.#options,
     });
 
@@ -431,9 +430,7 @@ export class TimelineManager extends VirtualScrollManager {
       return timelineMonth;
     }
 
-    const response = isAssetResponseDto(asset)
-      ? asset
-      : await getAssetInfo({ ...authManager.params, id }).catch(() => null);
+    const response = isAssetResponseDto(asset) ? asset : await getAssetInfo({ id }).catch(() => null);
     if (!response) {
       return;
     }

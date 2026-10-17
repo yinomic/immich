@@ -4,8 +4,6 @@
   import { scrollMemoryClearer } from '$lib/actions/scroll-memory';
   import AlbumMap from '$lib/components/album-page/AlbumMap.svelte';
   import AlbumSummary from '$lib/components/album-page/AlbumSummary.svelte';
-  import ActivityStatus from '$lib/components/asset-viewer/ActivityStatus.svelte';
-  import ActivityViewer from '$lib/components/asset-viewer/ActivityViewer.svelte';
   import HeaderActionButton from '$lib/components/HeaderActionButton.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
   import ButtonContextMenu from '$lib/components/shared-components/context-menu/ButtonContextMenu.svelte';
@@ -24,7 +22,6 @@
   import AssetSelectControlBar from '$lib/components/timeline/AssetSelectControlBar.svelte';
   import Timeline from '$lib/components/timeline/Timeline.svelte';
   import { AlbumPageViewMode } from '$lib/constants';
-  import { activityManager } from '$lib/managers/activity-manager.svelte';
   import { assetMultiSelectManager, AssetMultiSelectManager } from '$lib/managers/asset-multi-select-manager.svelte';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
   import { authManager } from '$lib/managers/auth-manager.svelte';
@@ -56,7 +53,6 @@
     mdiDotsVertical,
     mdiImageOutline,
     mdiImagePlusOutline,
-    mdiLink,
     mdiPlus,
     mdiPresentationPlay,
   } from '@mdi/js';
@@ -81,14 +77,6 @@
   let showAlbumUsers = $derived(timelineManager?.showAssetOwners ?? false);
 
   const timelineMultiSelectManager = new AssetMultiSelectManager();
-
-  const handleFavorite = async () => {
-    try {
-      await activityManager.toggleLike();
-    } catch (error) {
-      handleError(error, $t('errors.cant_change_asset_favorite'));
-    }
-  };
 
   const handleStartSlideshow = async () => {
     const asset =
@@ -221,12 +209,6 @@
   const containsEditors = $derived(album?.shared && album.albumUsers.some(({ role }) => role === AlbumUserRole.Editor));
   const albumUsers = $derived(showAlbumUsers && containsEditors ? album.albumUsers.map(({ user }) => user) : []);
 
-  $effect(() => {
-    if (!album.isActivityEnabled && activityManager.commentCount === 0) {
-      assetViewerManager.closeActivityPanel();
-    }
-  });
-
   const options = $derived.by(() => {
     if (viewMode === AlbumPageViewMode.SELECT_ASSETS) {
       return {
@@ -238,25 +220,7 @@
     return { albumId, order: album.order };
   });
 
-  const isShared = $derived(viewMode !== AlbumPageViewMode.SELECT_ASSETS && album.albumUsers.length > 1);
-
-  $effect(() => {
-    if (assetViewerManager.isViewing || !isShared) {
-      return;
-    }
-
-    handlePromiseError(activityManager.init(album.id));
-  });
-
-  onDestroy(() => activityManager.reset());
-
   const isOwned = $derived(isAlbumOwner(album));
-
-  let showActivityStatus = $derived(
-    album.albumUsers.length > 1 &&
-      !assetViewerManager.isViewing &&
-      (album.isActivityEnabled || activityManager.commentCount > 0),
-  );
   const isEditor = $derived(isAlbumEditor(album));
 
   const isSelectionMode = $derived(
@@ -325,8 +289,6 @@
 </script>
 
 <OnEvents
-  onSharedLinkCreate={(link) => refreshAlbum(link.album)}
-  onSharedLinkDelete={() => refreshAlbum()}
   {onAlbumDelete}
   {onAlbumAddAssets}
   {onAlbumRemoveAssets}
@@ -348,7 +310,6 @@
         bind:timelineManager
         {options}
         assetInteraction={currentAssetIntersection}
-        {isShared}
         {isSelectionMode}
         {singleSelect}
         {showArchiveIcon}
@@ -372,7 +333,7 @@
               {/if}
 
               <!-- ALBUM SHARING -->
-              {#if album.albumUsers.length > 1 || (album.hasSharedLink && isOwned)}
+              {#if album.albumUsers.length > 1}
                 <div class="my-3 flex gap-x-1">
                   <button
                     class="flex gap-x-1"
@@ -394,19 +355,7 @@
                         icon={mdiDotsHorizontal}
                       />
                     {/if}
-
-                    {#if album.hasSharedLink && isOwned}
-                      <IconButton
-                        aria-label={$t('shared_link_manage_links')}
-                        color="secondary"
-                        size="medium"
-                        shape="round"
-                        icon={mdiLink}
-                      />
-                    {/if}
                   </button>
-
-                  <ActionButton action={Actions.Share} />
                 </div>
               {/if}
               <AlbumDescription
@@ -436,25 +385,12 @@
           {/if}
         {/if}
       </Timeline>
-
-      {#if showActivityStatus}
-        <div class="absolute inset-e-0 bottom-0 z-2 me-12 mb-6">
-          <ActivityStatus
-            disabled={!album.isActivityEnabled}
-            isLiked={activityManager.isLiked}
-            numberOfComments={activityManager.commentCount}
-            numberOfLikes={undefined}
-            onFavorite={handleFavorite}
-          />
-        </div>
-      {/if}
     </main>
 
     {#if assetMultiSelectManager.selectionActive}
       <AssetSelectControlBar>
         {@const Actions = getAssetBulkActions($t, album)}
         <CommandPaletteDefaultProvider name={$t('assets')} actions={Object.values(Actions)} />
-        <ActionButton action={Actions.CreateSharedLink} />
         <SelectAllAssets {timelineManager} assetInteraction={assetMultiSelectManager} />
         <ActionButton action={Actions.AddToAlbum} />
         {#if assetMultiSelectManager.isAllUserOwned}
@@ -515,8 +451,6 @@
                 icon={mdiImagePlusOutline}
               />
             {/if}
-
-            <ActionButton action={Actions.Share} />
 
             {#if featureFlagsManager.value.map}
               <AlbumMap {album} />
@@ -593,18 +527,6 @@
       {/if}
     {/if}
   </div>
-  {#if album.albumUsers.length > 1 && album && assetViewerManager.isShowActivityPanel && authManager.authenticated && !assetViewerManager.isViewing}
-    <div class="flex">
-      <div
-        transition:fly={{ duration: 150 }}
-        id="activity-panel"
-        class="z-2 w-90 overflow-y-auto transition-all md:w-115 dark:border-l dark:border-s-immich-dark-gray"
-        translate="yes"
-      >
-        <ActivityViewer disabled={!album.isActivityEnabled} albumUsers={album.albumUsers} albumId={album.id} />
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>

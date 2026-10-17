@@ -10,12 +10,6 @@ export type IAccessRepositoryMock = {
 
 export const newAccessRepositoryMock = (): IAccessRepositoryMock => {
   return {
-    activity: {
-      checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-      checkAlbumOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-      checkCreateAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
     asset: {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
       checkAlbumAccess: vitest.fn().mockResolvedValue(new Set()),
@@ -35,20 +29,12 @@ export const newAccessRepositoryMock = (): IAccessRepositoryMock => {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
     },
 
-    duplicate: {
-      checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
     memory: {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
     },
 
     notification: {
       checkOwnerAccess: vitest.fn().mockResolvedValue(new Set()),
-    },
-
-    partner: {
-      checkUpdateAccess: vitest.fn().mockResolvedValue(new Set()),
     },
 
     session: {

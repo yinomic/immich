@@ -63,25 +63,14 @@ export type SearchLocationFilter = {
 
 export type SearchFilter = {
   query: string;
-  ocr?: string;
-  queryType: 'smart' | 'metadata' | 'description' | 'fullPath' | 'ocr';
-  personIds: SvelteSet<string>;
+  queryType: 'metadata' | 'description' | 'fullPath';
   tagIds: SvelteSet<string> | null;
   location: SearchLocationFilter;
-  queryAssetId?: string;
   camera: SearchCameraFilter;
   date: SearchDateFilter;
   display: SearchDisplayFilters;
   mediaType: MediaType;
   rating?: number | null;
-};
-
-export type PeopleFilter = {
-  sharedById?: string;
-  sharedWithId?: string;
-  isFavorite?: boolean;
-  isHidden?: boolean;
-  name?: string;
 };
 
 export type JSONSchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'object';

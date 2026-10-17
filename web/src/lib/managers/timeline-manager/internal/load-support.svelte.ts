@@ -18,7 +18,6 @@ export async function loadFromTimeBuckets(
   const timeBucket = toISOYearMonthUTC(timelineMonth.yearMonth);
   const bucketResponse = await getTimeBucket(
     {
-      ...authManager.params,
       ...options,
       timeBucket,
     },
@@ -32,7 +31,6 @@ export async function loadFromTimeBuckets(
   if (options.timelineAlbumId) {
     const albumAssets = await getTimeBucket(
       {
-        ...authManager.params,
         albumId: options.timelineAlbumId,
         timeBucket,
       },

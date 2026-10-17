@@ -19,11 +19,9 @@ import { modalManager, toastManager, type ActionItem } from '@immich/ui';
 import {
   mdiDownload,
   mdiImageOutline,
-  mdiLink,
   mdiPlus,
   mdiPlusBoxOutline,
   mdiRenameOutline,
-  mdiShareVariantOutline,
   mdiTrashCanOutline,
   mdiExitToApp,
   mdiUpload,
@@ -37,7 +35,6 @@ import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
 import AddUsersModal from '$lib/modals/AddUsersModal.svelte';
 import AlbumEditModal from '$lib/modals/AlbumEditModal.svelte';
 import AlbumOptionsModal from '$lib/modals/AlbumOptionsModal.svelte';
-import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
 import { Route } from '$lib/route';
 import { userInteraction } from '$lib/stores/user.svelte';
 import { createAlbumAndRedirect } from '$lib/utils/album-utils';
@@ -77,13 +74,6 @@ export const getAlbumActions = ($t: MessageFormatter, album: AlbumResponseDto) =
       }),
   };
 
-  const CreateSharedLink: ActionItem = {
-    title: $t('create_link'),
-    icon: mdiLink,
-    color: 'primary',
-    onAction: () => modalManager.show(SharedLinkCreateModal, { albumId: album.id }),
-  };
-
   const Delete: ActionItem = {
     title: $t('delete_album'),
     icon: mdiTrashCanOutline,
@@ -119,14 +109,7 @@ export const getAlbumActions = ($t: MessageFormatter, album: AlbumResponseDto) =
     onAction: () => modalManager.show(AlbumOptionsModal, { album, readOnly: !isOwned }),
   };
 
-  const Share: ActionItem = {
-    title: $t('share'),
-    icon: mdiShareVariantOutline,
-    $if: () => isOwned,
-    onAction: () => modalManager.show(AlbumOptionsModal, { album }),
-  };
-
-  return { AddUsers, CreateSharedLink, Delete, Download, Edit, Leave, Options, Share };
+  return { AddUsers, Delete, Download, Edit, Leave, Options };
 };
 
 export const getAlbumAssetActions = ($t: MessageFormatter, album: AlbumResponseDto, asset: AssetResponseDto) => {
@@ -169,14 +152,14 @@ export const addAssetsToAlbums = async (albumIds: string[], assetIds: string[], 
   try {
     if (albumIds.length === 1) {
       const albumId = albumIds[0];
-      const results = await addToAlbum({ ...authManager.params, id: albumId, bulkIdsDto: { ids: assetIds } });
+      const results = await addToAlbum({ id: albumId, bulkIdsDto: { ids: assetIds } });
       if (notify) {
         notifyAddToAlbum($t, albumId, assetIds, results);
       }
     }
 
     if (albumIds.length > 1) {
-      const results = await addToAlbums({ ...authManager.params, albumsAddAssetsDto: { albumIds, assetIds } });
+      const results = await addToAlbums({ albumsAddAssetsDto: { albumIds, assetIds } });
       if (notify) {
         notifyAddToAlbums($t, albumIds, assetIds, results);
       }

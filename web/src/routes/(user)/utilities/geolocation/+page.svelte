@@ -65,7 +65,7 @@
 
     const updatedAssets = await Promise.all(
       assetMultiSelectManager.assets.map(async (asset) => {
-        const updatedAsset = await getAssetInfo({ ...authManager.params, id: asset.id });
+        const updatedAsset = await getAssetInfo({ id: asset.id });
         return toTimelineAsset(updatedAsset);
       }),
     );

@@ -137,7 +137,6 @@ export const getSearchMediaTitle = (mediaType: MediaType) => {
   }
 };
 
-
 export const getSearchTagsTitle = (tags: TagResponseDto[], selected: SvelteSet<string>) => {
   const $t = get(t);
 

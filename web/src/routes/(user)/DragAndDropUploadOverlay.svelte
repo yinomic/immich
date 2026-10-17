@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { shouldIgnoreEvent } from '$lib/actions/shortcut';
-  import { authManager } from '$lib/managers/auth-manager.svelte';
-  import { dragAndDropFilesStore } from '$lib/stores/drag-and-drop-files.store';
   import { fileUploadHandler } from '$lib/utils/file-uploader';
   import { isAlbumsRoute, isLockedFolderRoute } from '$lib/utils/navigation';
   import { Logo } from '@immich/ui';
@@ -127,11 +125,7 @@
     }
 
     const filesArray: File[] = Array.from<File>(files);
-    if (authManager.isSharedLink) {
-      dragAndDropFilesStore.set({ isDragging: true, files: filesArray });
-    } else {
-      await fileUploadHandler({ files: filesArray, albumId, isLockedAssets: isInLockedFolder });
-    }
+    await fileUploadHandler({ files: filesArray, albumId, isLockedAssets: isInLockedFolder });
   };
 
   const ondragstart = () => {

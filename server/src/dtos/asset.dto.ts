@@ -64,7 +64,6 @@ export const AssetIdsSchema = z
   .meta({ id: 'AssetIdsDto' });
 
 export enum AssetJobName {
-  REFRESH_FACES = 'refresh-faces',
   REFRESH_METADATA = 'refresh-metadata',
   REGENERATE_THUMBNAIL = 'regenerate-thumbnail',
   TRANSCODE_VIDEO = 'transcode-video',

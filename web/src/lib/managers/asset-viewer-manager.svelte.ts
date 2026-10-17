@@ -8,16 +8,6 @@ import { canCopyImageToClipboard } from '$lib/utils/asset-utils';
 import { BaseEventManager } from '$lib/utils/base-event-manager.svelte';
 import type { AssetGridRouteSearchParams } from '$lib/utils/navigation';
 
-export interface Faces {
-  id: string;
-  imageHeight: number;
-  imageWidth: number;
-  boundingBoxX1: number;
-  boundingBoxX2: number;
-  boundingBoxY1: number;
-  boundingBoxY2: number;
-}
-
 const createDefaultZoomState = (): ZoomImageWheelState => ({
   currentRotation: 0,
   currentZoom: 1,
@@ -30,7 +20,6 @@ export type Events = {
   Zoom: [];
   ZoomChange: [ZoomImageWheelState];
   Copy: [];
-  FaceEditModeChange: [boolean];
 };
 
 class AssetViewerManager extends BaseEventManager<Events> {
@@ -48,15 +37,10 @@ class AssetViewerManager extends BaseEventManager<Events> {
     const loadingOriginal = this.zoom > 1 && quality.original !== 'success';
     return !previewOrOriginalReady || loadingOriginal;
   });
-  isShowActivityPanel = $state(false);
   isPlayingMotionPhoto = $state(false);
   isShowEditor = $state(false);
-  #isFaceEditMode = $state(false);
-  #isEditFacesPanelOpen = $state(false);
   #viewingAssetStoreState = $state<AssetResponseDto>();
   #viewState = $state<boolean>(false);
-  #highlightedFaces = $state<Faces[]>([]);
-  #showingHiddenPeople = $state(false);
   gridScrollTarget = $state<AssetGridRouteSearchParams | null | undefined>();
 
   get asset() {
@@ -77,14 +61,6 @@ class AssetViewerManager extends BaseEventManager<Events> {
 
   get isShowAssetPath() {
     return userPreferencesManager.showAssetPath;
-  }
-
-  get isFaceEditMode() {
-    return this.#isFaceEditMode;
-  }
-
-  get isEditFacesPanelOpen() {
-    return this.#isEditFacesPanelOpen;
   }
 
   get zoomState() {
@@ -164,21 +140,11 @@ class AssetViewerManager extends BaseEventManager<Events> {
     this.zoomState = createDefaultZoomState();
   }
 
-  toggleActivityPanel() {
-    this.closeDetailPanel();
-    this.isShowActivityPanel = !this.isShowActivityPanel;
-  }
-
-  closeActivityPanel() {
-    this.isShowActivityPanel = false;
-  }
-
   toggleAssetPath() {
     this.isShowAssetPath = !this.isShowAssetPath;
   }
 
   toggleDetailPanel() {
-    this.closeActivityPanel();
     this.isShowDetailPanel = !this.isShowDetailPanel;
   }
 
@@ -187,7 +153,6 @@ class AssetViewerManager extends BaseEventManager<Events> {
   }
 
   openEditor() {
-    this.closeActivityPanel();
     this.isShowEditor = true;
   }
 
@@ -195,54 +160,8 @@ class AssetViewerManager extends BaseEventManager<Events> {
     this.isShowEditor = false;
   }
 
-  toggleFaceEditMode() {
-    this.#isFaceEditMode = !this.#isFaceEditMode;
-    this.emit('FaceEditModeChange', this.#isFaceEditMode);
-  }
-
-  closeFaceEditMode() {
-    if (this.#isFaceEditMode) {
-      this.emit('FaceEditModeChange', false);
-    }
-    this.#isFaceEditMode = false;
-  }
-
-  openEditFacesPanel() {
-    this.#isEditFacesPanelOpen = true;
-  }
-
-  closeEditFacesPanel() {
-    this.#isEditFacesPanelOpen = false;
-  }
-
   resetPanelState() {
     this.closeEditor();
-    this.closeFaceEditMode();
-    this.closeEditFacesPanel();
-  }
-
-  get highlightedFaces() {
-    return this.#highlightedFaces;
-  }
-
-  setHighlightedFaces(faces: Faces[]) {
-    this.#highlightedFaces = faces;
-  }
-
-  clearHighlightedFaces() {
-    this.#highlightedFaces = [];
-  }
-
-  get isShowingHiddenPeople() {
-    return this.#showingHiddenPeople;
-  }
-
-  toggleHiddenPeople() {
-    this.#showingHiddenPeople = !this.#showingHiddenPeople;
-  }
-
-  hideHiddenPeople() {
-    this.#showingHiddenPeople = false;
   }
 
   setAsset(asset: AssetResponseDto) {
@@ -251,7 +170,7 @@ class AssetViewerManager extends BaseEventManager<Events> {
   }
 
   async setAssetId(id: string): Promise<AssetResponseDto> {
-    const asset = await getAssetInfo({ ...authManager.params, id });
+    const asset = await getAssetInfo({ id });
     this.setAsset(asset);
     return asset;
   }

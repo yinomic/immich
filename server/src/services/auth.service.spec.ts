@@ -522,7 +522,7 @@ describe(AuthService.name, () => {
 
     it('should not require any permission when metadata is set to `false`', async () => {
       const authUser = UserFactory.create();
-      const authApiKey = ApiKeyFactory.from({ permissions: [Permission.ActivityRead] })
+      const authApiKey = ApiKeyFactory.from({ permissions: [Permission.AssetRead] })
         .user(authUser)
         .build();
 

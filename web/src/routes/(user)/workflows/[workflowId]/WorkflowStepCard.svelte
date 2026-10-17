@@ -7,7 +7,7 @@
   const getAlbumName = (id: string): Promise<string> => {
     let albumName = albumNameCache.get(id);
     if (!albumName) {
-      albumName = getAlbumInfo({ ...authManager.params, id })
+      albumName = getAlbumInfo({ id })
         .then((album) => album.albumName)
         .catch(() => id);
       albumNameCache.set(id, albumName);

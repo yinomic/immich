@@ -223,25 +223,24 @@ export const getAssetMediaUrl = (options: AssetUrlOptions) => {
   const { id, size, cacheKey: c, edited = true } = options;
   const isOriginal = size === AssetMediaSize.Original;
   const path = isOriginal ? getAssetOriginalPath(id) : getAssetThumbnailPath(id);
-  return createUrl(path, { ...authManager.params, size: isOriginal ? undefined : size, c, edited });
+  return createUrl(path, { size: isOriginal ? undefined : size, c, edited });
 };
 
 export const getAssetPlaybackUrl = (options: AssetUrlOptions) => {
   const { id, cacheKey: c } = options;
-  return createUrl(getAssetPlaybackPath(id), { ...authManager.params, c });
+  return createUrl(getAssetPlaybackPath(id), { c });
 };
 
 export const getAssetHlsUrl = (id: string) => {
-  return createUrl(`/assets/${id}/video/stream/main.m3u8`, authManager.params);
+  return createUrl(`/assets/${id}/video/stream/main.m3u8`);
 };
 
 export const getAssetHlsSessionUrl = (id: string, sessionId: string) => {
-  return createUrl(`/assets/${id}/video/stream/${sessionId}`, authManager.params);
+  return createUrl(`/assets/${id}/video/stream/${sessionId}`);
 };
 
 export const getProfileImageUrl = (user: UserResponseDto) =>
   createUrl(getUserProfileImagePath(user.id), { updatedAt: user.profileChangedAt });
-
 
 export const copyToClipboard = async (secret: string | unknown) => {
   const $t = get(t);

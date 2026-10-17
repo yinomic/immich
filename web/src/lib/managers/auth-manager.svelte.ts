@@ -7,17 +7,13 @@ import {
 } from '@immich/sdk';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { page } from '$app/state';
 import { eventManager } from '$lib/managers/event-manager.svelte';
 import { queryClient } from '$lib/queries/client';
 import { getAboutInfoQuery } from '$lib/queries/server.query';
 import { Route } from '$lib/route';
-import { isSharedLinkRoute } from '$lib/utils/navigation';
 
 class AuthManager {
   isPurchased = $state(false);
-  isSharedLink = $derived(isSharedLinkRoute(page.route?.id));
-  params = $derived(this.isSharedLink ? { key: page.params.key, slug: page.params.slug } : {});
 
   #user = $state<UserAdminResponseDto>();
   #preferences = $state<UserPreferencesResponseDto>();

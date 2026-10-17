@@ -136,14 +136,14 @@ describe('/api-keys', () => {
         .put(`/api-keys/${id}`)
         .send({
           name: 'new name',
-          permissions: [Permission.ActivityCreate, Permission.ActivityRead, Permission.ActivityUpdate],
+          permissions: [Permission.AssetRead, Permission.AssetUpload, Permission.AssetUpdate],
         })
         .set('Authorization', `Bearer ${user.accessToken}`);
       expect(status).toBe(200);
       expect(body).toEqual({
         id: expect.any(String),
         name: 'new name',
-        permissions: [Permission.ActivityCreate, Permission.ActivityRead, Permission.ActivityUpdate],
+        permissions: [Permission.AssetRead, Permission.AssetUpload, Permission.AssetUpdate],
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });

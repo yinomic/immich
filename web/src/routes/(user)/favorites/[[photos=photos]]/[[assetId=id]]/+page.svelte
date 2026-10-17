@@ -67,7 +67,6 @@
     {@const Actions = getAssetBulkActions($t)}
     <CommandPaletteDefaultProvider name={$t('assets')} actions={Object.values(Actions)} />
     <FavoriteAction removeFavorite onFavorite={(assetIds) => timelineManager.removeAssets(assetIds)} />
-    <ActionButton action={Actions.CreateSharedLink} />
     <SelectAllAssets {timelineManager} assetInteraction={assetMultiSelectManager} />
     <ActionButton action={Actions.AddToAlbum} />
     <ButtonContextMenu icon={mdiDotsVertical} title={$t('menu')}>

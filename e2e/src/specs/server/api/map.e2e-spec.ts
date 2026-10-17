@@ -2,30 +2,23 @@ import { AssetVisibility, LoginResponseDto } from '@immich/sdk';
 import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { Socket } from 'socket.io-client';
-import { createUserDto } from 'src/fixtures.js';
 import { app, testAssetDir, utils } from 'src/utils.js';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 describe('/map', () => {
   let websocket: Socket;
-  let partnerWebsocket: Socket;
   let admin: LoginResponseDto;
-  let partner: LoginResponseDto;
-  let partnerArchivedAssetId: string;
   let adminArchivedAssetId: string;
 
   beforeAll(async () => {
     await utils.resetDatabase();
     admin = await utils.adminSetup({ onboarding: false });
-    partner = await utils.userSetup(admin.accessToken, createUserDto.user1);
 
     websocket = await utils.connectWebsocket(admin.accessToken);
-    partnerWebsocket = await utils.connectWebsocket(partner.accessToken);
 
     const adminFiles = ['formats/heic/IMG_2682.heic', 'metadata/gps-position/thompson-springs.jpg'];
     const adminArchivedFile = 'metadata/dates/datetimeoriginal-gps.jpg';
-    const partnerFile = 'metadata/gps-position/thompson-springs.jpg';
     utils.resetEvents();
     const uploadFile = async (accessToken: string, input: string) => {
       const filepath = join(testAssetDir, input);
@@ -36,21 +29,13 @@ describe('/map', () => {
       return id;
     };
     await Promise.all(adminFiles.map((f) => uploadFile(admin.accessToken, f)));
-    [adminArchivedAssetId, partnerArchivedAssetId] = await Promise.all([
-      uploadFile(admin.accessToken, adminArchivedFile),
-      uploadFile(partner.accessToken, partnerFile),
-    ]);
+    adminArchivedAssetId = await uploadFile(admin.accessToken, adminArchivedFile);
 
-    await Promise.all([
-      utils.archiveAssets(admin.accessToken, [adminArchivedAssetId]),
-      utils.archiveAssets(partner.accessToken, [partnerArchivedAssetId]),
-      utils.createPartner(partner.accessToken, admin.userId),
-    ]);
+    await utils.archiveAssets(admin.accessToken, [adminArchivedAssetId]);
   });
 
   afterAll(() => {
     utils.disconnectWebsocket(websocket);
-    utils.disconnectWebsocket(partnerWebsocket);
   });
 
   describe('GET /map/markers', () => {
@@ -80,18 +65,6 @@ describe('/map', () => {
           state: 'Nebraska',
         },
       ]);
-    });
-
-    it('should not expose partner archived asset locations', async () => {
-      const { status, body } = await request(app)
-        .get('/map/markers')
-        .query({ withPartners: true, isArchived: true })
-        .set('Authorization', `Bearer ${admin.accessToken}`);
-
-      expect(status).toBe(200);
-      const ids = body.map((m: { id: string }) => m.id);
-      expect(ids).not.toContain(partnerArchivedAssetId);
-      expect(ids).toContain(adminArchivedAssetId);
     });
 
     it('should include own archived asset locations', async () => {

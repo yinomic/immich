@@ -13,9 +13,8 @@
   import { getAlbumAssetActions } from '$lib/services/album.service';
   import { getGlobalActions } from '$lib/services/app.service';
   import { getAssetActions } from '$lib/services/asset.service';
-  import { getPersonAssetActions } from '$lib/services/person.service';
   import { getStackActions } from '$lib/services/stack.service';
-  import { getSharedLink, withoutIcons } from '$lib/utils';
+  import { withoutIcons } from '$lib/utils';
   import type { OnUndoDelete } from '$lib/utils/actions';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
   import {
@@ -23,7 +22,6 @@
     AssetVisibility,
     type AlbumResponseDto,
     type AssetResponseDto,
-    type PersonResponseDto,
     type StackResponseDto,
   } from '@immich/sdk';
   import { ActionButton, CommandPaletteDefaultProvider, Tooltip, type ActionItem } from '@immich/ui';
@@ -33,7 +31,6 @@
   interface Props {
     asset: AssetResponseDto;
     album?: AlbumResponseDto;
-    person?: PersonResponseDto | null;
     stack?: StackResponseDto;
     preAction: PreAction;
     onAction: OnAction;
@@ -46,7 +43,6 @@
   let {
     asset,
     album,
-    person = null,
     stack,
     preAction,
     onAction,
@@ -64,7 +60,7 @@
   const Close: ActionItem = $derived({
     title: $t('go_back'),
     icon: languageManager.rtl ? mdiArrowRight : mdiArrowLeft,
-    $if: () => !!onClose && !assetViewerManager.isFaceEditMode && !assetViewerManager.isEditFacesPanelOpen,
+    $if: () => !!onClose,
     onAction: () => onClose?.(),
     shortcuts: [{ key: 'Escape' }],
   });
@@ -78,7 +74,6 @@
 
   const Actions = $derived(getAssetActions($t, { ...asset, stackPrimaryAssetId: stack?.primaryAssetId }, album));
   const StackActions = $derived(getStackActions($t, stack, asset));
-  const sharedLink = getSharedLink();
 </script>
 
 <CommandPaletteDefaultProvider name={$t('assets')} actions={withoutIcons([Close, Cast, ...Object.values(Actions)])} />
@@ -104,14 +99,12 @@
       </Tooltip>
     {/if}
     <ActionButton action={Cast} />
-    <ActionButton action={Actions.Share} />
     <ActionButton action={Actions.Offline} />
     <ActionButton action={Actions.ZoomIn} />
     <ActionButton action={Actions.ZoomOut} />
     <ActionButton action={Actions.PlayMotionPhoto} />
     <ActionButton action={Actions.StopMotionPhoto} />
     <ActionButton action={Actions.Copy} />
-    <ActionButton action={Actions.SharedLinkDownload} />
     <ActionButton action={Actions.Info} />
     <ActionButton action={Actions.Favorite} />
     <ActionButton action={Actions.Unfavorite} />
@@ -121,57 +114,49 @@
       <DeleteAction {asset} {onAction} {preAction} {onUndoDelete} />
     {/if}
 
-    {#if !sharedLink}
-      <ButtonContextMenu direction="left" align="top-right" color="secondary" title={$t('more')} icon={mdiDotsVertical}>
-        <ActionMenuItem action={Actions.PlaySlideshow} />
+    <ButtonContextMenu direction="left" align="top-right" color="secondary" title={$t('more')} icon={mdiDotsVertical}>
+      <ActionMenuItem action={Actions.PlaySlideshow} />
 
-        <ActionMenuItem action={Actions.Download} />
-        <ActionMenuItem action={Actions.DownloadOriginal} />
+      <ActionMenuItem action={Actions.Download} />
+      <ActionMenuItem action={Actions.DownloadOriginal} />
 
-        {#if !isLocked && asset.isTrashed}
-          <RestoreAction {asset} {onAction} />
-        {/if}
+      {#if !isLocked && asset.isTrashed}
+        <RestoreAction {asset} {onAction} />
+      {/if}
 
-        <ActionMenuItem action={Actions.AddToAlbum} />
-        <ActionMenuItem action={Actions.RemoveFromAlbum} />
+      <ActionMenuItem action={Actions.AddToAlbum} />
+      <ActionMenuItem action={Actions.RemoveFromAlbum} />
 
-        <ActionMenuItem action={StackActions.AddUploads} />
-        <ActionMenuItem action={StackActions.Unstack} />
-        <ActionMenuItem action={StackActions.KeepThisDeleteOthers} />
-        <ActionMenuItem action={StackActions.SetPrimaryAsset} />
-        <ActionMenuItem action={StackActions.RemoveAsset} />
+      <ActionMenuItem action={StackActions.AddUploads} />
+      <ActionMenuItem action={StackActions.Unstack} />
+      <ActionMenuItem action={StackActions.KeepThisDeleteOthers} />
+      <ActionMenuItem action={StackActions.SetPrimaryAsset} />
+      <ActionMenuItem action={StackActions.RemoveAsset} />
 
-        {#if album}
-          {@const { SetCover } = getAlbumAssetActions($t, album, asset)}
-          <ActionMenuItem action={SetCover} />
-        {/if}
-        {#if person}
-          {@const { SetFeaturedPhoto } = getPersonAssetActions($t, person, asset)}
-          <ActionMenuItem action={SetFeaturedPhoto} />
-        {/if}
+      {#if album}
+        {@const { SetCover } = getAlbumAssetActions($t, album, asset)}
+        <ActionMenuItem action={SetCover} />
+      {/if}
 
-        <ActionMenuItem action={Actions.SetProfilePicture} />
+      <ActionMenuItem action={Actions.SetProfilePicture} />
 
-        {#if isOwner && !isLocked}
-          <ArchiveAction {asset} {onAction} {preAction} />
-        {/if}
-        <ActionMenuItem action={Actions.ViewInTimeline} />
-        <ActionMenuItem action={Actions.ViewSimilar} />
+      {#if isOwner && !isLocked}
+        <ArchiveAction {asset} {onAction} {preAction} />
+      {/if}
+      <ActionMenuItem action={Actions.ViewInTimeline} />
 
-        {#if !asset.isTrashed && isOwner}
-          <SetVisibilityAction asset={toTimelineAsset(asset)} {onAction} {preAction} />
-        {/if}
+      {#if !asset.isTrashed && isOwner}
+        <SetVisibilityAction asset={toTimelineAsset(asset)} {onAction} {preAction} />
+      {/if}
 
-        <ActionMenuItem action={PlayOriginalVideo} />
+      <ActionMenuItem action={PlayOriginalVideo} />
 
-        {#if isOwner}
-          <hr />
-          <ActionMenuItem action={Actions.RefreshFacesJob} />
-          <ActionMenuItem action={Actions.RefreshMetadataJob} />
-          <ActionMenuItem action={Actions.RegenerateThumbnailJob} />
-          <ActionMenuItem action={Actions.TranscodeVideoJob} />
-        {/if}
-      </ButtonContextMenu>
-    {/if}
+      {#if isOwner}
+        <hr />
+        <ActionMenuItem action={Actions.RefreshMetadataJob} />
+        <ActionMenuItem action={Actions.RegenerateThumbnailJob} />
+        <ActionMenuItem action={Actions.TranscodeVideoJob} />
+      {/if}
+    </ButtonContextMenu>
   </div>
 </div>

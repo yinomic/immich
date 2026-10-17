@@ -1,72 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { type Kysely, type NotNull, sql } from 'kysely';
+import { type Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators.js';
 import { AlbumUserRole, AssetVisibility } from 'src/enum.js';
 import { DB } from 'src/schema/index.js';
-import { asUuid } from 'src/utils/database.js';
-
-class ActivityAccess {
-  constructor(private db: Kysely<DB>) {}
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkOwnerAccess(userId: string, activityIds: Set<string>) {
-    if (activityIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('activity')
-      .select('activity.id')
-      .where('activity.id', 'in', [...activityIds])
-      .where('activity.userId', '=', userId)
-      .execute()
-      .then((activities) => new Set(activities.map((activity) => activity.id)));
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkAlbumOwnerAccess(userId: string, activityIds: Set<string>) {
-    if (activityIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('activity')
-      .select('activity.id')
-      .innerJoin('album', (join) => join.onRef('activity.albumId', '=', 'album.id').on('album.deletedAt', 'is', null))
-      .innerJoin('album_user', (join) =>
-        join
-          .onRef('album.id', '=', 'album_user.albumId')
-          .on('album_user.role', '=', sql.lit(AlbumUserRole.Owner))
-          .on('album_user.userId', '=', asUuid(userId)),
-      )
-      .where('activity.id', 'in', [...activityIds])
-      .execute()
-      .then((activities) => new Set(activities.map((activity) => activity.id)));
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkCreateAccess(userId: string, albumIds: Set<string>) {
-    if (albumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('album')
-      .select('album.id')
-      .innerJoin('album_user as albumUsers', 'albumUsers.albumId', 'album.id')
-      .innerJoin('user', (join) => join.onRef('user.id', '=', 'albumUsers.userId').on('user.deletedAt', 'is', null))
-      .where('album.id', 'in', [...albumIds])
-      .where('album.isActivityEnabled', '=', true)
-      .where((eb) => eb('user.id', '=', userId))
-      .where('album.deletedAt', 'is', null)
-      .execute()
-      .then((albums) => new Set(albums.map((album) => album.id)));
-  }
-}
 
 class AlbumAccess {
   constructor(private db: Kysely<DB>) {}
@@ -248,28 +185,6 @@ class AuthDeviceAccess {
   }
 }
 
-class DuplicateAccess {
-  constructor(private db: Kysely<DB>) {}
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkOwnerAccess(userId: string, duplicateIds: Set<string>) {
-    if (duplicateIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('asset')
-      .select('asset.duplicateId')
-      .where('asset.duplicateId', 'in', [...duplicateIds])
-      .where('asset.ownerId', '=', userId)
-      .where('asset.deletedAt', 'is', null)
-      .$narrowType<{ duplicateId: NotNull }>()
-      .execute()
-      .then((assets) => new Set(assets.map((asset) => asset.duplicateId)));
-  }
-}
-
 class NotificationAccess {
   constructor(private db: Kysely<DB>) {}
 
@@ -370,26 +285,6 @@ class MemoryAccess {
   }
 }
 
-class PartnerAccess {
-  constructor(private db: Kysely<DB>) {}
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkUpdateAccess(userId: string, partnerIds: Set<string>) {
-    if (partnerIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('partner')
-      .select('partner.sharedById')
-      .where('partner.sharedById', 'in', [...partnerIds])
-      .where('partner.sharedWithId', '=', userId)
-      .execute()
-      .then((partners) => new Set(partners.map((partner) => partner.sharedById)));
-  }
-}
-
 class TagAccess {
   constructor(private db: Kysely<DB>) {}
 
@@ -432,15 +327,12 @@ class WorkflowAccess {
 
 @Injectable()
 export class AccessRepository {
-  activity: ActivityAccess;
   album: AlbumAccess;
   asset: AssetAccess;
   assetFile: AssetFileAccess;
   authDevice: AuthDeviceAccess;
-  duplicate: DuplicateAccess;
   memory: MemoryAccess;
   notification: NotificationAccess;
-  partner: PartnerAccess;
   session: SessionAccess;
   stack: StackAccess;
   tag: TagAccess;
@@ -448,15 +340,12 @@ export class AccessRepository {
   workflow: WorkflowAccess;
 
   constructor(@InjectKysely() db: Kysely<DB>) {
-    this.activity = new ActivityAccess(db);
     this.album = new AlbumAccess(db);
     this.asset = new AssetAccess(db);
     this.assetFile = new AssetFileAccess(db);
     this.authDevice = new AuthDeviceAccess(db);
-    this.duplicate = new DuplicateAccess(db);
     this.memory = new MemoryAccess(db);
     this.notification = new NotificationAccess(db);
-    this.partner = new PartnerAccess(db);
     this.session = new SessionAccess(db);
     this.stack = new StackAccess(db);
     this.tag = new TagAccess(db);

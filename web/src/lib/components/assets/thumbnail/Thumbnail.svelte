@@ -318,7 +318,7 @@
         {/if}
 
         <!-- Favorite asset star -->
-        {#if !authManager.isSharedLink && asset.isFavorite}
+        {#if asset.isFavorite}
           <div class="absolute inset-s-2 bottom-2 z-2">
             <Icon data-icon-favorite icon={mdiHeart} size="24" class="text-white" />
           </div>
@@ -332,7 +332,7 @@
           </div>
         {/if}
 
-        {#if !authManager.isSharedLink && showArchiveIcon && asset.visibility === AssetVisibility.Archive}
+        {#if showArchiveIcon && asset.visibility === AssetVisibility.Archive}
           <div class={['absolute inset-s-2 z-2', asset.isFavorite ? 'bottom-10' : 'bottom-2']}>
             <Icon data-icon-archive icon={mdiArchiveArrowDownOutline} size="24" class="text-white" />
           </div>

@@ -66,7 +66,7 @@
   // where the asset sits in its memory, for the progress bar and counter
   const assetIndex = $derived(current ? current.memory.assets.findIndex(({ id }) => id === currentAssetId) : -1);
   const currentMemoryAssetFull = $derived.by(async () =>
-    currentAssetId ? await getAssetInfo({ ...authManager.params, id: currentAssetId }) : undefined,
+    currentAssetId ? await getAssetInfo({ id: currentAssetId }) : undefined,
   );
   let currentTimelineAssets = $derived(current?.memory.assets ?? []);
 
@@ -280,7 +280,6 @@
       {@const Actions = getAssetBulkActions($t)}
       <CommandPaletteDefaultProvider name={$t('assets')} actions={Object.values(Actions)} />
 
-      <ActionButton action={Actions.CreateSharedLink} />
       <IconButton
         shape="round"
         color="secondary"

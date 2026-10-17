@@ -61,13 +61,12 @@
   import { scaleToCover, scaleToFit, type Size } from '$lib/utils/container-utils';
   import { getAltText } from '$lib/utils/thumbnail-util';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
-  import type { AssetResponseDto, SharedLinkResponseDto } from '@immich/sdk';
+  import type { AssetResponseDto } from '@immich/sdk';
   import { untrack, type Snippet } from 'svelte';
   import { languageManager } from '$lib/managers/language-manager.svelte';
 
   type Props = {
     asset: AssetResponseDto;
-    sharedLink?: SharedLinkResponseDto;
     objectFit?: 'contain' | 'cover';
     container: Size;
     onUrlChange?: (url: string) => void;
@@ -84,7 +83,6 @@
     // eslint-disable-next-line no-useless-assignment, @typescript-eslint/no-unused-vars
     imgRef = $bindable(),
     asset,
-    sharedLink,
     objectFit = 'contain',
     container,
     onUrlChange,
@@ -103,7 +101,7 @@
   };
 
   const buildQualityList = () => {
-    const assetUrls = getAssetUrls(asset, sharedLink);
+    const assetUrls = getAssetUrls(asset);
     const qualityList: QualityList = [
       {
         quality: 'thumbnail',
@@ -121,7 +119,7 @@
     return qualityList;
   };
 
-  const loaderKey = $derived(`${asset.id}:${asset.thumbhash}:${sharedLink?.id}`);
+  const loaderKey = $derived(`${asset.id}:${asset.thumbhash}`);
 
   const adaptiveImageLoader = $derived.by(() => {
     void loaderKey;

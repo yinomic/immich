@@ -7,7 +7,6 @@ import {
   deleteUserAdmin,
   getAlbumInfo,
   LoginResponseDto,
-  SharedLinkType,
 } from '@immich/sdk';
 import { createUserDto } from 'src/fixtures.js';
 import { errorDto } from 'src/responses.js';
@@ -108,16 +107,6 @@ describe('/albums', () => {
         { id: deletedAssetAlbum.id, bulkIdsDto: { ids: [user4Asset1.id] } },
         { headers: asBearerAuth(user4.accessToken) },
       ),
-      // add shared link to user1SharedLink album
-      utils.createSharedLink(user1.accessToken, {
-        type: SharedLinkType.Album,
-        albumId: user1Albums[1].id,
-      }),
-      // add shared link to user2SharedLink album
-      utils.createSharedLink(user2.accessToken, {
-        type: SharedLinkType.Album,
-        albumId: user2Albums[1].id,
-      }),
     ]);
 
     // eslint-disable-next-line unicorn/no-unreadable-array-destructuring
@@ -151,16 +140,9 @@ describe('/albums', () => {
         .set('Authorization', `Bearer ${user1.accessToken}`);
 
       expect(status).toBe(200);
-      expect(body).toHaveLength(4);
+      expect(body).toHaveLength(3);
       expect(body).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            albumName: user1SharedLink,
-            albumUsers: expect.arrayContaining([
-              { role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) },
-            ]),
-            shared: true,
-          }),
           expect.objectContaining({
             albumName: user1SharedEditorUser,
             albumUsers: expect.arrayContaining([
@@ -211,7 +193,7 @@ describe('/albums', () => {
             albumUsers: expect.arrayContaining([
               { role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) },
             ]),
-            shared: true,
+            shared: false,
           }),
           expect.objectContaining({
             albumName: user1NotShared,
@@ -236,7 +218,7 @@ describe('/albums', () => {
         .get('/albums?isShared=true')
         .set('Authorization', `Bearer ${user1.accessToken}`);
       expect(status).toBe(200);
-      expect(body).toHaveLength(4);
+      expect(body).toHaveLength(3);
       expect(body).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -248,13 +230,6 @@ describe('/albums', () => {
           }),
           expect.objectContaining({
             albumName: user1SharedViewerUser,
-            albumUsers: expect.arrayContaining([
-              { role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) },
-            ]),
-            shared: true,
-          }),
-          expect.objectContaining({
-            albumName: user1SharedLink,
             albumUsers: expect.arrayContaining([
               { role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) },
             ]),
@@ -276,9 +251,16 @@ describe('/albums', () => {
         .get('/albums?isShared=false')
         .set('Authorization', `Bearer ${user1.accessToken}`);
       expect(status).toBe(200);
-      expect(body).toHaveLength(1);
+      expect(body).toHaveLength(2);
       expect(body).toEqual(
         expect.arrayContaining([
+          expect.objectContaining({
+            albumName: user1SharedLink,
+            albumUsers: expect.arrayContaining([
+              { role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) },
+            ]),
+            shared: false,
+          }),
           expect.objectContaining({
             albumName: user1NotShared,
             albumUsers: expect.arrayContaining([
@@ -329,12 +311,11 @@ describe('/albums', () => {
         .get('/albums?isOwned=true&isShared=true')
         .set('Authorization', `Bearer ${user1.accessToken}`);
       expect(status).toBe(200);
-      expect(body).toHaveLength(3);
+      expect(body).toHaveLength(2);
       expect(body).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ albumName: user1SharedEditorUser }),
           expect.objectContaining({ albumName: user1SharedViewerUser }),
-          expect.objectContaining({ albumName: user1SharedLink }),
         ]),
       );
     });
@@ -478,7 +459,7 @@ describe('/albums', () => {
         .set('Authorization', `Bearer ${user1.accessToken}`);
 
       expect(status).toBe(200);
-      expect(body).toEqual({ owned: 4, shared: 4, notShared: 1 });
+      expect(body).toEqual({ owned: 4, shared: 3, notShared: 2 });
     });
   });
 

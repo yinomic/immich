@@ -22,7 +22,7 @@
     const assets = assetMultiSelectManager.assets;
     if (assets.length === 1) {
       assetMultiSelectManager.clear();
-      let asset = await getAssetInfo({ ...authManager.params, id: assets[0].id });
+      let asset = await getAssetInfo({ id: assets[0].id });
       await handleDownloadAsset(asset, { edited: true });
       return;
     }

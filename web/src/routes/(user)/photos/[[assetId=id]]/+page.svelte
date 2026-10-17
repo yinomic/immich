@@ -118,7 +118,6 @@
     {@const StackActions = getStackBulkActions($t)}
     <CommandPaletteDefaultProvider name={$t('assets')} actions={Object.values(Actions)} />
 
-    <ActionButton action={Actions.CreateSharedLink} />
     <SelectAllAssets {timelineManager} assetInteraction={assetMultiSelectManager} />
     <ActionButton action={Actions.AddToAlbum} />
 

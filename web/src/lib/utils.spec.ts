@@ -101,10 +101,6 @@ describe('utils', () => {
       expect(url).toContain('/thumbnail');
       expect(url).toContain(asset.id);
     });
-
-
-
-
   });
   describe('semverToName', () => {
     it('should not append release candidate tag if prelease is not set', () => {

@@ -103,7 +103,6 @@
             assetViewerManager.showAssetViewer(false);
             handlePromiseError(navigate({ targetRoute: 'current', assetId: null }));
           }}
-          isShared={false}
         />
       {/await}
     {/if}

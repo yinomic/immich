@@ -23,7 +23,7 @@
   import { mediaQueryManager } from '$lib/stores/media-query-manager.svelte';
   import { isAssetViewerRoute, navigate } from '$lib/utils/navigation';
   import { getTimes, type ScrubberListener } from '$lib/utils/timeline-util';
-  import { type AlbumResponseDto, type PersonResponseDto, type UserResponseDto } from '@immich/sdk';
+  import { type AlbumResponseDto, type UserResponseDto } from '@immich/sdk';
   import { DateTime } from 'luxon';
   import { onDestroy, onMount, tick, type Snippet } from 'svelte';
   import type { UpdatePayload } from 'vite';
@@ -41,10 +41,8 @@
     removeAction?: AssetAction.UNARCHIVE | AssetAction.ARCHIVE | AssetAction.SET_VISIBILITY_TIMELINE | null;
     withStacked?: boolean;
     showArchiveIcon?: boolean;
-    isShared?: boolean;
     album?: AlbumResponseDto;
     albumUsers?: UserResponseDto[];
-    person?: PersonResponseDto;
     onSelect?: (asset: TimelineAsset) => void;
     onEscape?: () => void;
     children?: Snippet;
@@ -73,10 +71,8 @@
     removeAction = null,
     withStacked = false,
     showArchiveIcon = false,
-    isShared = false,
     album,
     albumUsers = [],
-    person,
     onSelect = () => {},
     onEscape = () => {},
     children,
@@ -709,7 +705,7 @@
 
 <Portal target="body">
   {#if assetViewerManager.isViewing}
-    <TimelineAssetViewer bind:invisible {timelineManager} {removeAction} {withStacked} {isShared} {album} {person} />
+    <TimelineAssetViewer bind:invisible {timelineManager} {removeAction} {withStacked} {album} />
   {/if}
 </Portal>
 

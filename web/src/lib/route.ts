@@ -1,6 +1,6 @@
 import { getBaseUrl, IntegrityReport, QueueName, type MetadataSearchDto } from '@immich/sdk';
 import { omitBy } from 'lodash-es';
-import { OpenQueryParam, type SharedLinkTab } from '$lib/constants';
+import { OpenQueryParam } from '$lib/constants';
 
 const asQueueSlug = (name: QueueName) => {
   return name.replaceAll(/[A-Z]/g, (m) => '-' + m.toLowerCase());
@@ -82,11 +82,6 @@ export const Route = {
   viewMemoryAsset: ({ id, assetId, ...params }: { id: string; assetId: string; isSaved?: boolean }) =>
     `/memories/${id}/photos/${assetId}` + asQueryString({ assetId, ...params }),
 
-  // people
-  people: () => '/people',
-  viewPerson: ({ id }: { id: string }, params?: { previousRoute?: string; action?: 'merge' }) =>
-    `/people/${id}` + asQueryString(params),
-
   // photos
   photos: (params?: { at?: string }) => '/photos' + asQueryString(params),
   viewAsset: ({ id }: { id: string }) => `/photos/${id}`,
@@ -103,12 +98,6 @@ export const Route = {
     const query = Object.keys(metadata).length === 0 ? undefined : JSON.stringify(metadata);
     return `/search` + asQueryString({ query });
   },
-
-  // shared links
-  sharedLinks: (params?: { filter?: SharedLinkTab }) => '/shared-links' + asQueryString(params),
-  editSharedLink: ({ id }: { id: string }) => `/shared-links/${id}/edit`,
-  viewSharedLink: ({ slug, key }: { slug?: string | null; key: string }) =>
-    slug ? `/s/${encodeURIComponent(slug)}` : `/share/${key}`,
 
   // settings
   userSettings: (params?: { isOpen?: OpenQueryParam }) => '/user-settings' + asQueryString(params),

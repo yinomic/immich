@@ -17,13 +17,10 @@ import {
   mdiAccountCircleOutline,
   mdiAlertOutline,
   mdiCogRefreshOutline,
-  mdiCompare,
   mdiContentCopy,
   mdiDatabaseRefreshOutline,
   mdiDownload,
   mdiDownloadBox,
-  mdiFaceRecognition,
-  mdiHeadSyncOutline,
   mdiHeart,
   mdiHeartOutline,
   mdiImageRefreshOutline,
@@ -36,7 +33,6 @@ import {
   mdiMotionPlayOutline,
   mdiPlus,
   mdiPresentationPlay,
-  mdiShareVariantOutline,
   mdiTagMultipleOutline,
   mdiTagPlusOutline,
   mdiTune,
@@ -52,7 +48,6 @@ import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte'
 import AssetAddToAlbumModal from '$lib/modals/AssetAddToAlbumModal.svelte';
 import AssetTagModal from '$lib/modals/AssetTagModal.svelte';
 import ProfileImageCropperModal from '$lib/modals/ProfileImageCropperModal.svelte';
-import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
 import { Route } from '$lib/route';
 import { SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
 import { getAssetMediaUrl, sleep } from '$lib/utils';
@@ -77,12 +72,6 @@ export const getAssetBulkActions = ($t: MessageFormatter, album?: AlbumResponseD
     onAction: () => modalManager.show(AssetAddToAlbumModal, { assetIds }),
   };
 
-  const CreateSharedLink: ActionItem = {
-    title: $t('share'),
-    icon: mdiShareVariantOutline,
-    onAction: () => modalManager.show(SharedLinkCreateModal, { assetIds }),
-  };
-
   const RemoveFromAlbum: ActionItem = {
     title: $t('remove_from_album'),
     icon: mdiImageRemoveOutline,
@@ -101,12 +90,6 @@ export const getAssetBulkActions = ($t: MessageFormatter, album?: AlbumResponseD
       }
     },
     shortcuts: { key: 't' },
-  };
-
-  const RefreshFacesJob: ActionItem = {
-    title: $t('refresh_faces'),
-    icon: mdiHeadSyncOutline,
-    onAction: () => onAction(AssetJobName.RefreshFaces),
   };
 
   const RefreshMetadataJob: ActionItem = {
@@ -130,10 +113,8 @@ export const getAssetBulkActions = ($t: MessageFormatter, album?: AlbumResponseD
 
   return {
     AddToAlbum,
-    CreateSharedLink,
     RemoveFromAlbum,
     Tag,
-    RefreshFacesJob,
     RefreshMetadataJob,
     RegenerateThumbnailJob,
     TranscodeVideoJob,
@@ -149,13 +130,6 @@ export const getAssetActions = (
   const isOwner = !!(authUser && authUser.id === asset.ownerId);
   const isAlbumOwner = !!(authUser && authUser.id === album?.albumUsers[0].user.id);
 
-  const Share: ActionItem = {
-    title: $t('share'),
-    icon: mdiShareVariantOutline,
-    $if: () => !!(authUser && !asset.isTrashed && asset.visibility !== AssetVisibility.Locked),
-    onAction: () => modalManager.show(SharedLinkCreateModal, { assetIds: [asset.id] }),
-  };
-
   const Download: ActionItem = {
     title: $t('download'),
     icon: mdiDownload,
@@ -169,10 +143,6 @@ export const getAssetActions = (
     icon: mdiDownloadBox,
     $if: () => !!authUser && asset.isEdited,
     onAction: () => handleDownloadAsset(asset, { edited: false }),
-  };
-
-  const SharedLinkDownload: ActionItem = {
-    ...Download,
   };
 
   const PlayMotionPhoto: ActionItem = {
@@ -285,14 +255,6 @@ export const getAssetActions = (
     shortcuts: { key: 't' },
   };
 
-  const TagPeople: ActionItem = {
-    title: $t('tag_people'),
-    icon: mdiFaceRecognition,
-    $if: () => isOwner && asset.type === AssetTypeEnum.Image && !asset.isTrashed,
-    onAction: () => assetViewerManager.toggleFaceEditMode(),
-    shortcuts: { key: 'p' },
-  };
-
   const Edit: ActionItem = {
     title: $t('editor'),
     icon: mdiTune,
@@ -322,12 +284,6 @@ export const getAssetActions = (
     onAction: () => goto(Route.photos({ at: asset.stackPrimaryAssetId ?? asset.id })),
   };
 
-  const RefreshFacesJob: ActionItem = {
-    title: $t('refresh_faces'),
-    icon: mdiHeadSyncOutline,
-    onAction: () => handleRunAssetJob({ name: AssetJobName.RefreshFaces, assetIds: [asset.id] }),
-  };
-
   const RefreshMetadataJob: ActionItem = {
     title: $t('refresh_metadata'),
     icon: mdiDatabaseRefreshOutline,
@@ -348,10 +304,8 @@ export const getAssetActions = (
   };
 
   return {
-    Share,
     Download,
     DownloadOriginal,
-    SharedLinkDownload,
     Offline,
     Info,
     Favorite,
@@ -366,11 +320,9 @@ export const getAssetActions = (
     ZoomOut,
     Copy,
     Tag,
-    TagPeople,
     Edit,
     SetProfilePicture,
     ViewInTimeline,
-    RefreshFacesJob,
     RefreshMetadataJob,
     RegenerateThumbnailJob,
     TranscodeVideoJob,
@@ -393,7 +345,7 @@ export const handleDownloadAsset = async (asset: AssetResponseDto, { edited }: {
   };
 
   if (asset.livePhotoVideoId) {
-    const motionAsset = await getAssetInfo({ ...authManager.params, id: asset.livePhotoVideoId });
+    const motionAsset = await getAssetInfo({ id: asset.livePhotoVideoId });
     if (
       !isAndroidMotionVideo(motionAsset) ||
       (authManager.authenticated && authManager.preferences.download.includeEmbeddedVideos)
@@ -521,7 +473,6 @@ const handleRemoveAssetsFromAlbum = async (assetIds: string[], album: AlbumRespo
 
 const getAssetJobMessage = ($t: MessageFormatter, job: AssetJobName) => {
   const messages: Record<AssetJobName, string> = {
-    [AssetJobName.RefreshFaces]: $t('refreshing_faces'),
     [AssetJobName.RefreshMetadata]: $t('refreshing_metadata'),
     [AssetJobName.RegenerateThumbnail]: $t('regenerating_thumbnails'),
     [AssetJobName.TranscodeVideo]: $t('refreshing_encoded_video'),

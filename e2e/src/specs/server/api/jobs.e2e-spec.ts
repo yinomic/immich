@@ -25,26 +25,8 @@ describe('/jobs', () => {
         force: false,
       });
 
-      await utils.queueCommand(admin.accessToken, QueueName.FaceDetection, {
-        command: QueueCommand.Resume,
-        force: false,
-      });
-
-      await utils.queueCommand(admin.accessToken, QueueName.SmartSearch, {
-        command: QueueCommand.Resume,
-        force: false,
-      });
-
-      await utils.queueCommand(admin.accessToken, QueueName.DuplicateDetection, {
-        command: QueueCommand.Resume,
-        force: false,
-      });
-
       const config = await utils.getSystemConfig(admin.accessToken);
-      config.machineLearning.duplicateDetection.enabled = false;
-      config.machineLearning.enabled = false;
       config.metadata.faces.import = false;
-      config.machineLearning.clip.enabled = false;
       await updateConfig({ adminConfigDto: config }, { headers: asBearerAuth(admin.accessToken) });
     });
 
