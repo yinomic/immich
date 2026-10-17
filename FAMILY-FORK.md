@@ -456,6 +456,16 @@ pnpm --filter @immich/sdk build
 
 **进度**：web 类型错误从 **70 → 30**，但剩下的 30 处不是"删个 import"就能解决——必须连带删掉使用这些符号的功能代码（`PreloadManager` 的 sharedlink 参数、`search-manager` 的 SmartSearchDto 方法签名、`AssetCacheManager` 的 `#faceCache` 使用点、`route.ts`、以及十几个下游文件）。
 
+**Round 22 更新**：在 `sdk-regen-wip` 上继续逐文件清理，web 类型错误 **70 → 30 → 22 → 21**。本轮又删掉：`lib/stores/ocr.svelte.ts`(+spec)、`lib/utils/ocr-utils.ts`(+spec)、`lib/utils/people-utils.ts`、`lib/utils/shared-links.ts`、`test-data/factories/person-factory.ts`、`routes/(user)/utilities/duplicates/**`（重复照片页），以及 queue.service 里 5 个已删队列项与图标、websocket 的 `on_person_thumbnail`、face 缓存、`smartSearch` 特性开关、`ViewSimilar`（以图搜图）动作。提交：`960757e1f`、随后一次。
+
+**剩余 21 处（下轮继续）**
+- `PreloadManager.svelte.ts`：`sharedlink` 参数（3 处）→ 建议直接删参数并改调用点
+- `search-bar-utils.ts` / `AssetCacheManager.svelte.ts` / `route.ts` / `utils.ts` / `utils.spec.ts` / `user-factory.ts`：残留 SDK 符号
+- `search-manager.svelte.ts`（61/64/112 行）：`MetadataSearchDto` 收窄后的类型问题
+- `utils/timeline-util.ts:141`：`asset.people` 已不存在
+- `routes/(user)/explore/+page.ts`：`getExploreData` 里的人物数据
+- `utils/asset-utils.ts:29`、`utils/file-uploader.ts:20`：删掉 `shared-links.ts` 后的两个引用点（需改成直接构造）
+
 **关键教训（务必记住）**
 1. `web` 通过 `@immich/sdk` 的 **dist** 解析类型；切换分支/回滚源码后必须 `pnpm --filter @immich/sdk build`，否则 tsc 会拿旧 dist 得出错误结论（本轮就把"回滚后仍报 70 错"误判过一次）。
 2. 这类清理必须**逐文件**：先删模块 → 跑 tsc → 看剩余错误所在文件 → 读具体行 → 精确替换，每步验证。批量正则只会让错误数上升。
