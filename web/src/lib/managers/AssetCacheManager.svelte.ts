@@ -1,4 +1,4 @@
-import { getAssetInfo, getAssetOcr } from '@immich/sdk';
+import { getAssetInfo } from '@immich/sdk';
 import { authManager } from '$lib/managers/auth-manager.svelte';
 import { eventManager } from '$lib/managers/event-manager.svelte';
 

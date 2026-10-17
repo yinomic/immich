@@ -4,7 +4,6 @@ import { get } from 'svelte/store';
 import en from '$i18n/en.json';
 import { getAssetUrl, memoryLaneTitle, semverToName } from '$lib/utils';
 import { assetFactory } from '@test-data/factories/asset-factory';
-import { sharedLinkFactory } from '@test-data/factories/shared-link-factory';
 
 describe('utils', () => {
   describe(getAssetUrl.name, () => {

@@ -423,10 +423,10 @@
       return;
     }
     if (lastCursor) {
-      preloadManager.updateAfterNavigation(lastCursor, cursor, sharedLink);
+      preloadManager.updateAfterNavigation(lastCursor, cursor);
     }
     if (!lastCursor) {
-      preloadManager.initializePreloads(cursor, sharedLink);
+      preloadManager.initializePreloads(cursor);
     }
     lastCursor = cursor;
   });

@@ -13,14 +13,11 @@ export class PreloadManager {
   private nextPreloader: AdaptiveImageLoader | undefined;
   private previousPreloader: AdaptiveImageLoader | undefined;
 
-  private startPreloader(
-    asset: AssetResponseDto | undefined,
-    sharedlink: SharedLinkResponseDto | undefined,
-  ): AdaptiveImageLoader | undefined {
+  private startPreloader(asset: AssetResponseDto | undefined): AdaptiveImageLoader | undefined {
     if (!asset) {
       return;
     }
-    const urls = getAssetUrls(asset, sharedlink);
+    const urls = getAssetUrls(asset);
     const afterThumbnail = (loader: AdaptiveImageLoader) => loader.trigger('preview');
     const qualityList: QualityList = [
       {
@@ -64,7 +61,7 @@ export class PreloadManager {
     }
   }
 
-  updateAfterNavigation(oldCursor: AssetCursor, newCursor: AssetCursor, sharedlink: SharedLinkResponseDto | undefined) {
+  updateAfterNavigation(oldCursor: AssetCursor, newCursor: AssetCursor) {
     const movedForward = newCursor.current.id === oldCursor.nextAsset?.id;
     const movedBackward = newCursor.current.id === oldCursor.previousAsset?.id;
 
@@ -77,21 +74,21 @@ export class PreloadManager {
     }
 
     if (movedForward) {
-      this.nextPreloader = this.startPreloader(newCursor.nextAsset, sharedlink);
+      this.nextPreloader = this.startPreloader(newCursor.nextAsset);
     } else if (movedBackward) {
-      this.previousPreloader = this.startPreloader(newCursor.previousAsset, sharedlink);
+      this.previousPreloader = this.startPreloader(newCursor.previousAsset);
     } else {
-      this.previousPreloader = this.startPreloader(newCursor.previousAsset, sharedlink);
-      this.nextPreloader = this.startPreloader(newCursor.nextAsset, sharedlink);
+      this.previousPreloader = this.startPreloader(newCursor.previousAsset);
+      this.nextPreloader = this.startPreloader(newCursor.nextAsset);
     }
   }
 
-  initializePreloads(cursor: AssetCursor, sharedlink: SharedLinkResponseDto | undefined) {
+  initializePreloads(cursor: AssetCursor) {
     if (cursor.nextAsset) {
-      this.nextPreloader = this.startPreloader(cursor.nextAsset, sharedlink);
+      this.nextPreloader = this.startPreloader(cursor.nextAsset);
     }
     if (cursor.previousAsset) {
-      this.previousPreloader = this.startPreloader(cursor.previousAsset, sharedlink);
+      this.previousPreloader = this.startPreloader(cursor.previousAsset);
     }
   }
 
