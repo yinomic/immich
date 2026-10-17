@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { AssetVisibility } from 'src/enum.js';
 import { TimelineService } from 'src/services/timeline.service.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
@@ -113,68 +112,6 @@ describe(TimelineService.name, () => {
         }),
         authStub.admin,
       );
-    });
-
-    it('should throw an error if withParners is true and visibility true or undefined', async () => {
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          visibility: AssetVisibility.Archive,
-          withPartners: true,
-          userId: authStub.admin.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          visibility: undefined,
-          withPartners: true,
-          userId: authStub.admin.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw an error if withParners is true and isFavorite is either true or false', async () => {
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          isFavorite: true,
-          withPartners: true,
-          userId: authStub.admin.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          isFavorite: false,
-          withPartners: true,
-          userId: authStub.admin.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw an error if withParners is true and isTrash is true', async () => {
-      await expect(
-        sut.getTimeBucket(authStub.admin, {
-          timeBucket: 'bucket',
-          isTrashed: true,
-          withPartners: true,
-          userId: authStub.admin.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw an error if withPartners is true and visibility is locked', async () => {
-      await expect(
-        sut.getTimeBucket(authStub.adminWithElevatedPermission, {
-          timeBucket: 'bucket',
-          visibility: AssetVisibility.Locked,
-          withPartners: true,
-          userId: authStub.adminWithElevatedPermission.user.id,
-        }),
-      ).rejects.toThrow(BadRequestException);
     });
   });
 });

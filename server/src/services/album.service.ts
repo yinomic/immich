@@ -77,13 +77,7 @@ export class AlbumService extends BaseService {
     await this.albumRepository.updateThumbnails();
     const album = await this.findOrFail(id, auth.user.id);
 
-    // NOTE (family fork): sharing was removed, so an album is never "shared"
-    const isShared = false;
-
-    return {
-      ...(await this.mapWithMetadata(album)),
-      contributorCounts: isShared ? await this.albumRepository.getContributorCounts(album.id) : undefined,
-    };
+    return this.mapWithMetadata(album);
   }
 
   async getMapMarkers(auth: AuthDto, id: string): Promise<MapMarkerResponseDto[]> {
@@ -149,7 +143,6 @@ export class AlbumService extends BaseService {
         albumName: dto.albumName,
         description: dto.description,
         albumThumbnailAssetId: dto.albumThumbnailAssetId,
-        isActivityEnabled: dto.isActivityEnabled,
         order: dto.order,
       },
       auth.user.id,

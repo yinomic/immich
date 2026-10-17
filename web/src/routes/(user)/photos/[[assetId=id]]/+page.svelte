@@ -37,7 +37,7 @@
   import { t } from 'svelte-i18n';
 
   let timelineManager = $state<TimelineManager>() as TimelineManager;
-  const options = { visibility: AssetVisibility.Timeline, withStacked: true, withPartners: true };
+  const options = { visibility: AssetVisibility.Timeline, withStacked: true };
 
   let selectedAssets = $derived(assetMultiSelectManager.assets);
   let isLinkActionAvailable = $derived.by(() => {

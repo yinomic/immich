@@ -125,7 +125,6 @@ describe('/albums', () => {
       expect(status).toEqual(200);
       expect(body).toEqual({
         ...user1Albums[0],
-        contributorCounts: [{ userId: user1.userId, assetCount: 1 }],
         lastModifiedAssetTimestamp: expect.any(String),
         startDate: expect.any(String),
         endDate: expect.any(String),
@@ -385,7 +384,6 @@ describe('/albums', () => {
       expect(status).toBe(200);
       expect(body).toEqual({
         ...user1Albums[0],
-        contributorCounts: [{ userId: user1.userId, assetCount: 1 }],
         lastModifiedAssetTimestamp: expect.any(String),
         startDate: expect.any(String),
         endDate: expect.any(String),
@@ -420,7 +418,6 @@ describe('/albums', () => {
       expect(status).toBe(200);
       expect(body).toEqual({
         ...user1Albums[0],
-        contributorCounts: [{ userId: user1.userId, assetCount: 1 }],
         assetCount: 1,
         lastModifiedAssetTimestamp: expect.any(String),
         endDate: expect.any(String),
@@ -440,7 +437,6 @@ describe('/albums', () => {
       expect(status).toBe(200);
       expect(body).toEqual(
         expect.objectContaining({
-          contributorCounts: [{ userId: user1.userId, assetCount: 1 }],
           assetCount: 1,
           lastModifiedAssetTimestamp: expect.any(String),
           endDate: expect.any(String),
@@ -481,7 +477,6 @@ describe('/albums', () => {
         albumUsers: [{ role: AlbumUserRole.Owner, user: expect.objectContaining({ id: user1.userId }) }],
         hasSharedLink: false,
         assetCount: 0,
-        isActivityEnabled: true,
         order: AssetOrder.Desc,
       });
     });

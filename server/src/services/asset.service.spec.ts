@@ -93,16 +93,6 @@ describe(AssetService.name, () => {
       );
     });
 
-    it('should allow partner sharing access', async () => {
-      const asset = AssetFactory.create();
-      mocks.access.asset.checkPartnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getById.mockResolvedValue(getForAsset(asset));
-
-      await sut.get(authStub.admin, asset.id);
-
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(authStub.admin.user.id, new Set([asset.id]));
-    });
-
     it('should allow shared album access', async () => {
       const asset = AssetFactory.create();
       mocks.access.asset.checkAlbumAccess.mockResolvedValue(new Set([asset.id]));

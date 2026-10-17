@@ -23,7 +23,6 @@ const MapMarkerSchema = z
     isFavorite: stringToBool.optional().describe('Filter by favorite status'),
     fileCreatedAfter: isoDatetimeToDate.optional().describe('Filter assets created after this date'),
     fileCreatedBefore: isoDatetimeToDate.optional().describe('Filter assets created before this date'),
-    withPartners: stringToBool.optional().describe('Include partner assets'),
     withSharedAlbums: stringToBool.optional().describe('Include shared album assets'),
   })
   .meta({ id: 'MapMarkerDto' });

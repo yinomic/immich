@@ -476,7 +476,6 @@ describe(AssetMediaService.name, () => {
         undefined,
       );
       expect(mocks.access.asset.checkAlbumAccess).toHaveBeenCalledWith(authStub.admin.user.id, new Set(['asset-1']));
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(authStub.admin.user.id, new Set(['asset-1']));
     });
 
     it('should download a file', async () => {
@@ -565,7 +564,6 @@ describe(AssetMediaService.name, () => {
 
       expect(mocks.access.asset.checkOwnerAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']), undefined);
       expect(mocks.access.asset.checkAlbumAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']));
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']));
     });
 
     it('should serve the original and queue regeneration when the cached file is missing', async () => {
@@ -698,7 +696,6 @@ describe(AssetMediaService.name, () => {
 
       expect(mocks.access.asset.checkOwnerAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']), undefined);
       expect(mocks.access.asset.checkAlbumAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']));
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(userStub.admin.id, new Set(['id']));
     });
 
     it('should throw an error if the video asset could not be found', async () => {

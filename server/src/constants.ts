@@ -154,7 +154,6 @@ export const endpointTags: Record<ApiTag, string> = {
   [ApiTag.Notifications]:
     'A notification is a specialized message sent to users to inform them of important events. Currently, these notifications are only shown in the Immich web application.',
   [ApiTag.NotificationsAdmin]: 'Notification administrative endpoints.',
-  [ApiTag.Partners]: 'A partner is a link with another user that allows sharing of assets between two users.',
   [ApiTag.Plugins]:
     'A plugin is an installed module that makes filters and actions available for the workflow feature.',
   [ApiTag.Queues]:

@@ -213,7 +213,6 @@
     if (viewMode === AlbumPageViewMode.SELECT_ASSETS) {
       return {
         visibility: AssetVisibility.Timeline,
-        withPartners: true,
         timelineAlbumId: albumId,
       };
     }

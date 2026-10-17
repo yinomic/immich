@@ -753,12 +753,6 @@ export type AlbumUserResponseDto = {
     role: AlbumUserRole;
     user: UserResponseDto;
 };
-export type ContributorCountResponseDto = {
-    /** Number of assets contributed */
-    assetCount: number;
-    /** User ID */
-    userId: string;
-};
 export type AlbumResponseDto = {
     /** Album name */
     albumName: string;
@@ -768,7 +762,6 @@ export type AlbumResponseDto = {
     albumUsers: AlbumUserResponseDto[];
     /** Number of assets */
     assetCount: number;
-    contributorCounts?: ContributorCountResponseDto[];
     /** Creation date */
     createdAt: string;
     /** Album description */
@@ -777,8 +770,6 @@ export type AlbumResponseDto = {
     endDate?: string;
     /** Album ID */
     id: string;
-    /** Activity feed enabled */
-    isActivityEnabled: boolean;
     /** Last modified asset timestamp */
     lastModifiedAssetTimestamp?: string;
     order?: AssetOrder;
@@ -830,8 +821,6 @@ export type UpdateAlbumDto = {
     albumThumbnailAssetId?: string;
     /** Album description */
     description?: string | null;
-    /** Enable activity feed */
-    isActivityEnabled?: boolean;
     order?: AssetOrder;
 };
 export type BulkIdsDto = {
@@ -2774,8 +2763,6 @@ export type SyncAlbumV1 = {
     description: string;
     /** Album ID */
     id: string;
-    /** Is activity enabled */
-    isActivityEnabled: boolean;
     /** Album name */
     name: string;
     order: AssetOrder;
@@ -2793,8 +2780,6 @@ export type SyncAlbumV2 = {
     description: string;
     /** Album ID */
     id: string;
-    /** Is activity enabled */
-    isActivityEnabled: boolean;
     /** Album name */
     name: string;
     order: AssetOrder;
@@ -3186,20 +3171,6 @@ export type SyncMemoryV2 = {
     "type": MemoryType;
     /** Updated at */
     updatedAt: string;
-};
-export type SyncPartnerDeleteV1 = {
-    /** Shared by ID */
-    sharedById: string;
-    /** Shared with ID */
-    sharedWithId: string;
-};
-export type SyncPartnerV1 = {
-    /** In timeline */
-    inTimeline: boolean;
-    /** Shared by ID */
-    sharedById: string;
-    /** Shared with ID */
-    sharedWithId: string;
 };
 export type SyncPersonDeleteV1 = {
     /** Person ID */
@@ -4760,12 +4731,11 @@ export function validate({ id, validateLibraryDto }: {
 /**
  * Retrieve map markers
  */
-export function getMapMarkers({ fileCreatedAfter, fileCreatedBefore, isArchived, isFavorite, withPartners, withSharedAlbums }: {
+export function getMapMarkers({ fileCreatedAfter, fileCreatedBefore, isArchived, isFavorite, withSharedAlbums }: {
     fileCreatedAfter?: string;
     fileCreatedBefore?: string;
     isArchived?: boolean;
     isFavorite?: boolean;
-    withPartners?: boolean;
     withSharedAlbums?: boolean;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
@@ -4776,7 +4746,6 @@ export function getMapMarkers({ fileCreatedAfter, fileCreatedBefore, isArchived,
         fileCreatedBefore,
         isArchived,
         isFavorite,
-        withPartners,
         withSharedAlbums
     }))}`, {
         ...opts
@@ -6051,7 +6020,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -6066,7 +6035,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
     userId?: string;
     visibility?: AssetVisibility;
     withCoordinates?: boolean;
-    withPartners?: boolean;
     withStacked?: boolean;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
@@ -6087,7 +6055,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
         userId,
         visibility,
         withCoordinates,
-        withPartners,
         withStacked
     }))}`, {
         ...opts
@@ -6096,7 +6063,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, userId, visibility, withCoordinates, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -6110,7 +6077,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
     userId?: string;
     visibility?: AssetVisibility;
     withCoordinates?: boolean;
-    withPartners?: boolean;
     withStacked?: boolean;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
@@ -6130,7 +6096,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
         userId,
         visibility,
         withCoordinates,
-        withPartners,
         withStacked
     }))}`, {
         ...opts
@@ -7014,18 +6979,6 @@ export enum SyncEntityType {
     AssetMetadataDeleteV1 = "AssetMetadataDeleteV1",
     AssetOcrV1 = "AssetOcrV1",
     AssetOcrDeleteV1 = "AssetOcrDeleteV1",
-    PartnerV1 = "PartnerV1",
-    PartnerDeleteV1 = "PartnerDeleteV1",
-    PartnerAssetV1 = "PartnerAssetV1",
-    PartnerAssetV2 = "PartnerAssetV2",
-    PartnerAssetBackfillV1 = "PartnerAssetBackfillV1",
-    PartnerAssetBackfillV2 = "PartnerAssetBackfillV2",
-    PartnerAssetDeleteV1 = "PartnerAssetDeleteV1",
-    PartnerAssetExifV1 = "PartnerAssetExifV1",
-    PartnerAssetExifBackfillV1 = "PartnerAssetExifBackfillV1",
-    PartnerStackBackfillV1 = "PartnerStackBackfillV1",
-    PartnerStackDeleteV1 = "PartnerStackDeleteV1",
-    PartnerStackV1 = "PartnerStackV1",
     AlbumV1 = "AlbumV1",
     AlbumV2 = "AlbumV2",
     AlbumDeleteV1 = "AlbumDeleteV1",
@@ -7078,17 +7031,17 @@ export enum SyncRequestType {
     AssetEditsV1 = "AssetEditsV1",
     AssetMetadataV1 = "AssetMetadataV1",
     AssetOcrV1 = "AssetOcrV1",
+    PartnersV1 = "PartnersV1",
+    PartnerAssetsV1 = "PartnerAssetsV1",
+    PartnerAssetsV2 = "PartnerAssetsV2",
+    PartnerStacksV1 = "PartnerStacksV1",
+    PartnerAssetExifsV1 = "PartnerAssetExifsV1",
     AuthUsersV1 = "AuthUsersV1",
     AuthUsersV2 = "AuthUsersV2",
     MemoriesV1 = "MemoriesV1",
     MemoriesV2 = "MemoriesV2",
     MemoryToAssetsV1 = "MemoryToAssetsV1",
     MemoryToAssetsV2 = "MemoryToAssetsV2",
-    PartnersV1 = "PartnersV1",
-    PartnerAssetsV1 = "PartnerAssetsV1",
-    PartnerAssetsV2 = "PartnerAssetsV2",
-    PartnerAssetExifsV1 = "PartnerAssetExifsV1",
-    PartnerStacksV1 = "PartnerStacksV1",
     StacksV1 = "StacksV1",
     UsersV1 = "UsersV1",
     PeopleV1 = "PeopleV1",

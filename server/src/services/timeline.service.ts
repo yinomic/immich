@@ -25,7 +25,7 @@ export class TimelineService extends BaseService {
   }
 
   private buildTimeBucketOptions(auth: AuthDto, dto: TimeBucketDto): TimeBucketOptions {
-    const { userId, withPartners: _withPartners, ...options } = dto;
+    const { userId, ...options } = dto;
 
     // single account: the only universe is the caller
     return { ...options, userIds: userId ? [userId] : [auth.user.id] };
@@ -54,20 +54,6 @@ export class TimelineService extends BaseService {
 
     if (dto.tagId) {
       await this.requireAccess({ auth, permission: Permission.TagRead, ids: [dto.tagId] });
-    }
-
-    // eslint-disable-next-line unicorn/prefer-early-return
-    if (dto.withPartners) {
-      const isRequestedLocked = dto.visibility === AssetVisibility.Locked;
-      const isRequestedArchived = dto.visibility === AssetVisibility.Archive || dto.visibility === undefined;
-      const isRequestedFavorite = dto.isFavorite === true || dto.isFavorite === false;
-      const isRequestedTrash = dto.isTrashed === true;
-
-      if (isRequestedLocked || isRequestedArchived || isRequestedFavorite || isRequestedTrash) {
-        throw new BadRequestException(
-          'withPartners is only supported for non-archived, non-trashed, non-favorited, non-locked assets',
-        );
-      }
     }
   }
 }

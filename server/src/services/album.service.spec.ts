@@ -643,31 +643,6 @@ describe(AlbumService.name, () => {
       expect(mocks.album.update).not.toHaveBeenCalled();
     });
 
-    it('should allow adding assets shared via partner sharing', async () => {
-      const album = AlbumFactory.create();
-      const { user: owner } = album.albumUsers.find(({ role }) => role === AlbumUserRole.Owner)!;
-      const asset = AssetFactory.create();
-      mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set([album.id]));
-      mocks.access.asset.checkPartnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.album.getById.mockResolvedValue(getForAlbum(album));
-      mocks.album.getAssetIds.mockResolvedValueOnce(new Set());
-
-      await expect(sut.addAssets(AuthFactory.create(owner), album.id, { ids: [asset.id] })).resolves.toEqual([
-        { success: true, id: asset.id },
-      ]);
-
-      expect(mocks.album.update).toHaveBeenCalledWith(
-        album.id,
-        {
-          id: album.id,
-          updatedAt: expect.any(Date),
-          albumThumbnailAssetId: asset.id,
-        },
-        owner.id,
-      );
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(owner.id, new Set([asset.id]));
-    });
-
     it('should skip duplicate assets', async () => {
       const asset = AssetFactory.create();
       const album = AlbumFactory.create();
@@ -697,7 +672,6 @@ describe(AlbumService.name, () => {
       ]);
 
       expect(mocks.access.asset.checkOwnerAccess).toHaveBeenCalledWith(owner.id, new Set([asset.id]), false);
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(owner.id, new Set([asset.id]));
     });
 
     it('should not allow unauthorized access to the album', async () => {
@@ -896,63 +870,6 @@ describe(AlbumService.name, () => {
       expect(mocks.album.update).not.toHaveBeenCalled();
     });
 
-    it('should allow adding assets shared via partner sharing', async () => {
-      const user = UserFactory.create();
-      const album1 = AlbumFactory.create();
-      const { user: owner } = album1.albumUsers.find(({ role }) => role === AlbumUserRole.Owner)!;
-      const album2 = AlbumFactory.create();
-      const [asset1, asset2, asset3] = [
-        AssetFactory.create({ ownerId: user.id }),
-        AssetFactory.create({ ownerId: user.id }),
-        AssetFactory.create({ ownerId: user.id }),
-      ];
-      mocks.access.album.checkOwnerAccess.mockResolvedValueOnce(new Set([album1.id, album2.id]));
-      mocks.access.asset.checkPartnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id, asset3.id]));
-      mocks.album.getById.mockResolvedValueOnce(getForAlbum(album1)).mockResolvedValueOnce(getForAlbum(album2));
-      mocks.album.getAssetIds.mockResolvedValueOnce(new Set()).mockResolvedValueOnce(new Set());
-
-      await expect(
-        sut.addAssetsToAlbums(AuthFactory.create(owner), {
-          albumIds: [album1.id, album2.id],
-          assetIds: [asset1.id, asset2.id, asset3.id],
-        }),
-      ).resolves.toEqual({ success: true, error: undefined });
-
-      expect(mocks.album.update).toHaveBeenCalledTimes(2);
-      expect(mocks.album.update).toHaveBeenNthCalledWith(
-        1,
-        album1.id,
-        {
-          id: album1.id,
-          updatedAt: expect.any(Date),
-          albumThumbnailAssetId: asset1.id,
-        },
-        owner.id,
-      );
-      expect(mocks.album.update).toHaveBeenNthCalledWith(
-        2,
-        album2.id,
-        {
-          id: album2.id,
-          updatedAt: expect.any(Date),
-          albumThumbnailAssetId: asset1.id,
-        },
-        owner.id,
-      );
-      expect(mocks.album.addAssetIdsToAlbums).toHaveBeenCalledWith([
-        { albumId: album1.id, assetId: asset1.id },
-        { albumId: album1.id, assetId: asset2.id },
-        { albumId: album1.id, assetId: asset3.id },
-        { albumId: album2.id, assetId: asset1.id },
-        { albumId: album2.id, assetId: asset2.id },
-        { albumId: album2.id, assetId: asset3.id },
-      ]);
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(
-        owner.id,
-        new Set([asset1.id, asset2.id, asset3.id]),
-      );
-    });
-
     it('should skip some duplicate assets', async () => {
       const [asset1, asset2, asset3] = [AssetFactory.create(), AssetFactory.create(), AssetFactory.create()];
       const album1 = AlbumFactory.create();
@@ -1049,10 +966,6 @@ describe(AlbumService.name, () => {
         owner.id,
         new Set([asset1.id, asset2.id, asset3.id]),
         false,
-      );
-      expect(mocks.access.asset.checkPartnerAccess).toHaveBeenCalledWith(
-        owner.id,
-        new Set([asset1.id, asset2.id, asset3.id]),
       );
     });
 

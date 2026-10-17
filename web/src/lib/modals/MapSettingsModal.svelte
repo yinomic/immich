@@ -30,9 +30,6 @@
     <Field label={$t('include_archived')}>
       <Switch bind:checked={settings.includeArchived} />
     </Field>
-    <Field label={$t('include_shared_partner_assets')}>
-      <Switch bind:checked={settings.withPartners} />
-    </Field>
     <Field label={$t('include_shared_albums')}>
       <Switch bind:checked={settings.withSharedAlbums} />
     </Field>

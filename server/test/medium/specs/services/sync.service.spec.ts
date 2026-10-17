@@ -136,19 +136,6 @@ describe(SyncService.name, () => {
       await assertTableCount(ctx.database, tableName, 0);
     });
 
-    it('should cleanup the partner_audit table', async () => {
-      const { sut, ctx } = setup();
-      const tableName = 'partner_audit';
-      await ctx.database
-        .insertInto(tableName)
-        .values({ sharedById: v4(), sharedWithId: v4(), deletedAt: deletedLongAgo })
-        .execute();
-
-      await assertTableCount(ctx.database, tableName, 1);
-      await expect(sut.onAuditTableCleanup()).resolves.toBeUndefined();
-      await assertTableCount(ctx.database, tableName, 0);
-    });
-
     it('should cleanup the stack_audit table', async () => {
       const { sut, ctx } = setup();
       const tableName = 'stack_audit';

@@ -102,12 +102,6 @@ export const SharingDirectionSchema = z
   .describe('Sharing direction')
   .meta({ id: 'SharingDirection' });
 
-// TODO(v4) replace with SharingDirection
-export const PartnerDirectionSchema = z
-  .enum(SharingDirection)
-  .describe('Partner direction')
-  .meta({ id: 'PartnerDirection' });
-
 export enum AssetOrderWithRandom {
   // Include existing values
   Asc = AssetOrder.Asc,
@@ -957,18 +951,23 @@ export enum SyncRequestType {
   AssetEditsV1 = 'AssetEditsV1',
   AssetMetadataV1 = 'AssetMetadataV1',
   AssetOcrV1 = 'AssetOcrV1',
+  /** @deprecated partner sharing was removed from this build */
+  PartnersV1 = 'PartnersV1',
+  /** @deprecated partner sharing was removed from this build */
+  PartnerAssetsV1 = 'PartnerAssetsV1',
+  /** @deprecated partner sharing was removed from this build */
+  PartnerAssetsV2 = 'PartnerAssetsV2',
+  /** @deprecated partner sharing was removed from this build */
+  PartnerStacksV1 = 'PartnerStacksV1',
+  /** @deprecated partner sharing was removed from this build */
+  PartnerAssetExifsV1 = 'PartnerAssetExifsV1',
   AuthUsersV1 = 'AuthUsersV1',
   AuthUsersV2 = 'AuthUsersV2',
   MemoriesV1 = 'MemoriesV1',
   MemoriesV2 = 'MemoriesV2',
   MemoryToAssetsV1 = 'MemoryToAssetsV1',
   MemoryToAssetsV2 = 'MemoryToAssetsV2',
-  PartnersV1 = 'PartnersV1',
   /** @deprecated */
-  PartnerAssetsV1 = 'PartnerAssetsV1',
-  PartnerAssetsV2 = 'PartnerAssetsV2',
-  PartnerAssetExifsV1 = 'PartnerAssetExifsV1',
-  PartnerStacksV1 = 'PartnerStacksV1',
   StacksV1 = 'StacksV1',
   UsersV1 = 'UsersV1',
   PeopleV1 = 'PeopleV1',
@@ -1004,21 +1003,8 @@ export enum SyncEntityType {
   AssetOcrV1 = 'AssetOcrV1',
   AssetOcrDeleteV1 = 'AssetOcrDeleteV1',
 
-  PartnerV1 = 'PartnerV1',
-  PartnerDeleteV1 = 'PartnerDeleteV1',
-
   /** @deprecated */
-  PartnerAssetV1 = 'PartnerAssetV1',
-  PartnerAssetV2 = 'PartnerAssetV2',
   /** @deprecated */
-  PartnerAssetBackfillV1 = 'PartnerAssetBackfillV1',
-  PartnerAssetBackfillV2 = 'PartnerAssetBackfillV2',
-  PartnerAssetDeleteV1 = 'PartnerAssetDeleteV1',
-  PartnerAssetExifV1 = 'PartnerAssetExifV1',
-  PartnerAssetExifBackfillV1 = 'PartnerAssetExifBackfillV1',
-  PartnerStackBackfillV1 = 'PartnerStackBackfillV1',
-  PartnerStackDeleteV1 = 'PartnerStackDeleteV1',
-  PartnerStackV1 = 'PartnerStackV1',
 
   AlbumV1 = 'AlbumV1',
   AlbumV2 = 'AlbumV2',
@@ -1173,7 +1159,6 @@ export enum ApiTag {
   Notifications = 'Notifications',
   NotificationsAdmin = 'Notifications (admin)',
   ClusterGroups = 'Cluster groups',
-  Partners = 'Partners',
   People = 'People',
   Plugins = 'Plugins',
   Queues = 'Queues',

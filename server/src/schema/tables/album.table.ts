@@ -43,8 +43,6 @@ export class AlbumTable {
   deletedAt!: Timestamp | null;
 
   @Column({ type: 'boolean', default: true })
-  isActivityEnabled!: Generated<boolean>;
-
   @Column({ default: AssetOrder.Desc })
   order!: Generated<AssetOrder>;
 

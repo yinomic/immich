@@ -1,14 +1,11 @@
-import { Selectable, ShallowDehydrateObject } from 'kysely';
+import { ShallowDehydrateObject } from 'kysely';
 import type { AudioStreamInfo, VideoFormat, VideoStreamInfo } from 'src/types.js';
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
 import { AssetEditActionItem } from 'src/dtos/editing.dto.js';
-import { ActivityTable } from 'src/schema/tables/activity.table.js';
-import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { AlbumFactory } from 'test/factories/album.factory.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { MemoryFactory } from 'test/factories/memory.factory.js';
 import { StackFactory } from 'test/factories/stack.factory.js';
-import { UserFactory } from 'test/factories/user.factory.js';
 import { newUuid } from 'test/small.factory.js';
 
 export const getForStorageTemplate = (asset: ReturnType<AssetFactory['build']>) => {
@@ -56,11 +53,6 @@ export const getForAlbum = (album: ReturnType<AlbumFactory['build']>) => ({
   })),
 });
 
-export const getForActivity = (activity: Selectable<ActivityTable> & { user: ReturnType<UserFactory['build']> }) => ({
-  ...activity,
-  user: getDehydrated(activity.user),
-});
-
 export const getForAsset = (asset: ReturnType<AssetFactory['build']>) => {
   return {
     ...asset,
@@ -73,14 +65,6 @@ export const getForAsset = (asset: ReturnType<AssetFactory['build']>) => {
     edits: asset.edits.map(({ action, parameters }) => ({ action, parameters })) as AssetEditActionItem[],
   };
 };
-
-export const getForPartner = (
-  partner: Selectable<PartnerTable> & Record<'sharedWith' | 'sharedBy', ReturnType<UserFactory['build']>>,
-) => ({
-  ...partner,
-  sharedBy: getDehydrated(partner.sharedBy),
-  sharedWith: getDehydrated(partner.sharedWith),
-});
 
 export const getForMemory = (memory: ReturnType<MemoryFactory['build']>) => ({
   ...memory,

@@ -662,7 +662,7 @@ export class TimelineManager extends VirtualScrollManager {
     if (this.#options.albumId || this.#options.personId || this.#options.timelineAlbumId) {
       return false;
     }
-    if (this.#options.userId && !this.#options.withPartners && asset.ownerId !== this.#options.userId) {
+    if (this.#options.userId && asset.ownerId !== this.#options.userId) {
       return false;
     }
     return true;

@@ -57,19 +57,6 @@ export type AuthApiKey = {
   permissions: Permission[];
 };
 
-export type Activity = {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  albumId: string;
-  userId: string;
-  user: ShallowDehydrateObject<User>;
-  assetId: string | null;
-  comment: string | null;
-  isLiked: boolean;
-  updateId: string;
-};
-
 export type ApiKey = {
   id: string;
   name: string;
@@ -166,18 +153,6 @@ export type Album = Selectable<AlbumTable> & {
 export type AuthSession = {
   id: string;
   hasElevatedPermission: boolean;
-};
-
-export type Partner = {
-  sharedById: string;
-  sharedBy: ShallowDehydrateObject<User>;
-  sharedWithId: string;
-  sharedWith: ShallowDehydrateObject<User>;
-  createdAt: Date;
-  createId: string;
-  updatedAt: Date;
-  updateId: string;
-  inTimeline: boolean;
 };
 
 export type Place = {
@@ -377,27 +352,6 @@ export const columns = {
     'asset.fileModifiedAt',
     'asset.createdAt',
     'asset.localDateTime',
-    'asset.type',
-    'asset.deletedAt',
-    'asset.visibility',
-    'asset.duration',
-    'asset.livePhotoVideoId',
-    'asset.stackId',
-    'asset.libraryId',
-    'asset.width',
-    'asset.height',
-    'asset.isEdited',
-  ],
-  syncPartnerAsset: [
-    'asset.id',
-    'asset.ownerId',
-    'asset.originalFileName',
-    'asset.thumbhash',
-    'asset.checksum',
-    'asset.fileCreatedAt',
-    'asset.fileModifiedAt',
-    'asset.localDateTime',
-    'asset.createdAt',
     'asset.type',
     'asset.deletedAt',
     'asset.visibility',

@@ -7,10 +7,6 @@ import { BaseService } from 'src/services/base.service.js';
 export class MapService extends BaseService {
   async getMapMarkers(auth: AuthDto, options: MapMarkerDto): Promise<MapMarkerResponseDto[]> {
     const userIds = [auth.user.id];
-    if (options.withPartners) {
-      const partnerIds: string[] = [];
-      userIds.push(...partnerIds);
-    }
 
     const albumIds = options.withSharedAlbums ? await this.albumRepository.getAllIds(auth.user.id) : [];
 

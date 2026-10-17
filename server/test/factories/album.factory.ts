@@ -27,7 +27,6 @@ export class AlbumFactory {
       createdAt: newDate(),
       deletedAt: null,
       description: 'Album description',
-      isActivityEnabled: false,
       order: AssetOrder.Desc,
       updatedAt: newDate(),
       updateId: newUuidV7(),

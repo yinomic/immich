@@ -12,13 +12,11 @@ import {
   ll_to_earth_public,
   memory_asset_delete_audit,
   memory_delete_audit,
-  partner_delete_audit,
   stack_delete_audit,
   updated_at,
   user_delete_audit,
   user_metadata_audit,
 } from 'src/schema/functions.js';
-import { ActivityTable } from 'src/schema/tables/activity.table.js';
 import { AlbumAssetAuditTable } from 'src/schema/tables/album-asset-audit.table.js';
 import { AlbumAssetTable } from 'src/schema/tables/album-asset.table.js';
 import { AlbumAuditTable } from 'src/schema/tables/album-audit.table.js';
@@ -46,8 +44,6 @@ import { MemoryTable } from 'src/schema/tables/memory.table.js';
 import { MoveTable } from 'src/schema/tables/move.table.js';
 import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-countries.table.js';
 import { NotificationTable } from 'src/schema/tables/notification.table.js';
-import { PartnerAuditTable } from 'src/schema/tables/partner-audit.table.js';
-import { PartnerTable } from 'src/schema/tables/partner.table.js';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table.js';
 import { PluginTable } from 'src/schema/tables/plugin.table.js';
 import { SessionTable } from 'src/schema/tables/session.table.js';
@@ -76,7 +72,6 @@ import { WorkflowTable } from 'src/schema/tables/workflow.table.js';
 @Database({ name: 'immich' })
 export class ImmichDatabase {
   tables = [
-    ActivityTable,
     AlbumAssetTable,
     AlbumAssetAuditTable,
     AlbumAuditTable,
@@ -103,8 +98,6 @@ export class ImmichDatabase {
     MoveTable,
     NaturalEarthCountriesTable,
     NotificationTable,
-    PartnerAuditTable,
-    PartnerTable,
     SessionTable,
     StackTable,
     StackAuditTable,
@@ -134,7 +127,6 @@ export class ImmichDatabase {
     f_unaccent,
     ll_to_earth_public,
     user_delete_audit,
-    partner_delete_audit,
     asset_delete_audit,
     album_user_after_insert,
     album_user_delete_audit,
@@ -157,8 +149,6 @@ export interface Migrations {
 
 export interface DB {
   kysely_migrations: { timestamp: string; name: string };
-
-  activity: ActivityTable;
 
   album: AlbumTable;
   album_audit: AlbumAuditTable;
@@ -200,9 +190,6 @@ export interface DB {
   move_history: MoveTable;
 
   naturalearth_countries: NaturalEarthCountriesTable;
-
-  partner: PartnerTable;
-  partner_audit: PartnerAuditTable;
 
   session: SessionTable;
   session_sync_checkpoint: SessionSyncCheckpointTable;

@@ -23,7 +23,6 @@ export interface MapSettings {
   allowDarkMode: boolean;
   includeArchived: boolean;
   onlyFavorites: boolean;
-  withPartners: boolean;
   withSharedAlbums: boolean;
   showAssetPanel: boolean;
   relativeDate: string;
@@ -35,7 +34,6 @@ const defaultMapSettings = {
   allowDarkMode: true,
   includeArchived: false,
   onlyFavorites: false,
-  withPartners: false,
   withSharedAlbums: false,
   showAssetPanel: false,
   relativeDate: '',

@@ -10,11 +10,9 @@ import {
   anyUuid,
   asUuid,
   withAudioStream,
-  withDefaultVisibility,
   withEdits,
   withExif,
   withExifInner,
-  withFilePath,
   withFiles,
   withVideoFormat,
   withVideoStream,
@@ -24,16 +22,6 @@ import { mimeTypes } from 'src/utils/mime-types.js';
 @Injectable()
 export class AssetJobRepository {
   constructor(@InjectKysely() private db: Kysely<DB>) {}
-
-  @GenerateSql({ params: [DummyValue.UUID] })
-  getForSearchDuplicatesJob(id: string) {
-    return this.db
-      .selectFrom('asset')
-      .where('asset.id', '=', asUuid(id))
-      .select(['id', 'type', 'ownerId', 'duplicateId', 'stackId', 'visibility'])
-      .limit(1)
-      .executeTakeFirst();
-  }
 
   @GenerateSql({ params: [DummyValue.UUID] })
   getForSidecarWriteJob(id: string) {
@@ -186,30 +174,6 @@ export class AssetJobRepository {
             .where('asset_file.type', '=', AssetFileType.Preview),
         ),
       );
-  }
-
-  @GenerateSql({ params: [], stream: true })
-  streamForSearchDuplicates(force?: boolean) {
-    return this.db
-      .selectFrom('asset')
-      .select(['asset.id'])
-      .where('asset.deletedAt', 'is', null)
-      .$call(withDefaultVisibility)
-      .$if(!force, (qb) =>
-        qb
-          .innerJoin('asset_job_status as job_status', 'job_status.assetId', 'asset.id')
-          .where('job_status.duplicatesDetectedAt', 'is', null),
-      )
-      .stream();
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID] })
-  getForOcr(id: string) {
-    return this.db
-      .selectFrom('asset')
-      .select((eb) => ['asset.visibility', withFilePath(eb, AssetFileType.Preview).as('previewFile')])
-      .where('asset.id', '=', id)
-      .executeTakeFirst();
   }
 
   @GenerateSql({ params: [[DummyValue.UUID]] })
@@ -391,17 +355,6 @@ export class AssetJobRepository {
           ),
         ),
       )
-      .stream();
-  }
-
-  @GenerateSql({ params: [], stream: true })
-  streamForOcrJob(force?: boolean) {
-    return this.db
-      .selectFrom('asset')
-      .select(['asset.id'])
-      .$if(!force, (qb) => qb.innerJoin('asset_job_status', 'asset_job_status.assetId', 'asset.id'))
-      .where('asset.deletedAt', 'is', null)
-      .where('asset.visibility', '!=', AssetVisibility.Hidden)
       .stream();
   }
 

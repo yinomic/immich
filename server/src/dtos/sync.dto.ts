@@ -46,21 +46,6 @@ const SyncAuthUserV2Schema = SyncAuthUserV1Schema.extend({
 
 const SyncUserDeleteV1Schema = z.object({ userId: z.uuidv4().describe('User ID') }).meta({ id: 'SyncUserDeleteV1' });
 
-const SyncPartnerV1Schema = z
-  .object({
-    sharedById: z.uuidv4().describe('Shared by ID'),
-    sharedWithId: z.uuidv4().describe('Shared with ID'),
-    inTimeline: z.boolean().describe('In timeline'),
-  })
-  .meta({ id: 'SyncPartnerV1' });
-
-const SyncPartnerDeleteV1Schema = z
-  .object({
-    sharedById: z.uuidv4().describe('Shared by ID'),
-    sharedWithId: z.uuidv4().describe('Shared with ID'),
-  })
-  .meta({ id: 'SyncPartnerDeleteV1' });
-
 const SyncAssetV1Schema = z
   .object({
     id: z.uuidv4().describe('Asset ID'),
@@ -120,9 +105,7 @@ class SyncAuthUserV2 extends createZodDto(SyncAuthUserV2Schema) {}
 @ExtraModel()
 class SyncUserDeleteV1 extends createZodDto(SyncUserDeleteV1Schema) {}
 @ExtraModel()
-class SyncPartnerV1 extends createZodDto(SyncPartnerV1Schema) {}
 @ExtraModel()
-class SyncPartnerDeleteV1 extends createZodDto(SyncPartnerDeleteV1Schema) {}
 @ExtraModel()
 export class SyncAssetV1 extends createZodDto(SyncAssetV1Schema) {}
 @ExtraModel()
@@ -232,7 +215,6 @@ const SyncAlbumV1Schema = z
     createdAt: isoDatetimeToDate.describe('Created at'),
     updatedAt: isoDatetimeToDate.describe('Updated at'),
     thumbnailAssetId: z.string().nullable().describe('Thumbnail asset ID'),
-    isActivityEnabled: z.boolean().describe('Is activity enabled'),
     order: AssetOrderSchema,
   })
   .meta({ id: 'SyncAlbumV1' });
@@ -245,7 +227,6 @@ const SyncAlbumV2Schema = z
     createdAt: isoDatetimeToDate.describe('Created at'),
     updatedAt: isoDatetimeToDate.describe('Updated at'),
     thumbnailAssetId: z.string().nullable().describe('Thumbnail asset ID'),
-    isActivityEnabled: z.boolean().describe('Is activity enabled'),
     order: AssetOrderSchema,
   })
   .meta({ id: 'SyncAlbumV2' });
@@ -479,8 +460,6 @@ export type SyncItem = {
   [SyncEntityType.AuthUserV2]: SyncAuthUserV2;
   [SyncEntityType.UserV1]: SyncUserV1;
   [SyncEntityType.UserDeleteV1]: SyncUserDeleteV1;
-  [SyncEntityType.PartnerV1]: SyncPartnerV1;
-  [SyncEntityType.PartnerDeleteV1]: SyncPartnerDeleteV1;
   [SyncEntityType.AssetV2]: SyncAssetV2;
   [SyncEntityType.AssetDeleteV1]: SyncAssetDeleteV1;
   [SyncEntityType.AssetMetadataV1]: SyncAssetMetadataV1;
@@ -490,11 +469,6 @@ export type SyncItem = {
   [SyncEntityType.AssetOcrDeleteV1]: SyncAssetOcrDeleteV1;
   [SyncEntityType.AssetEditV1]: SyncAssetEditV1;
   [SyncEntityType.AssetEditDeleteV1]: SyncAssetEditDeleteV1;
-  [SyncEntityType.PartnerAssetV2]: SyncAssetV2;
-  [SyncEntityType.PartnerAssetBackfillV2]: SyncAssetV2;
-  [SyncEntityType.PartnerAssetDeleteV1]: SyncAssetDeleteV1;
-  [SyncEntityType.PartnerAssetExifV1]: SyncAssetExifV1;
-  [SyncEntityType.PartnerAssetExifBackfillV1]: SyncAssetExifV1;
   [SyncEntityType.AlbumV1]: SyncAlbumV1;
   [SyncEntityType.AlbumV2]: SyncAlbumV2;
   [SyncEntityType.AlbumDeleteV1]: SyncAlbumDeleteV1;
@@ -518,9 +492,6 @@ export type SyncItem = {
   [SyncEntityType.MemoryToAssetDeleteV1]: SyncMemoryAssetDeleteV1;
   [SyncEntityType.StackV1]: SyncStackV1;
   [SyncEntityType.StackDeleteV1]: SyncStackDeleteV1;
-  [SyncEntityType.PartnerStackBackfillV1]: SyncStackV1;
-  [SyncEntityType.PartnerStackDeleteV1]: SyncStackDeleteV1;
-  [SyncEntityType.PartnerStackV1]: SyncStackV1;
   [SyncEntityType.PersonV1]: SyncPersonV1;
   [SyncEntityType.PersonDeleteV1]: SyncPersonDeleteV1;
   [SyncEntityType.AssetFaceV1]: SyncAssetFaceV1;

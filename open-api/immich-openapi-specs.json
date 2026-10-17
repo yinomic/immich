@@ -6527,15 +6527,6 @@
             }
           },
           {
-            "name": "withPartners",
-            "required": false,
-            "in": "query",
-            "description": "Include partner assets",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
             "name": "withSharedAlbums",
             "required": false,
             "in": "query",
@@ -12704,15 +12695,6 @@
             }
           },
           {
-            "name": "withPartners",
-            "required": false,
-            "in": "query",
-            "description": "Include assets shared by partners",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
             "name": "withStacked",
             "required": false,
             "in": "query",
@@ -12888,15 +12870,6 @@
             "required": false,
             "in": "query",
             "description": "Include location data in the response",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "withPartners",
-            "required": false,
-            "in": "query",
-            "description": "Include assets shared by partners",
             "schema": {
               "type": "boolean"
             }
@@ -14695,10 +14668,6 @@
       "description": "Notification administrative endpoints."
     },
     {
-      "name": "Partners",
-      "description": "A partner is a link with another user that allows sharing of assets between two users."
-    },
-    {
       "name": "Plugins",
       "description": "A plugin is an installed module that makes filters and actions available for the workflow feature."
     },
@@ -15887,12 +15856,6 @@
             "minimum": 0,
             "type": "integer"
           },
-          "contributorCounts": {
-            "items": {
-              "$ref": "#/components/schemas/ContributorCountResponseDto"
-            },
-            "type": "array"
-          },
           "createdAt": {
             "description": "Creation date",
             "format": "date-time",
@@ -15923,10 +15886,6 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
-          },
-          "isActivityEnabled": {
-            "description": "Activity feed enabled",
-            "type": "boolean"
           },
           "lastModifiedAssetTimestamp": {
             "description": "Last modified asset timestamp",
@@ -15959,7 +15918,6 @@
           "createdAt",
           "description",
           "id",
-          "isActivityEnabled",
           "shared",
           "updatedAt"
         ],
@@ -17502,27 +17460,6 @@
           "p3"
         ],
         "type": "string"
-      },
-      "ContributorCountResponseDto": {
-        "properties": {
-          "assetCount": {
-            "description": "Number of assets contributed",
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "userId": {
-            "description": "User ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetCount",
-          "userId"
-        ],
-        "type": "object"
       },
       "CreateAlbumDto": {
         "properties": {
@@ -24177,10 +24114,6 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
           },
-          "isActivityEnabled": {
-            "description": "Is activity enabled",
-            "type": "boolean"
-          },
           "name": {
             "description": "Album name",
             "type": "string"
@@ -24211,7 +24144,6 @@
           "createdAt",
           "description",
           "id",
-          "isActivityEnabled",
           "name",
           "order",
           "ownerId",
@@ -24239,10 +24171,6 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
           },
-          "isActivityEnabled": {
-            "description": "Is activity enabled",
-            "type": "boolean"
-          },
           "name": {
             "description": "Album name",
             "type": "string"
@@ -24267,7 +24195,6 @@
           "createdAt",
           "description",
           "id",
-          "isActivityEnabled",
           "name",
           "order",
           "thumbnailAssetId",
@@ -25342,18 +25269,6 @@
           "AssetMetadataDeleteV1",
           "AssetOcrV1",
           "AssetOcrDeleteV1",
-          "PartnerV1",
-          "PartnerDeleteV1",
-          "PartnerAssetV1",
-          "PartnerAssetV2",
-          "PartnerAssetBackfillV1",
-          "PartnerAssetBackfillV2",
-          "PartnerAssetDeleteV1",
-          "PartnerAssetExifV1",
-          "PartnerAssetExifBackfillV1",
-          "PartnerStackBackfillV1",
-          "PartnerStackDeleteV1",
-          "PartnerStackV1",
           "AlbumV1",
           "AlbumV2",
           "AlbumDeleteV1",
@@ -25642,53 +25557,6 @@
         ],
         "type": "object"
       },
-      "SyncPartnerDeleteV1": {
-        "properties": {
-          "sharedById": {
-            "description": "Shared by ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "sharedWithId": {
-            "description": "Shared with ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "sharedById",
-          "sharedWithId"
-        ],
-        "type": "object"
-      },
-      "SyncPartnerV1": {
-        "properties": {
-          "inTimeline": {
-            "description": "In timeline",
-            "type": "boolean"
-          },
-          "sharedById": {
-            "description": "Shared by ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "sharedWithId": {
-            "description": "Shared with ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "inTimeline",
-          "sharedById",
-          "sharedWithId"
-        ],
-        "type": "object"
-      },
       "SyncPersonDeleteV1": {
         "properties": {
           "personId": {
@@ -25792,17 +25660,17 @@
           "AssetEditsV1",
           "AssetMetadataV1",
           "AssetOcrV1",
+          "PartnersV1",
+          "PartnerAssetsV1",
+          "PartnerAssetsV2",
+          "PartnerStacksV1",
+          "PartnerAssetExifsV1",
           "AuthUsersV1",
           "AuthUsersV2",
           "MemoriesV1",
           "MemoriesV2",
           "MemoryToAssetsV1",
           "MemoryToAssetsV2",
-          "PartnersV1",
-          "PartnerAssetsV1",
-          "PartnerAssetsV2",
-          "PartnerAssetExifsV1",
-          "PartnerStacksV1",
           "StacksV1",
           "UsersV1",
           "PeopleV1",
@@ -26556,10 +26424,6 @@
                 "description": "Sending an empty string is deprecated; send null instead. Empty strings will no longer be coerced to null in v4."
               }
             ]
-          },
-          "isActivityEnabled": {
-            "description": "Enable activity feed",
-            "type": "boolean"
           },
           "order": {
             "$ref": "#/components/schemas/AssetOrder"

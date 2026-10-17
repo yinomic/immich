@@ -39,7 +39,6 @@
   const options = {
     visibility: AssetVisibility.Timeline,
     withStacked: true,
-    withPartners: true,
     orderBy: AssetOrderBy.CreatedAt,
   };
 

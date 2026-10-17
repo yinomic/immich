@@ -418,7 +418,6 @@ export function getAlbum(
     updatedAt: album.updatedAt,
     albumUsers: [{ user: albumOwner, role: AlbumUserRole.Owner }],
     shared: false,
-    isActivityEnabled: true,
     assetCount: albumAssets.length,
     startDate: albumAssets.length > 0 ? albumAssets.at(-1)?.fileCreatedAt : undefined,
     endDate: albumAssets.length > 0 ? albumAssets[0].fileCreatedAt : undefined,

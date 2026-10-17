@@ -1121,17 +1121,6 @@ export class AssetRepository {
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })
-  async getForOcr(id: string) {
-    return this.db
-      .selectFrom('asset')
-      .where('asset.id', '=', id)
-      .select(withEdits)
-      .innerJoin('asset_exif', (join) => join.onRef('asset_exif.assetId', '=', 'asset.id'))
-      .select(['asset_exif.exifImageWidth', 'asset_exif.exifImageHeight', 'asset_exif.orientation'])
-      .executeTakeFirst();
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID] })
   async getForEdit(id: string) {
     return this.db
       .selectFrom('asset')

@@ -500,7 +500,7 @@ describe('TimelineManager', () => {
     });
 
     it('does not insert live event assets with a different owner into a user-scoped timeline', async () => {
-      await timelineManager.updateOptions({ userId: 'partner-id', visibility: AssetVisibility.Timeline });
+      await timelineManager.updateOptions({ userId: 'other-user-id', visibility: AssetVisibility.Timeline });
 
       const asset = deriveLocalDateTimeFromFileCreatedAt(
         timelineAssetFactory.build({
@@ -515,11 +515,11 @@ describe('TimelineManager', () => {
     });
 
     it('inserts live event assets for the matching owner into a user-scoped timeline', async () => {
-      await timelineManager.updateOptions({ userId: 'partner-id', visibility: AssetVisibility.Timeline });
+      await timelineManager.updateOptions({ userId: 'other-user-id', visibility: AssetVisibility.Timeline });
 
       const asset = deriveLocalDateTimeFromFileCreatedAt(
         timelineAssetFactory.build({
-          ownerId: 'partner-id',
+          ownerId: 'other-user-id',
           visibility: AssetVisibility.Timeline,
         }),
       );

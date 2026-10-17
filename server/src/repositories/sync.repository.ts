@@ -59,10 +59,6 @@ export class SyncRepository {
   authUser: AuthUserSync;
   memory: MemorySync;
   memoryToAsset: MemoryToAssetSync;
-  partner: PartnerSync;
-  partnerAsset: PartnerAssetsSync;
-  partnerAssetExif: PartnerAssetExifsSync;
-  partnerStack: PartnerStackSync;
   stack: StackSync;
   user: UserSync;
   userMetadata: UserMetadataSync;
@@ -80,10 +76,6 @@ export class SyncRepository {
     this.authUser = new AuthUserSync(this.db);
     this.memory = new MemorySync(this.db);
     this.memoryToAsset = new MemoryToAssetSync(this.db);
-    this.partner = new PartnerSync(this.db);
-    this.partnerAsset = new PartnerAssetsSync(this.db);
-    this.partnerAssetExif = new PartnerAssetExifsSync(this.db);
-    this.partnerStack = new PartnerStackSync(this.db);
     this.stack = new StackSync(this.db);
     this.user = new UserSync(this.db);
     this.userMetadata = new UserMetadataSync(this.db);
@@ -176,7 +168,6 @@ class AlbumSync extends BaseSync {
         'album.createdAt',
         'album.updatedAt',
         'album.albumThumbnailAssetId as thumbnailAssetId',
-        'album.isActivityEnabled',
         'album.order',
         'album.updateId',
       ])
@@ -522,104 +513,6 @@ class MemoryToAssetSync extends BaseSync {
   }
 }
 
-class PartnerSync extends BaseSync {
-  @GenerateSql({ params: [dummyCreateAfterOptions] })
-  getCreatedAfter({ nowId, userId, afterCreateId }: SyncCreatedAfterOptions) {
-    return this.db
-      .selectFrom('partner')
-      .select(['sharedById', 'createId'])
-      .where('sharedWithId', '=', userId)
-      .$if(!!afterCreateId, (qb) => qb.where('createId', '>=', afterCreateId!))
-      .where('createId', '<', nowId)
-      .orderBy('partner.createId', 'asc')
-      .execute();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletes(options: SyncQueryOptions) {
-    const userId = options.userId;
-    return this.auditQuery('partner_audit', options)
-      .select(['id', 'sharedById', 'sharedWithId'])
-      .where((eb) => eb.or([eb('sharedById', '=', userId), eb('sharedWithId', '=', userId)]))
-      .stream();
-  }
-
-  cleanupAuditTable(daysAgo: number) {
-    return this.auditCleanup('partner_audit', daysAgo);
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpserts(options: SyncQueryOptions) {
-    const userId = options.userId;
-    return this.upsertQuery('partner', options)
-      .select(['sharedById', 'sharedWithId', 'inTimeline', 'updateId'])
-      .where((eb) => eb.or([eb('sharedById', '=', userId), eb('sharedWithId', '=', userId)]))
-      .stream();
-  }
-}
-
-class PartnerAssetsSync extends BaseSync {
-  @GenerateSql({ params: [dummyBackfillOptions, DummyValue.UUID], stream: true })
-  getBackfill(options: SyncBackfillOptions, partnerId: string) {
-    return this.backfillQuery('asset', options)
-      .select(columns.syncPartnerAsset)
-      .select(sql.val(false).as('isFavorite'))
-      .select('asset.updateId')
-      .where('ownerId', '=', partnerId)
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletes(options: SyncQueryOptions) {
-    return this.auditQuery('asset_audit', options)
-      .select(['id', 'assetId'])
-      .where('ownerId', 'in', (eb) =>
-        eb.selectFrom('partner').select(['sharedById']).where('sharedWithId', '=', options.userId),
-      )
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpserts(options: SyncQueryOptions) {
-    return this.upsertQuery('asset', options)
-      .select(columns.syncPartnerAsset)
-      .select(sql.val(false).as('isFavorite'))
-      .select('asset.updateId')
-      .where('ownerId', 'in', (eb) =>
-        eb.selectFrom('partner').select(['sharedById']).where('sharedWithId', '=', options.userId),
-      )
-      .stream();
-  }
-}
-
-class PartnerAssetExifsSync extends BaseSync {
-  @GenerateSql({ params: [dummyBackfillOptions, DummyValue.UUID], stream: true })
-  getBackfill(options: SyncBackfillOptions, partnerId: string) {
-    return this.backfillQuery('asset_exif', options)
-      .select(columns.syncAssetExif)
-      .select('asset_exif.updateId')
-      .innerJoin('asset', 'asset.id', 'asset_exif.assetId')
-      .where('asset.ownerId', '=', partnerId)
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpserts(options: SyncQueryOptions) {
-    return this.upsertQuery('asset_exif', options)
-      .select(columns.syncAssetExif)
-      .select('asset_exif.updateId')
-      .where('assetId', 'in', (eb) =>
-        eb
-          .selectFrom('asset')
-          .select('id')
-          .where('ownerId', 'in', (eb) =>
-            eb.selectFrom('partner').select(['sharedById']).where('sharedWithId', '=', options.userId),
-          ),
-      )
-      .stream();
-  }
-}
-
 class StackSync extends BaseSync {
   @GenerateSql({ params: [dummyQueryOptions], stream: true })
   getDeletes(options: SyncQueryOptions) {
@@ -639,38 +532,6 @@ class StackSync extends BaseSync {
       .select(columns.syncStack)
       .select('updateId')
       .where('ownerId', '=', options.userId)
-      .stream();
-  }
-}
-
-class PartnerStackSync extends BaseSync {
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getDeletes(options: SyncQueryOptions) {
-    return this.auditQuery('stack_audit', options)
-      .select(['id', 'stackId'])
-      .where('userId', 'in', (eb) =>
-        eb.selectFrom('partner').select(['sharedById']).where('sharedWithId', '=', options.userId),
-      )
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyBackfillOptions, DummyValue.UUID], stream: true })
-  getBackfill(options: SyncBackfillOptions, partnerId: string) {
-    return this.backfillQuery('stack', options)
-      .select(columns.syncStack)
-      .select('updateId')
-      .where('ownerId', '=', partnerId)
-      .stream();
-  }
-
-  @GenerateSql({ params: [dummyQueryOptions], stream: true })
-  getUpserts(options: SyncQueryOptions) {
-    return this.upsertQuery('stack', options)
-      .select(columns.syncStack)
-      .select('updateId')
-      .where('ownerId', 'in', (eb) =>
-        eb.selectFrom('partner').select(['sharedById']).where('sharedWithId', '=', options.userId),
-      )
       .stream();
   }
 }
