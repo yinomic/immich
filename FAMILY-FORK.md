@@ -447,3 +447,15 @@ pnpm --filter @immich/sdk build
 4. 逐个手修（**不要用正则整块删**，本轮就是这么把错误数从 33 弄到 72 的）：
    `services/queue.service.ts`（SmartSearch/DuplicateDetection/FaceDetection/FacialRecognition/Ocr 队列项）、`components/shared-components/search-bar/search-bar-utils.ts`（人物建议）、`managers/AssetCacheManager.svelte.ts`（ocr/faces）、`managers/event-manager.svelte.ts`（Person/SharedLink 事件）、`components/asset-viewer/PreloadManager.svelte.ts`、`lib/route.ts` + `managers/search-manager.svelte.ts`（SmartSearchDto）、`services/asset.service.ts`（`features.smartSearch`）、`utils/timeline-util.ts`、`utils.ts`
 5. 每改一个文件后跑一次 `pnpm --filter immich-web check:typescript` + `check:svelte`，确认再继续
+
+### Round 21（SDK 重新生成：把 WIP 放到独立分支，主分支保持绿色）
+本轮实际执行了 Round 20 记录的配方，并把**已经正确的部分**保留在分支 `sdk-regen-wip`（提交 `563eabb74`）：
+- 重新导出 `open-api/immich-openapi-specs.json`、用 oazapfts 7.5.0 重新生成 `packages/sdk/src/fetch-client.ts`
+- 删除后端已不存在的 web 模块：`lib/services/shared-link.service.ts`、`lib/managers/activity-manager.svelte.ts`(+spec)、`lib/services/person*.service.ts`、`lib/utils/person.ts`(+spec)、`lib/stores/face.svelte.ts`、`test-data/factories/shared-link-factory.ts`
+- 清理 4 个文件的死引用（search-bar 的人物建议、AssetCacheManager 的 ocr/face 缓存、event-manager 的 Person/SharedLink 事件、search-manager 的 SmartSearchDto 导入）
+
+**进度**：web 类型错误从 **70 → 30**，但剩下的 30 处不是"删个 import"就能解决——必须连带删掉使用这些符号的功能代码（`PreloadManager` 的 sharedlink 参数、`search-manager` 的 SmartSearchDto 方法签名、`AssetCacheManager` 的 `#faceCache` 使用点、`route.ts`、以及十几个下游文件）。
+
+**关键教训（务必记住）**
+1. `web` 通过 `@immich/sdk` 的 **dist** 解析类型；切换分支/回滚源码后必须 `pnpm --filter @immich/sdk build`，否则 tsc 会拿旧 dist 得出错误结论（本轮就把"回滚后仍报 70 错"误判过一次）。
+2. 这类清理必须**逐文件**：先删模块 → 跑 tsc → 看剩余错误所在文件 → 读具体行 → 精确替换，每步验证。批量正则只会让错误数上升。
