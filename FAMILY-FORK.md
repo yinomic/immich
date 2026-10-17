@@ -558,3 +558,25 @@ pnpm --filter @immich/sdk build
 **10.5 还需要注意**
 - 跨域直传（客户端把照片直接 PUT 到桶）**没有实现**，上传流量仍走你的服务器；家庭场景带宽足够，若需要可后续加预签名 PUT。
 - 桶的存储类型/生命周期建议保持默认，不要给 `upload/` 配过期删除规则。
+
+### Round 29（改为只支持火山引擎 TOS + 软删除开关默认开启）
+
+**需求变更**：对象存储只用火山引擎 TOS；不要 S3、不要腾讯云；另加软删除开关（默认开启）。
+
+**1. 存储后端换成 TOS 官方 SDK**
+- 新增 `repositories/object-storage/tos-object-storage.ts`，基于 `@volcengine/tos-sdk`：`putObject / getObject / getObjectV2(stream) / headObject / deleteMultiObjects / getPreSignedUrl`
+- 因为走 TOS 自己的签名与协议，之前为 S3 兼容层写的三个 workaround **全部不再需要**：path-style、`aws-chunked`、批量删除的 `Content-MD5`
+- 删除 `s3-object-storage.ts` 与 `@aws-sdk/client-s3`、`@aws-sdk/s3-request-presigner`
+- 配置改为 `IMMICH_STORAGE_BACKEND=tos`（不再接受 `s3`）+ `TOS_ENDPOINT`（不带协议/桶名，如 `tos-cn-beijing.volces.com`）、`TOS_REGION`、`TOS_BUCKET`、`TOS_ACCESS_KEY_ID`、`TOS_ACCESS_KEY_SECRET`、`TOS_PREFIX`、`TOS_PRESIGN_TTL`
+- 两个脚本（迁移、连通性验证）同步改用 TOS SDK；`docker/.env` 与 `example.env` 只保留 TOS 配置
+
+**2. 软删除开关（默认开启）** `IMMICH_SOFT_DELETE_ONLY=true`
+- 删除资产 → 只进回收站（`handleAssetDeletion` 直接 `Skipped`，不删行、不删文件）
+- `force` 永久删除 → 降级为回收站
+- 清空回收站 → 跳过
+- 存储层 `ObjectStorageRepository.delete()` → 只记日志，**绝不删桶里的对象**
+
+即：**只读权限的密钥就够用**，照片永远不会被应用删掉。
+
+**验证**：`tsc` 绿、eslint（max-warnings 0）绿、83 文件 / 1550 用例绿（含软删除新用例）；`docker compose config` 正确解析 TOS 变量。
+**未验证**：没有 TOS 真实凭证，`TosObjectStorage` 的实际上传/预签名尚未在真桶上跑过（上一轮用的是腾讯 COS 实测，那套代码已删除）。
