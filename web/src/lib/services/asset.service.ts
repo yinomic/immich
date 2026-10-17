@@ -149,7 +149,6 @@ export const getAssetActions = (
   const authUser = authManager.authenticated ? authManager.user : undefined;
   const isOwner = !!(authUser && authUser.id === asset.ownerId);
   const isAlbumOwner = !!(authUser && authUser.id === album?.albumUsers[0].user.id);
-  const smartSearchEnabled = featureFlagsManager.value.smartSearch;
 
   const Share: ActionItem = {
     title: $t('share'),
@@ -326,14 +325,6 @@ export const getAssetActions = (
     onAction: () => goto(Route.photos({ at: asset.stackPrimaryAssetId ?? asset.id })),
   };
 
-  const ViewSimilar: ActionItem = {
-    title: $t('view_similar_photos'),
-    icon: mdiCompare,
-    $if: () =>
-      asset.visibility !== AssetVisibility.Locked && !asset.isArchived && !asset.isTrashed && smartSearchEnabled,
-    onAction: () => goto(Route.search({ queryAssetId: asset.stackPrimaryAssetId ?? asset.id })),
-  };
-
   const RefreshFacesJob: ActionItem = {
     title: $t('refresh_faces'),
     icon: mdiHeadSyncOutline,
@@ -382,7 +373,6 @@ export const getAssetActions = (
     Edit,
     SetProfilePicture,
     ViewInTimeline,
-    ViewSimilar,
     RefreshFacesJob,
     RefreshMetadataJob,
     RegenerateThumbnailJob,

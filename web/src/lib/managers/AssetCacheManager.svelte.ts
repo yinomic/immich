@@ -62,7 +62,6 @@ class AssetCacheManager {
   invalidateAsset(id: string) {
     const { key, slug } = authManager.params;
     this.#assetCache.clearKey({ id, key, slug });
-    this.#faceCache.clearKey({ id });
   }
 
   clearAssetCache() {

@@ -20,7 +20,7 @@ class SearchManager {
     this.#filter = this.#fromQuery({});
   }
 
-  setQuery(query: MetadataSearchDto | SmartSearchDto) {
+  setQuery(query: MetadataSearchDto) {
     this.#filter = this.#fromQuery(query);
   }
 
@@ -33,7 +33,7 @@ class SearchManager {
     await goto(Route.search(this.#toQuery()));
   }
 
-  #fromQuery(searchQuery: MetadataSearchDto | SmartSearchDto): SearchFilter {
+  #fromQuery(searchQuery: MetadataSearchDto): SearchFilter {
     let query = 'query' in searchQuery && searchQuery.query ? searchQuery.query : '';
     let queryType = query ? QueryType.SMART : this.#defaultQueryType();
 
@@ -98,7 +98,7 @@ class SearchManager {
     };
   }
 
-  #toQuery(): MetadataSearchDto | SmartSearchDto {
+  #toQuery(): MetadataSearchDto {
     let type: AssetTypeEnum | undefined = undefined;
     if (this.filter.mediaType === MediaType.Image) {
       type = AssetTypeEnum.Image;
