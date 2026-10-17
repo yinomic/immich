@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -113,7 +114,22 @@ export class S3ObjectStorage implements ObjectStorage {
       return;
     }
 
-    await this.client.send(new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: objects } }));
+    try {
+      await this.client.send(new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: objects } }));
+    } catch (error: unknown) {
+      // Tencent COS rejects the multi-object delete without a Content-MD5 header
+      // ("Missing required header for this request: Content-MD5"), so fall back to
+      // deleting one by one.
+      const message = (error as Error)?.message ?? String(error);
+      if (!/Content-MD5|InvalidRequest/i.test(message)) {
+        throw error;
+      }
+
+      this.logger.warn(`Batch delete failed (${message}), deleting objects individually`);
+      for (const { Key } of objects) {
+        await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key }));
+      }
+    }
   }
 
   presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string> {

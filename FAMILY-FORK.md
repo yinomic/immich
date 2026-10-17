@@ -530,13 +530,18 @@ pnpm --filter @immich/sdk build
 |---|---|---|
 | `S3_ENDPOINT` | `https://tos-s3-<region>.volces.com`（如 `cn-beijing`） | `https://cos.<region>.myqcloud.com`（如 `ap-guangzhou`） |
 | `S3_REGION` | 与 endpoint 的 region 一致 | 与 endpoint 的 region 一致 |
-| `S3_FORCE_PATH_STYLE` | `true`（必须） | `true`（必须） |
+| `S3_FORCE_PATH_STYLE` | `true`（未实测；遇到 `PathStyleDomainForbidden` 就改 `false`） | **`false`**（实测必须；path-style 会被拒绝） |
 | `S3_BUCKET` | 桶名 | 桶名（形如 `name-appid`） |
 | 密钥 | 账号的 AK/SK（建议用子账号 + 只读写该桶的策略） | 访问密钥的 SecretId/SecretKey |
 
-**10.2 代码里的两个关键点（都已处理）**
+**10.2 代码里的三个关键点（都已处理）**
 1. **不要用 `aws-chunked` 上传**：SDK v3 默认启用尾部校验和，TOS/COS 常直接拒绝 → 已设为 `requestChecksumCalculation/responseChecksumValidation: 'WHEN_REQUIRED'`。
-2. **必须 path-style**：两家的 S3 兼容接口都不支持 virtual-host 风格。
+2. **COS 必须 virtual-hosted 风格**：实测 `S3_FORCE_PATH_STYLE=true` 会在 PUT 时返回 `403 PathStyleDomainForbidden`（"must be addressed using COS virtual-styled domain"），改成 `false` 后 PUT/HEAD/GET/预签名 GET 全部通过。（TOS 未实测。）
+3. **COS 的多对象删除需要 `Content-MD5`**：批量删除会返回 `InvalidRequest: Missing required header for this request: Content-MD5` → `S3ObjectStorage.delete()` 已加**降级为逐个删除**的逻辑（仅在该错误时触发，其他 provider 仍走批量）。
+
+**10.2.1 腾讯云子账号需要的权限（实测踩到）**
+- 能上传/读取：`cos:PutObject`、`cos:GetObject`、`cos:HeadObject`（已通过）
+- **删除需要额外授权**：`cos:DeleteObject` 与 `cos:DeleteMultipleObjects`——实测当前密钥单对象删除返回 `403 AccessDenied`，未授权时"删除照片"会在服务端报错。
 
 **10.3 CORS 需不需要？**
 - **浏览时间线/看原图一般不需要**：缩略图由服务端从本地缓存直接返回；原图走 `302` 到预签名 URL，浏览器在 `<img>/<video>` 里加载跨域资源不受同源限制。
