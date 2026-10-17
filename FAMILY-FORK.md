@@ -522,3 +522,34 @@ pnpm --filter @immich/sdk build
 3. 以 `IMMICH_STORAGE_BACKEND=s3` 启动服务，访问被迁移资产：`GET /assets/:id/original` → **302 到预签名 URL** → 拉取 **200（6402 字节）**；`/thumbnail` → 200
 
 即"迁移已有照片 → 从桶里读出来"这条链路已经跑通。
+
+### 10. 对象存储接入清单（火山 TOS / 腾讯 COS）
+
+**10.1 填什么**
+| 项 | 火山 TOS | 腾讯 COS |
+|---|---|---|
+| `S3_ENDPOINT` | `https://tos-s3-<region>.volces.com`（如 `cn-beijing`） | `https://cos.<region>.myqcloud.com`（如 `ap-guangzhou`） |
+| `S3_REGION` | 与 endpoint 的 region 一致 | 与 endpoint 的 region 一致 |
+| `S3_FORCE_PATH_STYLE` | `true`（必须） | `true`（必须） |
+| `S3_BUCKET` | 桶名 | 桶名（形如 `name-appid`） |
+| 密钥 | 账号的 AK/SK（建议用子账号 + 只读写该桶的策略） | 访问密钥的 SecretId/SecretKey |
+
+**10.2 代码里的两个关键点（都已处理）**
+1. **不要用 `aws-chunked` 上传**：SDK v3 默认启用尾部校验和，TOS/COS 常直接拒绝 → 已设为 `requestChecksumCalculation/responseChecksumValidation: 'WHEN_REQUIRED'`。
+2. **必须 path-style**：两家的 S3 兼容接口都不支持 virtual-host 风格。
+
+**10.3 CORS 需不需要？**
+- **浏览时间线/看原图一般不需要**：缩略图由服务端从本地缓存直接返回；原图走 `302` 到预签名 URL，浏览器在 `<img>/<video>` 里加载跨域资源不受同源限制。
+- **只有当你用 `fetch`/XHR 直接拉预签名 URL 时才需要**给桶配 CORS（`AllowedOrigin` = 你的站点域名，`AllowedMethod` 含 `GET`、`HEAD`，`ExposeHeaders` 含 `Content-Length`、`Content-Range`）。
+- 预签名有效期默认 3600s（`S3_PRESIGN_TTL` 可调）。时间线快速滚动时同一张图会命中浏览器缓存，不会反复签名。
+
+**10.4 上线顺序（推荐）**
+1. 建桶 → 建子账号/密钥（只给该桶的读写权限）
+2. 保持 `IMMICH_STORAGE_BACKEND=local`，先把现有照片照常跑起来
+3. 停服务 → `server/scripts/migrate-to-object-storage.mjs --dry-run` 看清单 → 去掉 `--dry-run` 正式迁移 → 需要的话加 `--delete-local`
+4. 改 `.env`：`IMMICH_STORAGE_BACKEND=s3` + `S3_*`，启动后确认日志出现 `Using S3 object storage (...)`
+5. 验证：`GET /assets/:id/original` 返回 302 到预签名 URL；桶里只有 `upload/` 等，**没有** `thumbs/`（缩略图在本地 `/cache`，可随时删）
+
+**10.5 还需要注意**
+- 跨域直传（客户端把照片直接 PUT 到桶）**没有实现**，上传流量仍走你的服务器；家庭场景带宽足够，若需要可后续加预签名 PUT。
+- 桶的存储类型/生命周期建议保持默认，不要给 `upload/` 配过期删除规则。
