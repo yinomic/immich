@@ -52,16 +52,9 @@ class SearchManager {
       queryType = QueryType.DESCRIPTION;
     }
 
-    if (searchQuery.ocr) {
-      query = searchQuery.ocr;
-      queryType = QueryType.OCR;
-    }
-
     return {
       query,
-      ocr: searchQuery.ocr,
       queryType,
-      queryAssetId: 'queryAssetId' in searchQuery ? searchQuery.queryAssetId : undefined,
       personIds: new SvelteSet('personIds' in searchQuery ? searchQuery.personIds : []),
       tagIds:
         'tagIds' in searchQuery
@@ -110,8 +103,6 @@ class SearchManager {
 
     return {
       query: this.filter.queryType === 'smart' ? query : undefined,
-      queryAssetId: this.filter.queryAssetId || undefined,
-      ocr: this.filter.queryType === 'ocr' ? query : undefined,
       originalFileName: this.filter.queryType === 'metadata' ? query : undefined,
       description: this.filter.queryType === 'description' ? query : undefined,
       originalPath: this.filter.queryType === 'fullPath' ? this.filter.query.trim() || undefined : undefined,

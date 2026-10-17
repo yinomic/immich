@@ -471,3 +471,26 @@ export const transformToTitleCase = (text: string) => {
   }
   return result.trim();
 };
+
+export const asQueryString = (
+  params?: Record<string, string | number | boolean | null | undefined>,
+  options?: { skipEmptyStrings?: boolean; skipNullValues?: boolean },
+) => {
+  const { skipEmptyStrings = true, skipNullValues = true } = options ?? {};
+  const items = Object.entries(params ?? {})
+    .filter((item): item is [string, string | number | boolean] => {
+      const value = item[1];
+      if (value === undefined) {
+        return false;
+      }
+      if (skipNullValues && value === null) {
+        return false;
+      }
+      if (skipEmptyStrings && value === '') {
+        return false;
+      }
+      return true;
+    })
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  return items.length === 0 ? '' : `?${items.join('&')}`;
+};
