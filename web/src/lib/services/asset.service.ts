@@ -55,7 +55,7 @@ import ProfileImageCropperModal from '$lib/modals/ProfileImageCropperModal.svelt
 import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
 import { Route } from '$lib/route';
 import { SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
-import { getAssetMediaUrl, getSharedLink, sleep } from '$lib/utils';
+import { getAssetMediaUrl, sleep } from '$lib/utils';
 import { downloadUrl } from '$lib/utils';
 import { handleError } from '$lib/utils/handle-error';
 import { getFormatter } from '$lib/utils/i18n';
@@ -145,7 +145,6 @@ export const getAssetActions = (
   asset: AssetResponseDto & { stackPrimaryAssetId?: string },
   album?: AlbumResponseDto,
 ) => {
-  const sharedLink = getSharedLink();
   const authUser = authManager.authenticated ? authManager.user : undefined;
   const isOwner = !!(authUser && authUser.id === asset.ownerId);
   const isAlbumOwner = !!(authUser && authUser.id === album?.albumUsers[0].user.id);
@@ -174,7 +173,6 @@ export const getAssetActions = (
 
   const SharedLinkDownload: ActionItem = {
     ...Download,
-    $if: () => isOwner || !!sharedLink?.allowDownload,
   };
 
   const PlayMotionPhoto: ActionItem = {
@@ -299,7 +297,6 @@ export const getAssetActions = (
     title: $t('editor'),
     icon: mdiTune,
     $if: () =>
-      !sharedLink &&
       isOwner &&
       asset.type === AssetTypeEnum.Image &&
       !asset.livePhotoVideoId &&

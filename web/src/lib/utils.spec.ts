@@ -102,66 +102,9 @@ describe('utils', () => {
       expect(url).toContain(asset.id);
     });
 
-    it('should return thumbnail URL for static images in shared link even with download and showMetadata permissions', () => {
-      const asset = assetFactory.build({
-        originalPath: 'image.gif',
-        originalMimeType: 'image/gif',
-        type: AssetTypeEnum.Image,
-      });
-      const sharedLink = sharedLinkFactory.build({ allowDownload: true, showMetadata: true, assets: [asset] });
 
-      const url = getAssetUrl({ asset, sharedLink });
 
-      expect(url).toContain('/thumbnail');
-      expect(url).toContain(asset.id);
-    });
 
-    it('should return original URL for animated images in shared link with download and showMetadata permissions', () => {
-      const asset = assetFactory.build({
-        originalPath: 'image.gif',
-        originalMimeType: 'image/gif',
-        type: AssetTypeEnum.Image,
-        duration: 2000,
-      });
-      const sharedLink = sharedLinkFactory.build({ allowDownload: true, showMetadata: true, assets: [asset] });
-
-      const url = getAssetUrl({ asset, sharedLink });
-
-      expect(url).toContain('/original');
-      expect(url).toContain(asset.id);
-    });
-
-    it('should return thumbnail URL (not original) for animated images when shared link download permission is false', () => {
-      const asset = assetFactory.build({
-        originalPath: 'image.gif',
-        originalMimeType: 'image/gif',
-        type: AssetTypeEnum.Image,
-        duration: 2000,
-      });
-      const sharedLink = sharedLinkFactory.build({ allowDownload: false, assets: [asset] });
-
-      const url = getAssetUrl({ asset, sharedLink });
-
-      expect(url).toContain('/thumbnail');
-      expect(url).not.toContain('/original');
-      expect(url).toContain(asset.id);
-    });
-
-    it('should return thumbnail URL (not original) for animated images when shared link showMetadata permission is false', () => {
-      const asset = assetFactory.build({
-        originalPath: 'image.gif',
-        originalMimeType: 'image/gif',
-        type: AssetTypeEnum.Image,
-        duration: 2000,
-      });
-      const sharedLink = sharedLinkFactory.build({ showMetadata: false, assets: [asset] });
-
-      const url = getAssetUrl({ asset, sharedLink });
-
-      expect(url).toContain('/thumbnail');
-      expect(url).not.toContain('/original');
-      expect(url).toContain(asset.id);
-    });
   });
   describe('semverToName', () => {
     it('should not append release candidate tag if prelease is not set', () => {

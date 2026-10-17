@@ -150,6 +150,7 @@ export const toTimelineAsset = (unknownAsset: AssetResponseDto | TimelineAsset):
     id: assetResponse.id,
     ownerId: assetResponse.ownerId,
     tags: assetResponse.tags?.map((tag) => tag.id),
+    people: null,
     ratio,
     thumbhash: assetResponse.thumbhash,
     localDateTime,

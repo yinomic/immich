@@ -34,7 +34,7 @@ class SearchManager {
   }
 
   #fromQuery(searchQuery: MetadataSearchDto): SearchFilter {
-    let query = 'query' in searchQuery && searchQuery.query ? searchQuery.query : '';
+    let query = '';
     let queryType = query ? QueryType.SMART : this.#defaultQueryType();
 
     if ('originalFileName' in searchQuery && searchQuery.originalFileName) {
@@ -55,7 +55,7 @@ class SearchManager {
     return {
       query,
       queryType,
-      personIds: new SvelteSet('personIds' in searchQuery ? searchQuery.personIds : []),
+      personIds: new SvelteSet<string>(),
       tagIds:
         'tagIds' in searchQuery
           ? searchQuery.tagIds === null
@@ -102,7 +102,6 @@ class SearchManager {
     const query = this.filter.query || undefined;
 
     return {
-      query: this.filter.queryType === 'smart' ? query : undefined,
       originalFileName: this.filter.queryType === 'metadata' ? query : undefined,
       description: this.filter.queryType === 'description' ? query : undefined,
       originalPath: this.filter.queryType === 'fullPath' ? this.filter.query.trim() || undefined : undefined,
