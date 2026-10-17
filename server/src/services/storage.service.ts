@@ -46,7 +46,7 @@ export class StorageService extends BaseService {
   @OnEvent({ name: 'AppBootstrap', priority: BootstrapEventPriority.StorageService })
   async onBootstrap() {
     const { storage } = this.configRepository.getEnv();
-    const remote = storage.backend === 's3';
+    const remote = storage.backend === 'tos';
     StorageCore.setRemoteStorage(remote);
     // with object storage the media location is empty on purpose: every media
     // path is a relative object key
@@ -54,7 +54,7 @@ export class StorageService extends BaseService {
     StorageCore.setCacheLocation(storage.cacheLocation);
 
     if (remote) {
-      this.logger.log(`Using object storage bucket "${storage.s3.bucket}" at ${storage.s3.endpoint}`);
+      this.logger.log(`Using Volcengine TOS bucket "${storage.tos.bucket}" at ${storage.tos.endpoint}`);
       return;
     }
 

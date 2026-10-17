@@ -7,12 +7,12 @@ import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { LocalObjectStorage } from 'src/repositories/object-storage/local-object-storage.js';
 import { ObjectStorage } from 'src/repositories/object-storage/object-storage.js';
-import { S3ObjectStorage } from 'src/repositories/object-storage/s3-object-storage.js';
+import { TosObjectStorage } from 'src/repositories/object-storage/tos-object-storage.js';
 
 /**
- * The library backend: local filesystem (default) or an S3-compatible bucket.
+ * The library backend: local filesystem (default) or a Volcengine TOS bucket.
  *
- * Selected with `IMMICH_STORAGE_BACKEND=s3` plus the `S3_*` variables.
+ * Selected with `IMMICH_STORAGE_BACKEND=tos` plus the `TOS_*` variables.
  */
 @Injectable()
 export class ObjectStorageRepository implements ObjectStorage {
@@ -115,18 +115,17 @@ export class ObjectStorageRepository implements ObjectStorage {
     }
 
     const { storage } = this.configRepository.getEnv();
-    if (storage.backend === 's3') {
-      const s3 = storage.s3;
-      this.storage = new S3ObjectStorage(
+    if (storage.backend === 'tos') {
+      const tos = storage.tos;
+      this.storage = new TosObjectStorage(
         {
-          endpoint: s3.endpoint,
-          region: s3.region,
-          bucket: s3.bucket,
-          accessKeyId: s3.accessKeyId,
-          secretAccessKey: s3.secretAccessKey,
-          forcePathStyle: s3.forcePathStyle,
-          prefix: s3.prefix,
-          presignTtlSeconds: s3.presignTtlSeconds,
+          endpoint: tos.endpoint,
+          region: tos.region,
+          bucket: tos.bucket,
+          accessKeyId: tos.accessKeyId,
+          accessKeySecret: tos.accessKeySecret,
+          prefix: tos.prefix,
+          presignTtlSeconds: tos.presignTtlSeconds,
         },
         this.logger,
       );

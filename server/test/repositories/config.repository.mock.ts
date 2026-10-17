@@ -89,13 +89,12 @@ export const envData: EnvData = {
     thumbnails: 'cache',
     backend: 'local',
     softDeleteOnly: false,
-    s3: {
-      endpoint: 'http://localhost:9000',
-      region: 'auto',
+    tos: {
+      endpoint: 'tos-cn-beijing.volces.com',
+      region: 'cn-beijing',
       bucket: 'immich',
       accessKeyId: 'key',
-      secretAccessKey: 'secret',
-      forcePathStyle: true,
+      accessKeySecret: 'secret',
     },
   },
 

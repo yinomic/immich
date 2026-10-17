@@ -116,16 +116,15 @@ export interface EnvData {
     cacheLocation: string;
     /** `off` serves originals instead of cached thumbnails */
     thumbnails: 'cache' | 'off';
-    backend: 'local' | 's3';
+    backend: 'local' | 'tos';
     /** never remove assets or objects: deletion only moves them to the trash */
     softDeleteOnly: boolean;
-    s3: {
+    tos: {
       endpoint: string;
       region: string;
       bucket: string;
       accessKeyId: string;
-      secretAccessKey: string;
-      forcePathStyle: boolean;
+      accessKeySecret: string;
       prefix?: string;
       presignTtlSeconds?: number;
     };
@@ -359,15 +358,14 @@ const getEnv = (): EnvData => {
       thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
       backend: dto.IMMICH_STORAGE_BACKEND ?? 'local',
       softDeleteOnly: dto.IMMICH_SOFT_DELETE_ONLY ?? true,
-      s3: {
-        endpoint: dto.S3_ENDPOINT ?? '',
-        region: dto.S3_REGION ?? 'auto',
-        bucket: dto.S3_BUCKET ?? '',
-        accessKeyId: dto.S3_ACCESS_KEY_ID ?? '',
-        secretAccessKey: dto.S3_SECRET_ACCESS_KEY ?? '',
-        forcePathStyle: dto.S3_FORCE_PATH_STYLE ?? true,
-        prefix: dto.S3_PREFIX,
-        presignTtlSeconds: dto.S3_PRESIGN_TTL,
+      tos: {
+        endpoint: dto.TOS_ENDPOINT ?? 'tos-cn-beijing.volces.com',
+        region: dto.TOS_REGION ?? 'cn-beijing',
+        bucket: dto.TOS_BUCKET ?? '',
+        accessKeyId: dto.TOS_ACCESS_KEY_ID ?? '',
+        accessKeySecret: dto.TOS_ACCESS_KEY_SECRET ?? '',
+        prefix: dto.TOS_PREFIX,
+        presignTtlSeconds: dto.TOS_PRESIGN_TTL,
       },
     },
 

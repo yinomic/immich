@@ -1,0 +1,139 @@
+import { TosClient, TosClientError, TosServerError } from '@volcengine/tos-sdk';
+import { Readable } from 'node:stream';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { ObjectStorage, ObjectStorageError, normalizeKey } from 'src/repositories/object-storage/object-storage.js';
+
+export interface TosObjectStorageOptions {
+  /** e.g. tos-cn-beijing.volces.com (no scheme) */
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  accessKeySecret: string;
+  /** optional key prefix, e.g. `immich/` */
+  prefix?: string;
+  presignTtlSeconds?: number;
+}
+
+/**
+ * Volcengine TOS (对象存储) backend, using the official TOS SDK.
+ *
+ * `tos-server` is handled by the SDK, so no S3 compatibility layer, no chunked
+ * transfer encoding and no Content-MD5 workarounds are needed.
+ */
+export class TosObjectStorage implements ObjectStorage {
+  private readonly client: TosClient;
+  private readonly bucket: string;
+  private readonly prefix: string;
+  private readonly presignTtl: number;
+
+  constructor(
+    options: TosObjectStorageOptions,
+    private logger: LoggingRepository,
+  ) {
+    this.bucket = options.bucket;
+    this.prefix = options.prefix ? normalizeKey(options.prefix).replace(/\/?$/, '/') : '';
+    this.presignTtl = options.presignTtlSeconds ?? 3600;
+    this.client = new TosClient({
+      accessKeyId: options.accessKeyId,
+      accessKeySecret: options.accessKeySecret,
+      endpoint: options.endpoint,
+      region: options.region,
+      bucket: options.bucket,
+    });
+
+    this.logger.setContext(TosObjectStorage.name);
+    this.logger.log(`Using Volcengine TOS (${options.endpoint}, bucket ${options.bucket}, prefix "${this.prefix}")`);
+  }
+
+  isRemote(): boolean {
+    return true;
+  }
+
+  async put(key: string, body: Buffer | Readable, contentType?: string): Promise<void> {
+    await this.client.putObject({
+      bucket: this.bucket,
+      key: this.objectKey(key),
+      body,
+      contentType,
+    });
+  }
+
+  async get(key: string): Promise<Buffer> {
+    const { data } = await this.client.getObject({ bucket: this.bucket, key: this.objectKey(key) });
+    return data;
+  }
+
+  async stream(key: string): Promise<Readable> {
+    const { data } = await this.client.getObjectV2({
+      bucket: this.bucket,
+      key: this.objectKey(key),
+      dataType: 'stream',
+    });
+    const content = data.content;
+    return (
+      typeof (content as { pipe?: unknown }).pipe === 'function' ? content : Readable.fromWeb(content as never)
+    ) as Readable;
+  }
+
+  async exists(key: string): Promise<boolean> {
+    return (await this.size(key)) !== undefined;
+  }
+
+  async size(key: string): Promise<number | undefined> {
+    try {
+      const { data } = await this.client.headObject({ bucket: this.bucket, key: this.objectKey(key) });
+      const { 'content-length': contentLength } = data;
+      return contentLength === undefined ? undefined : Number(contentLength);
+    } catch (error: unknown) {
+      if (this.isNotFound(error)) {
+        return undefined;
+      }
+      throw new ObjectStorageError(`Failed to check object ${key}`, { cause: error });
+    }
+  }
+
+  async delete(keys: string[]): Promise<void> {
+    const objects = keys.map((key) => ({ key: this.objectKey(key) })).filter(({ key }) => key.length > 0);
+    if (objects.length === 0) {
+      return;
+    }
+
+    await this.client.deleteMultiObjects({ bucket: this.bucket, objects });
+  }
+
+  presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string> {
+    const url = this.client.getPreSignedUrl({
+      bucket: this.bucket,
+      key: this.objectKey(key),
+      method: 'GET',
+      expires: options?.ttlSeconds ?? this.presignTtl,
+      response: {
+        contentType: options?.contentType,
+        contentDisposition: options?.fileName
+          ? `inline; filename*=UTF-8''${encodeURIComponent(options.fileName)}`
+          : undefined,
+      },
+    });
+
+    return Promise.resolve(url);
+  }
+
+  localPath(key: string): string {
+    throw new ObjectStorageError(`Object ${key} is remote and has no local path`);
+  }
+
+  private isNotFound(error: unknown): boolean {
+    if (error instanceof TosServerError) {
+      return error.statusCode === 404;
+    }
+    if (error instanceof TosClientError) {
+      return true;
+    }
+    return /404|NotFound/i.test((error as Error)?.message ?? '');
+  }
+
+  private objectKey(key: string): string {
+    return `${this.prefix}${normalizeKey(key)}`;
+  }
+}
