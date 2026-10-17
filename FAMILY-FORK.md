@@ -469,3 +469,17 @@ pnpm --filter @immich/sdk build
 **关键教训（务必记住）**
 1. `web` 通过 `@immich/sdk` 的 **dist** 解析类型；切换分支/回滚源码后必须 `pnpm --filter @immich/sdk build`，否则 tsc 会拿旧 dist 得出错误结论（本轮就把"回滚后仍报 70 错"误判过一次）。
 2. 这类清理必须**逐文件**：先删模块 → 跑 tsc → 看剩余错误所在文件 → 读具体行 → 精确替换，每步验证。批量正则只会让错误数上升。
+
+### Round 23（SDK 清理：21 → 12）
+在 `sdk-regen-wip` 上继续逐文件清理，本轮删除/修复：
+- 删除 **分享链接落地页** `routes/(user)/s/[slug]/**`、`routes/(user)/share/[key]/**`（分享功能已整体移除）
+- `PreloadManager.svelte.ts`：删掉贯穿 3 个方法的 `sharedlink` 参数，并同步改 `AssetViewer.svelte` 的调用点
+- 搜索栏 `getSearchPeopleTitle`、`route.search` 的 `SmartSearchDto`、`timeline-util` 的 `people` 投影、`explore/+page.ts` 的人物数据
+- `people-utils.spec.ts`、`duplicates` 路由树
+
+**剩余 12 处（下轮）**
+1. `lib/managers/search-manager.svelte.ts`（61/64/112）：`MetadataSearchDto` 收窄后 `query`/`queryType` 的类型问题
+2. `lib/utils.ts`（17/19）：`PersonResponseDto` / `SharedLinkResponseDto` 的导入与 `getSharedLink`/`setSharedLink` 一族函数（`asset.service.ts` 还在用 → 要一起清）
+3. `lib/utils.spec.ts`（111/126/141/157）：4 处 `sharedLinkFactory` 用例
+4. `lib/utils/asset-utils.ts:29`、`lib/utils/file-uploader.ts:20`：引用已删的 `$lib/utils/shared-links`
+5. `lib/utils/timeline-util.ts:149`：返回对象缺少 `people` 字段（类型仍要求，需同步改类型定义）
