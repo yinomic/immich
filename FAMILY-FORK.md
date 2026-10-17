@@ -641,3 +641,18 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 **清理**：验证脚本自己删掉了探测对象；测试上传的 `upload/...png` 我也用 SDK 显式删除，最后桶内对象数 = **0**（不留垃圾）。
 
 **结论**：火山 TOS 后端 + 软删除开关，全部需求在真实桶上验证通过。
+
+### Round 33（追问"缩略图缺失/关闭时会怎样" → 顺带修好视频链路）
+**结论（全部在 TOS 容器里实测）**
+| 场景 | 系统响应 |
+|---|---|
+| `IMMICH_THUMBNAILS=off` | `/thumbnail`、`/thumbnail?size=preview` 一律 **302 → `/original`**（再 302 到 TOS 预签名）；**缓存里 0 个缩略图文件**；作业 0 报错 |
+| 缩略图缺失（缓存被删） | 首次请求 **302 → 原图**（不报错），同时自动重排缩略图作业，约 20s 后同一请求变 **200**，缓存文件重新生成（缩略图 + 预览各 1 个） |
+| 视频缩略图缺失 | 与图片同逻辑：302 到原图对 `<img>` 无意义，因此视频返回 404 并重排作业，待作业完成后恢复 200 |
+
+**顺带发现并修掉两个真实 bug**（视频在 TOS 模式下根本不可用）：
+1. `metadata.service.getVideoTags` 直接把**对象 key** 交给 ffprobe → 视频元数据全空 → 缩略图作业报 `Missing video metadata`。已改为先 `withLocalCopy` 落地再探测。
+2. `asset-media.service.playbackVideo` 在回退到原图时没有预签名 → 视频播放 404。已改为：只有回退到远端原图时才 302 预签名，编码后的视频（本地缓存）仍由服务器流式返回。
+
+修后实测：新上传视频 `duration=2000ms`、`96x64` 元数据正确；`/thumbnail` **200**；`/assets/:id/video/playback` **302 → TOS 预签名**；作业 0 报错。（播放路由是 `/video/playback`，不是 `/video`。）
+**注意**：修复前上传的旧视频元数据是空的，需要跑一次强制重新抽取：`PUT /api/jobs/metadataExtraction {"command":"start","force":true}`，之后缩略图才会补上。
