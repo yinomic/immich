@@ -138,7 +138,6 @@ export const toTimelineAsset = (unknownAsset: AssetResponseDto | TimelineAsset):
   const ratio = getAssetRatio(assetResponse) ?? 1;
   const city = assetResponse.exifInfo?.city;
   const country = assetResponse.exifInfo?.country;
-  const people = assetResponse.people?.map((person) => person.name) || [];
 
   const localDateTime = fromISODateTimeUTCToObject(assetResponse.localDateTime);
   // Keep this consistent with the bucket loader (getTimes), which stores fileCreatedAt as UTC
@@ -151,6 +150,7 @@ export const toTimelineAsset = (unknownAsset: AssetResponseDto | TimelineAsset):
     id: assetResponse.id,
     ownerId: assetResponse.ownerId,
     tags: assetResponse.tags?.map((tag) => tag.id),
+    people: null,
     ratio,
     thumbhash: assetResponse.thumbhash,
     localDateTime,
@@ -167,7 +167,6 @@ export const toTimelineAsset = (unknownAsset: AssetResponseDto | TimelineAsset):
     livePhotoVideoId: assetResponse.livePhotoVideoId || null,
     city: city || null,
     country: country || null,
-    people,
     latitude: assetResponse.exifInfo?.latitude || null,
     longitude: assetResponse.exifInfo?.longitude || null,
   };

@@ -55,7 +55,7 @@ import ProfileImageCropperModal from '$lib/modals/ProfileImageCropperModal.svelt
 import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
 import { Route } from '$lib/route';
 import { SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
-import { getAssetMediaUrl, getSharedLink, sleep } from '$lib/utils';
+import { getAssetMediaUrl, sleep } from '$lib/utils';
 import { downloadUrl } from '$lib/utils';
 import { handleError } from '$lib/utils/handle-error';
 import { getFormatter } from '$lib/utils/i18n';
@@ -145,11 +145,9 @@ export const getAssetActions = (
   asset: AssetResponseDto & { stackPrimaryAssetId?: string },
   album?: AlbumResponseDto,
 ) => {
-  const sharedLink = getSharedLink();
   const authUser = authManager.authenticated ? authManager.user : undefined;
   const isOwner = !!(authUser && authUser.id === asset.ownerId);
   const isAlbumOwner = !!(authUser && authUser.id === album?.albumUsers[0].user.id);
-  const smartSearchEnabled = featureFlagsManager.value.smartSearch;
 
   const Share: ActionItem = {
     title: $t('share'),
@@ -175,7 +173,6 @@ export const getAssetActions = (
 
   const SharedLinkDownload: ActionItem = {
     ...Download,
-    $if: () => isOwner || !!sharedLink?.allowDownload,
   };
 
   const PlayMotionPhoto: ActionItem = {
@@ -300,7 +297,6 @@ export const getAssetActions = (
     title: $t('editor'),
     icon: mdiTune,
     $if: () =>
-      !sharedLink &&
       isOwner &&
       asset.type === AssetTypeEnum.Image &&
       !asset.livePhotoVideoId &&
@@ -324,14 +320,6 @@ export const getAssetActions = (
     icon: mdiImageSearch,
     $if: () => isOwner && asset.visibility !== AssetVisibility.Locked && !asset.isArchived && !asset.isTrashed,
     onAction: () => goto(Route.photos({ at: asset.stackPrimaryAssetId ?? asset.id })),
-  };
-
-  const ViewSimilar: ActionItem = {
-    title: $t('view_similar_photos'),
-    icon: mdiCompare,
-    $if: () =>
-      asset.visibility !== AssetVisibility.Locked && !asset.isArchived && !asset.isTrashed && smartSearchEnabled,
-    onAction: () => goto(Route.search({ queryAssetId: asset.stackPrimaryAssetId ?? asset.id })),
   };
 
   const RefreshFacesJob: ActionItem = {
@@ -382,7 +370,6 @@ export const getAssetActions = (
     Edit,
     SetProfilePicture,
     ViewInTimeline,
-    ViewSimilar,
     RefreshFacesJob,
     RefreshMetadataJob,
     RegenerateThumbnailJob,

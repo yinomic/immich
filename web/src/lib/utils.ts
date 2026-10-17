@@ -14,9 +14,7 @@ import {
   unlinkOAuthAccount,
   type AssetResponseDto,
   type MemoryResponseDto,
-  type PersonResponseDto,
   type ServerVersionResponseDto,
-  type SharedLinkResponseDto,
   type UserResponseDto,
 } from '@immich/sdk';
 import { toastManager, type ActionItem, type IfLike } from '@immich/ui';
@@ -167,11 +165,6 @@ export const downloadRequest = <TBody = unknown>(options: DownloadRequestOptions
   });
 };
 
-let _sharedLink: SharedLinkResponseDto | undefined;
-
-export const setSharedLink = (sharedLink: typeof _sharedLink) => (_sharedLink = sharedLink);
-export const getSharedLink = (): typeof _sharedLink => _sharedLink;
-
 const createUrl = (path: string, parameters?: Record<string, unknown>) => {
   const searchParameters = new URLSearchParams();
   for (const key in parameters) {
@@ -191,11 +184,9 @@ type AssetUrlOptions = { id: string; cacheKey?: string | null; edited?: boolean;
 
 export const getAssetUrl = ({
   asset,
-  sharedLink,
   forceOriginal = false,
 }: {
   asset: AssetResponseDto | undefined;
-  sharedLink?: SharedLinkResponseDto;
   forceOriginal?: boolean;
 }) => {
   if (!asset) {
@@ -203,18 +194,15 @@ export const getAssetUrl = ({
   }
   const id = asset.id;
   const cacheKey = asset.thumbhash;
-  if (sharedLink && (!sharedLink.allowDownload || !sharedLink.showMetadata)) {
-    return getAssetMediaUrl({ id, size: AssetMediaSize.Preview, cacheKey });
-  }
   const size = targetImageSize(asset, forceOriginal);
   return getAssetMediaUrl({ id, size, cacheKey });
 };
 
-export function getAssetUrls(asset: AssetResponseDto, sharedLink?: SharedLinkResponseDto) {
+export function getAssetUrls(asset: AssetResponseDto) {
   return {
     thumbnail: getAssetMediaUrl({ id: asset.id, cacheKey: asset.thumbhash, size: AssetMediaSize.Thumbnail }),
-    preview: getAssetUrl({ asset, sharedLink })!,
-    original: getAssetUrl({ asset, sharedLink, forceOriginal: true })!,
+    preview: getAssetUrl({ asset })!,
+    original: getAssetUrl({ asset, forceOriginal: true })!,
   };
 }
 
@@ -254,8 +242,6 @@ export const getAssetHlsSessionUrl = (id: string, sessionId: string) => {
 export const getProfileImageUrl = (user: UserResponseDto) =>
   createUrl(getUserProfileImagePath(user.id), { updatedAt: user.profileChangedAt });
 
-export const getPeopleThumbnailUrl = (person: PersonResponseDto, updatedAt?: string) =>
-  createUrl(getPeopleThumbnailPath(person.id), { updatedAt: updatedAt ?? person.updatedAt });
 
 export const copyToClipboard = async (secret: string | unknown) => {
   const $t = get(t);
@@ -470,4 +456,27 @@ export const transformToTitleCase = (text: string) => {
     result += word.charAt(0).toUpperCase() + word.slice(1) + ' ';
   }
   return result.trim();
+};
+
+export const asQueryString = (
+  params?: Record<string, string | number | boolean | null | undefined>,
+  options?: { skipEmptyStrings?: boolean; skipNullValues?: boolean },
+) => {
+  const { skipEmptyStrings = true, skipNullValues = true } = options ?? {};
+  const items = Object.entries(params ?? {})
+    .filter((item): item is [string, string | number | boolean] => {
+      const value = item[1];
+      if (value === undefined) {
+        return false;
+      }
+      if (skipNullValues && value === null) {
+        return false;
+      }
+      if (skipEmptyStrings && value === '') {
+        return false;
+      }
+      return true;
+    })
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  return items.length === 0 ? '' : `?${items.join('&')}`;
 };

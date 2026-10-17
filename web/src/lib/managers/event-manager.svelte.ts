@@ -7,10 +7,8 @@ import type {
   JobCreateDto,
   LibraryResponseDto,
   LoginResponseDto,
-  PersonResponseDto,
   QueueResponseDto,
   ReleaseEventV1,
-  SharedLinkResponseDto,
   StackResponseDto,
   AdminConfigDto,
   TagResponseDto,
@@ -52,21 +50,11 @@ export type Events = {
   AlbumUserUpdate: [{ albumId: string; userId: string; role: AlbumUserRole }];
   AlbumUserDelete: [{ albumId: string; userId: string }];
 
-  PersonUpdate: [PersonResponseDto];
-  PersonShare: [{ personId: string }];
-  PersonUserDelete: [{ personId: string; userId: string }];
-  PersonThumbnailReady: [{ id: string }];
-  PersonAssetDelete: [{ id: string; assetId: string }];
-
   BackupDeleteStatus: [{ filename: string; isDeleting: boolean }];
   BackupDeleted: [{ filename: string }];
   BackupUpload: [{ progress: number; isComplete: boolean }];
 
   QueueUpdate: [QueueResponseDto];
-
-  SharedLinkCreate: [SharedLinkResponseDto];
-  SharedLinkUpdate: [SharedLinkResponseDto];
-  SharedLinkDelete: [SharedLinkResponseDto];
 
   StackCreate: [StackResponseDto];
   /** Unstacked, with assets to handle */

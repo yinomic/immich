@@ -1,4 +1,4 @@
-import { getBaseUrl, IntegrityReport, QueueName, type MetadataSearchDto, type SmartSearchDto } from '@immich/sdk';
+import { getBaseUrl, IntegrityReport, QueueName, type MetadataSearchDto } from '@immich/sdk';
 import { omitBy } from 'lodash-es';
 import { OpenQueryParam, type SharedLinkTab } from '$lib/constants';
 
@@ -98,7 +98,7 @@ export const Route = {
   recentlyAdded: () => '/recently-added',
 
   // search
-  search: (dto?: MetadataSearchDto | SmartSearchDto) => {
+  search: (dto?: MetadataSearchDto) => {
     const metadata = omitBy(dto ?? {}, (value) => value === undefined);
     const query = Object.keys(metadata).length === 0 ? undefined : JSON.stringify(metadata);
     return `/search` + asQueryString({ query });

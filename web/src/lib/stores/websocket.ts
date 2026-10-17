@@ -97,7 +97,6 @@ websocket
   .on('on_asset_delete', (asset) => eventManager.emit('AssetsDelete', [asset]))
   .on('on_asset_trash', (assets) => eventManager.emit('AssetsDelete', assets))
   .on('on_asset_update', (asset) => eventManager.emit('AssetUpdate', asset))
-  .on('on_person_thumbnail', (id) => eventManager.emit('PersonThumbnailReady', { id }))
   .on('on_notification', () => notificationManager.refresh())
   .on('connect_error', (e) => console.log('Websocket Connect Error', e));
 
