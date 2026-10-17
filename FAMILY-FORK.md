@@ -582,3 +582,19 @@ IMMICH_SOFT_DELETE_ONLY=true               # 默认开启
 
 **验证**：`tsc` 绿、eslint（max-warnings 0）绿、83 文件 / 1550 用例绿（含软删除新用例）；`docker compose config` 正确解析 TOS 变量。
 **未验证**：没有 TOS 真实凭证，`TosObjectStorage` 的实际上传/预签名尚未在真桶上跑过（上一轮用的是腾讯 COS 实测，那套代码已删除）。
+
+### Round 30（TOS 模式的合成验证：协议、预签名、真实端点）
+没有真实凭证的情况下，把能验证的都验证到位：
+
+1. **TOS 模式启动正常**：日志 `Using Volcengine TOS bucket "family-album-demo" at tos-cn-beijing.volces.com`，登录/时间线照常（环境变量 → 配置 → DI → 适配器 全链路通）
+2. **预签名 URL 结构正确**（纯本地签名，无需网络）：
+   `https://family-album-demo.tos-cn-beijing.volces.com/upload/...`
+   参数含 `X-Tos-Algorithm=TOS4-HMAC-SHA256`、`X-Tos-Credential`、`X-Tos-Date`、`X-Tos-Expires=3600`、`X-Tos-SignedHeaders=host`、`X-Tos-Signature`、`response-content-type` —— 即 TOS V4 签名与 virtual-hosted 桶域名都正确
+3. **真的连到了火山 TOS**：用占位密钥/占位桶名发一次 PUT，返回
+   `404 NoSuchBucket: The specified bucket does not exist.`
+   → 说明**网络可达、endpoint/region 正确、请求格式与签名流程被 TOS 接受**（不是 DNS 失败、也不是 `AuthorizationHeaderMalformed`）。用真实桶名+密钥后，若密钥有误会得到 `AccessDenied`/`SignatureDoesNotMatch`，即"只剩密钥有效性"这一个未知量。
+
+**仍未验证**：真实桶上的上传/读取/预签名拉取端到端（需要你的 TOS 桶名与 AK/SK）。验证命令已备好：
+```bash
+cd server && set -a && . <(grep '^TOS_' ../docker/.env) && set +a && node scripts/verify-object-storage.mjs
+```
