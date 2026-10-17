@@ -568,7 +568,11 @@ export class MetadataService extends BaseService {
     const [mediaTags, sidecarTags, videoResult] = await Promise.all([
       this.metadataRepository.readTags(asset.originalPath),
       sidecarFile ? this.metadataRepository.readTags(sidecarFile.path) : null,
-      shouldProbe ? this.getVideoTags(asset.originalPath) : null,
+      // NOTE (family fork): ffprobe needs a real file, so object-storage originals are
+      // materialised first (without this, videos end up with no metadata at all)
+      shouldProbe
+        ? this.storageRepository.withLocalCopy(asset.originalPath, (localPath) => this.getVideoTags(localPath))
+        : null,
     ]);
 
     // prefer dates from sidecar tags

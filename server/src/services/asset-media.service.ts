@@ -343,10 +343,17 @@ export class AssetMediaService extends BaseService {
     }
 
     const filepath = asset.encodedVideoPath || asset.originalPath;
+    const contentType = mimeTypes.lookup(filepath);
 
     return new ImmichFileResponse({
       path: filepath,
-      contentType: mimeTypes.lookup(filepath),
+      contentType,
+      // an encoded video lives in the local cache and is streamed by the server; with
+      // object storage the fallback is the original, which is served via a presigned URL
+      serveTarget:
+        filepath === asset.originalPath
+          ? await this.storageRepository.buildServeTarget(filepath, { contentType })
+          : undefined,
       cacheControl: CacheControl.PrivateWithCache,
     });
   }
