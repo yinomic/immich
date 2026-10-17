@@ -460,19 +460,3 @@ const SearchStatisticsResponseSchema = z
   .meta({ id: 'SearchStatisticsResponseDto' });
 
 export class SearchStatisticsResponseDto extends createZodDto(SearchStatisticsResponseSchema) {}
-
-const SearchExploreItemSchema = z
-  .object({
-    value: z.string().describe('Explore value'),
-    data: AssetResponseSchema,
-  })
-  .meta({ id: 'SearchExploreItem' });
-
-const SearchExploreResponseSchema = z
-  .object({
-    fieldName: z.string().describe('Explore field name'),
-    items: z.array(SearchExploreItemSchema),
-  })
-  .meta({ id: 'SearchExploreResponseDto' });
-
-export class SearchExploreResponseDto extends createZodDto(SearchExploreResponseSchema) {}

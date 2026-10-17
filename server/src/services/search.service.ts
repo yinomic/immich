@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AssetMapOptions, AssetResponseDto, MapAsset, mapAsset } from 'src/dtos/asset-response.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
@@ -31,32 +31,6 @@ export class SearchService extends BaseService {
     return places.map((place) => mapPlaces(place));
   }
 
-  async getExploreData(auth: AuthDto) {
-    const options = { maxFields: 12, minAssetsPerField: 5 };
-
-    const cities = await this.assetRepository.getAssetIdByCity(auth.user.id, options);
-    const cityAssets = await this.assetRepository.getByIdsWithAllRelationsButStacks(
-      cities.items.map(({ data }) => data),
-      auth.user.id,
-    );
-    const cityItems = cityAssets.map((asset) => ({ value: asset.exifInfo!.city!, data: mapAsset(asset, { auth }) }));
-
-    const recents = await this.assetRepository.getRecentlyCreatedAssetIds(auth.user.id, options.maxFields);
-    const recentAssets = await this.assetRepository.getByIdsWithAllRelationsButStacks(
-      recents.items.map((item) => item.data),
-      auth.user.id,
-    );
-    const recentItems = recentAssets.map((asset) => ({
-      value: asset.createdAt.toISOString(),
-      data: mapAsset(asset, { auth }),
-    }));
-
-    return [
-      { fieldName: cities.fieldName, items: cityItems },
-      { fieldName: recents.fieldName, items: recentItems },
-    ];
-  }
-
   async searchMetadata(auth: AuthDto, dto: MetadataSearchDto): Promise<SearchResponseDto> {
     if (isNewShapeRequest(dto)) {
       return this.searchMetadataV3(auth, dto);
@@ -76,8 +50,6 @@ export class SearchService extends BaseService {
 
     if (dto.albumIds && dto.albumIds.length > 0) {
       await this.requireAccess({ auth, ids: dto.albumIds, permission: Permission.AlbumRead });
-    } else if (auth.sharedLink) {
-      throw new BadRequestException('Shared link access is only allowed in combination with an albumIds filter');
     } else {
       userIds = this.getUserIdsToSearch(auth);
     }
@@ -240,10 +212,6 @@ export class SearchService extends BaseService {
     const effectiveFilter = applyLockedVisibilityPolicy(auth, filter);
 
     const fullyConfined = isFullyAlbumConfined(filter);
-    // a shared link visitor does not have a universe, so there every branch must be confined
-    if (auth.sharedLink && !fullyConfined) {
-      throw new BadRequestException('Shared link access is only allowed in combination with an albumIds filter');
-    }
 
     const albumIds = collectFilterIds(filter, 'albumIds');
     const userIds = fullyConfined ? [auth.user.id] : this.getUserIdsToSearch(auth);

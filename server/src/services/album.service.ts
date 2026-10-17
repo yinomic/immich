@@ -89,10 +89,6 @@ export class AlbumService extends BaseService {
   async getMapMarkers(auth: AuthDto, id: string): Promise<MapMarkerResponseDto[]> {
     await this.requireAccess({ auth, permission: Permission.AlbumRead, ids: [id] });
 
-    if (auth.sharedLink && !auth.sharedLink.showExif) {
-      return [];
-    }
-
     return this.mapRepository.getAlbumMapMarkers(id);
   }
 

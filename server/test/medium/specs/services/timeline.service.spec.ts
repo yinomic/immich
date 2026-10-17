@@ -84,14 +84,6 @@ describe(TimelineService.name, () => {
         'withPartners is only supported for non-archived, non-trashed, non-favorited, non-locked assets',
       );
     });
-
-    it('should not allow access for unrelated shared links', async () => {
-      const { sut } = setup();
-      const auth = factory.auth({ sharedLink: {} });
-      const response = sut.getTimeBuckets(auth, {});
-      await expect(response).rejects.toBeInstanceOf(BadRequestException);
-      await expect(response).rejects.toThrow('Not found or no timeline.read access');
-    });
   });
 
   describe('getTimeBucket', () => {

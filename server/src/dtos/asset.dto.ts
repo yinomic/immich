@@ -154,7 +154,6 @@ const AssetCopySchema = z
   .object({
     sourceId: z.uuidv4().describe('Source asset ID'),
     targetId: z.uuidv4().describe('Target asset ID'),
-    sharedLinks: z.boolean().default(true).optional().describe('Copy shared links'),
     albums: z.boolean().default(true).optional().describe('Copy album associations'),
     sidecar: z.boolean().default(true).optional().describe('Copy sidecar file'),
     stack: z.boolean().default(true).optional().describe('Copy stack association'),

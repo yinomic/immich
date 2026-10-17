@@ -3,7 +3,6 @@ import {
   type ExpressionBuilder,
   type Insertable,
   type Kysely,
-  type NotNull,
   type SelectQueryBuilder,
   type Selectable,
   type ShallowDehydrateObject,
@@ -106,11 +105,6 @@ export interface YearMonthDay {
   day: number;
   month: number;
   year: number;
-}
-
-interface AssetExploreFieldOptions {
-  maxFields: number;
-  minAssetsPerField: number;
 }
 
 interface AssetGetByChecksumOptions {
@@ -829,9 +823,7 @@ export class AssetRepository {
               )
               .as('ratio'),
           ])
-          .$if(!auth.sharedLink || auth.sharedLink.showExif, (qb) =>
-            qb.select(['asset_exif.city', 'asset_exif.country']),
-          )
+          .select(['asset_exif.city', 'asset_exif.country'])
           .$if(!!options.withCoordinates, (qb) => qb.select(['asset_exif.latitude', 'asset_exif.longitude']))
           .where('asset.deletedAt', options.isTrashed ? 'is not' : 'is', null)
           .$if(options.visibility === undefined, withDefaultVisibility)
@@ -928,12 +920,10 @@ export class AssetRepository {
             eb.fn.coalesce(eb.fn('array_agg', ['status']), sql.lit('{}')).as('status'),
             eb.fn.coalesce(eb.fn('array_agg', ['thumbhash']), sql.lit('{}')).as('thumbhash'),
           ])
-          .$if(!auth.sharedLink || auth.sharedLink.showExif, (qb) =>
-            qb.select((eb) => [
-              eb.fn.coalesce(eb.fn('array_agg', ['city']), sql.lit('{}')).as('city'),
-              eb.fn.coalesce(eb.fn('array_agg', ['country']), sql.lit('{}')).as('country'),
-            ]),
-          )
+          .select((eb) => [
+            eb.fn.coalesce(eb.fn('array_agg', ['city']), sql.lit('{}')).as('city'),
+            eb.fn.coalesce(eb.fn('array_agg', ['country']), sql.lit('{}')).as('country'),
+          ])
           .$if(!!options.withCoordinates, (qb) =>
             qb.select((eb) => [
               eb.fn.coalesce(eb.fn('array_agg', ['latitude']), sql.lit('{}')).as('latitude'),
@@ -948,49 +938,6 @@ export class AssetRepository {
       .select(sql<string>`to_json(agg)::text`.as('assets'));
 
     return query.executeTakeFirstOrThrow();
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, { minAssetsPerField: 5, maxFields: 12 }] })
-  async getAssetIdByCity(ownerId: string, { minAssetsPerField, maxFields }: AssetExploreFieldOptions) {
-    const items = await this.db
-      .with('cities', (qb) =>
-        qb
-          .selectFrom('asset_exif')
-          .select('city')
-          .where('city', 'is not', null)
-          .groupBy('city')
-          .having((eb) => eb.fn('count', [eb.ref('assetId')]), '>=', minAssetsPerField),
-      )
-      .selectFrom('asset')
-      .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
-      .innerJoin('cities', 'asset_exif.city', 'cities.city')
-      .distinctOn('asset_exif.city')
-      .select(['assetId as data', 'asset_exif.city as value'])
-      .$narrowType<{ value: NotNull }>()
-      .where('ownerId', '=', asUuid(ownerId))
-      .where('visibility', '=', AssetVisibility.Timeline)
-      .where('type', '=', AssetType.Image)
-      .where('deletedAt', 'is', null)
-      .limit(maxFields)
-      .execute();
-
-    return { fieldName: 'exifInfo.city', items };
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, 12] })
-  async getRecentlyCreatedAssetIds(ownerId: string, maxAssets: number) {
-    const items = await this.db
-      .selectFrom('asset')
-      .select(['id as data', 'createdAt as value'])
-      .where('ownerId', '=', asUuid(ownerId))
-      .where('asset.visibility', '=', AssetVisibility.Timeline)
-      .where('type', '=', AssetType.Image)
-      .where('deletedAt', 'is', null)
-      .orderBy('value', 'desc')
-      .limit(maxAssets)
-      .execute();
-
-    return { fieldName: 'createdAt', items };
   }
 
   async upsertFile(

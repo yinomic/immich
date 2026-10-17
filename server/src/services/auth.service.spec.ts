@@ -350,7 +350,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: {},
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
@@ -372,7 +372,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { authorization: 'Bearer auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).resolves.toEqual({
         user: sessionWithToken.user,
@@ -392,7 +392,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { 'x-immich-user-token': 'auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
@@ -414,7 +414,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { cookie: 'immich_access_token=auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).resolves.toEqual({
         user: sessionWithToken.user,
@@ -443,7 +443,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { cookie: 'immich_access_token=auth_token' },
           queryParams: {},
-          metadata: { adminRoute: true, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: true, uri: 'test' },
         }),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
@@ -467,7 +467,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { cookie: 'immich_access_token=auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).resolves.toBeDefined();
 
@@ -483,7 +483,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { 'x-api-key': 'auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
       expect(mocks.apiKey.getKey).toHaveBeenCalledWith(Buffer.from('auth_token (hashed)'));
@@ -498,7 +498,7 @@ describe(AuthService.name, () => {
       const result = sut.authenticate({
         headers: { 'x-api-key': 'auth_token' },
         queryParams: {},
-        metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test', permission: Permission.AssetRead },
+        metadata: { adminRoute: false, uri: 'test', permission: Permission.AssetRead },
       });
 
       await expect(result).rejects.toBeInstanceOf(ForbiddenException);
@@ -514,7 +514,7 @@ describe(AuthService.name, () => {
       const result = sut.authenticate({
         headers: { 'x-api-key': 'auth_token' },
         queryParams: {},
-        metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+        metadata: { adminRoute: false, uri: 'test' },
       });
       await expect(result).rejects.toBeInstanceOf(ForbiddenException);
       await expect(result).rejects.toThrow('Missing required permission: all');
@@ -531,7 +531,7 @@ describe(AuthService.name, () => {
       const result = sut.authenticate({
         headers: { 'x-api-key': 'auth_token' },
         queryParams: {},
-        metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test', permission: false },
+        metadata: { adminRoute: false, uri: 'test', permission: false },
       });
       await expect(result).resolves.toEqual({ user: authUser, apiKey: expect.objectContaining(authApiKey) });
     });
@@ -548,7 +548,7 @@ describe(AuthService.name, () => {
         sut.authenticate({
           headers: { 'x-api-key': 'auth_token' },
           queryParams: {},
-          metadata: { adminRoute: false, sharedLinkRoute: false, uri: 'test' },
+          metadata: { adminRoute: false, uri: 'test' },
         }),
       ).resolves.toEqual({ user: authUser, apiKey: expect.objectContaining(authApiKey) });
       expect(mocks.apiKey.getKey).toHaveBeenCalledWith(Buffer.from('auth_token (hashed)'));

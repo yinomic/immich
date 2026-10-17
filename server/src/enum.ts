@@ -12,7 +12,6 @@ export enum ImmichCookie {
   MaintenanceToken = 'immich_maintenance_token',
   AuthType = 'immich_auth_type',
   IsAuthenticated = 'immich_is_authenticated',
-  SharedLinkToken = 'immich_shared_link_token',
   OAuthState = 'immich_oauth_state',
   OAuthCodeVerifier = 'immich_oauth_code_verifier',
 }
@@ -21,8 +20,6 @@ export enum ImmichHeader {
   ApiKey = 'x-api-key',
   UserToken = 'x-immich-user-token',
   SessionToken = 'x-immich-session-token',
-  SharedLinkKey = 'x-immich-share-key',
-  SharedLinkSlug = 'x-immich-share-slug',
   Checksum = 'x-immich-checksum',
   CorrelationId = 'X-Correlation-ID',
   HlsInitSegment = 'x-immich-hls-msn',
@@ -30,8 +27,6 @@ export enum ImmichHeader {
 }
 
 export enum ImmichQuery {
-  SharedLinkKey = 'key',
-  SharedLinkSlug = 'slug',
   ApiKey = 'apiKey',
   SessionKey = 'sessionKey',
 }
@@ -309,18 +304,6 @@ export enum Permission {
 
   AdminAuthUnlinkAll = 'adminAuth.unlinkAll',
 }
-
-export enum SharedLinkType {
-  Album = 'ALBUM',
-
-  /**
-   * Individual asset
-   * or group of assets that are not in an album
-   */
-  Individual = 'INDIVIDUAL',
-}
-
-export const SharedLinkTypeSchema = z.enum(SharedLinkType).describe('Shared link type').meta({ id: 'SharedLinkType' });
 
 export enum StorageFolder {
   EncodedVideo = 'encoded-video',
@@ -1197,7 +1180,6 @@ export enum ApiTag {
   Search = 'Search',
   Server = 'Server',
   Sessions = 'Sessions',
-  SharedLinks = 'Shared links',
   Stacks = 'Stacks',
   Sync = 'Sync',
   SystemConfig = 'System config',

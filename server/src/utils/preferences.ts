@@ -25,10 +25,6 @@ const getDefaultPreferences = (): UserPreferences => {
       minimumFaces: 3,
       updateStrategy: PersonUpdateStrategy.Everyone,
     },
-    sharedLinks: {
-      enabled: true,
-      sidebarWeb: false,
-    },
     ratings: {
       enabled: false,
     },

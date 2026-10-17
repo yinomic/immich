@@ -38,10 +38,6 @@ export const preferencesFactory = Sync.makeFactory<UserPreferencesResponseDto>({
   ratings: {
     enabled: false,
   },
-  sharedLinks: {
-    enabled: false,
-    sidebarWeb: false,
-  },
   tags: {
     enabled: false,
     sidebarWeb: false,

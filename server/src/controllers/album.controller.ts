@@ -59,7 +59,7 @@ export class AlbumController {
     return this.service.getStatistics(auth);
   }
 
-  @Authenticated({ permission: Permission.AlbumRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AlbumRead })
   @Get(':id')
   @Endpoint({
     summary: 'Retrieve an album',
@@ -99,7 +99,7 @@ export class AlbumController {
     return this.service.delete(auth, id);
   }
 
-  @Authenticated({ permission: Permission.AlbumRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AlbumRead })
   @Get(':id/map-markers')
   @Endpoint({
     summary: 'Retrieve album map markers',

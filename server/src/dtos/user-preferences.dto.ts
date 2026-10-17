@@ -52,14 +52,6 @@ const PeopleUpdateSchema = z
   .optional()
   .meta({ id: 'PeopleUpdate' });
 
-const SharedLinksUpdateSchema = z
-  .object({
-    enabled: z.boolean().optional().describe('Whether shared links are enabled'),
-    sidebarWeb: z.boolean().optional().describe('Whether shared links appear in web sidebar'),
-  })
-  .optional()
-  .meta({ id: 'SharedLinksUpdate' });
-
 const TagsUpdateSchema = z
   .object({
     enabled: z.boolean().optional().describe('Whether tags are enabled'),
@@ -119,7 +111,6 @@ const UserPreferencesUpdateSchema = z
     people: PeopleUpdateSchema,
     purchase: PurchaseUpdateSchema,
     ratings: RatingsUpdateSchema,
-    sharedLinks: SharedLinksUpdateSchema,
     tags: TagsUpdateSchema,
     recentlyAdded: RecentlyAddedUpdateSchema,
   })
@@ -160,13 +151,6 @@ const RatingsResponseSchema = z
     enabled: z.boolean().describe('Whether ratings are enabled'),
   })
   .meta({ id: 'RatingsResponse' });
-
-const SharedLinksResponseSchema = z
-  .object({
-    enabled: z.boolean().describe('Whether shared links are enabled'),
-    sidebarWeb: z.boolean().describe('Whether shared links appear in web sidebar'),
-  })
-  .meta({ id: 'SharedLinksResponse' });
 
 const TagsResponseSchema = z
   .object({
@@ -216,7 +200,6 @@ const UserPreferencesResponseSchema = z
     memories: MemoriesResponseSchema,
     people: PeopleResponseSchema,
     ratings: RatingsResponseSchema,
-    sharedLinks: SharedLinksResponseSchema,
     tags: TagsResponseSchema,
     emailNotifications: EmailNotificationsResponseSchema,
     download: DownloadResponseSchema,

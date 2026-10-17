@@ -13,7 +13,7 @@ export class TimelineController {
   constructor(private service: TimelineService) {}
 
   @Get('buckets')
-  @Authenticated({ permission: Permission.AssetRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetRead })
   @Endpoint({
     summary: 'Get time buckets',
     description: 'Retrieve a list of all minimal time buckets.',
@@ -24,7 +24,7 @@ export class TimelineController {
   }
 
   @Get('bucket')
-  @Authenticated({ permission: Permission.AssetRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetRead })
   @ApiOkResponse({ type: TimeBucketAssetResponseDto })
   @Header('Content-Type', 'application/json')
   @Endpoint({

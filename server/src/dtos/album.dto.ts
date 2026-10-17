@@ -2,7 +2,7 @@ import { ShallowDehydrateObject } from 'kysely';
 import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
 import type { MaybeDehydrated } from 'src/types.js';
-import { AlbumUser, AuthSharedLink } from 'src/database.js';
+import { AlbumUser } from 'src/database.js';
 import { HistoryBuilder } from 'src/decorators.js';
 import { BulkIdErrorReasonSchema } from 'src/dtos/asset-ids.response.dto.js';
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
@@ -164,7 +164,6 @@ export const AlbumResponseSchema = z
       .describe(
         'First entry is always the album owner. Second entry is the auth user, if it differs from the owner. The rest are ordered alphabetically.',
       ),
-    hasSharedLink: z.boolean().describe('Has shared link'),
     assetCount: z.int().min(0).describe('Number of assets'),
     // TODO: use `isoDatetimeToDate` when using `ZodSerializerDto` on the controllers.
     lastModifiedAssetTimestamp: z
@@ -218,7 +217,6 @@ class AlbumUserResponseDto extends createZodDto(AlbumUserResponseSchema) {}
 export type MapAlbumDto = {
   albumUsers?: AlbumUser[];
   assets?: ShallowDehydrateObject<MapAsset>[];
-  sharedLinks?: ShallowDehydrateObject<AuthSharedLink>[];
   albumName: string;
   description: string | null;
   albumThumbnailAssetId: string | null;
@@ -244,7 +242,6 @@ export const mapAlbum = (entity: MaybeDehydrated<MapAlbumDto>): AlbumResponseDto
 
   const assets = entity.assets || [];
 
-  const hasSharedLink = !!entity.sharedLinks && entity.sharedLinks.length > 0;
   const hasSharedUser = albumUsers.length > 1;
 
   let startDate = assets.at(0)?.localDateTime;
@@ -263,8 +260,7 @@ export const mapAlbum = (entity: MaybeDehydrated<MapAlbumDto>): AlbumResponseDto
     updatedAt: asDateTimeString(entity.updatedAt),
     id: entity.id,
     albumUsers,
-    shared: hasSharedUser || hasSharedLink,
-    hasSharedLink,
+    shared: hasSharedUser,
     startDate: asDateTimeString(startDate),
     endDate: asDateTimeString(endDate),
     assetCount: entity.assets?.length || 0,

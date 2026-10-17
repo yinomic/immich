@@ -49,7 +49,7 @@ export class AssetMediaController {
   ) {}
 
   @Post()
-  @Authenticated({ permission: Permission.AssetUpload, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetUpload })
   @UseInterceptors(AssetUploadInterceptor, FileUploadInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiHeader({
@@ -91,7 +91,7 @@ export class AssetMediaController {
 
   @Get(':id/original')
   @FileResponse()
-  @Authenticated({ permission: Permission.AssetDownload, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetDownload })
   @Endpoint({
     summary: 'Download original asset',
     description: 'Downloads the original file of the specified asset.',
@@ -109,7 +109,7 @@ export class AssetMediaController {
 
   @Get(':id/thumbnail')
   @FileResponse()
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Endpoint({
     summary: 'View asset thumbnail',
     description:
@@ -162,7 +162,7 @@ export class AssetMediaController {
 
   @Get(':id/video/playback')
   @FileResponse()
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Endpoint({
     summary: 'Play asset video',
     description: 'Streams the video file for the specified asset. This endpoint also supports byte range requests.',

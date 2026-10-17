@@ -549,10 +549,6 @@ export type UserPreferences = {
   ratings: {
     enabled: boolean;
   };
-  sharedLinks: {
-    enabled: boolean;
-    sidebarWeb: boolean;
-  };
   tags: {
     enabled: boolean;
     sidebarWeb: boolean;

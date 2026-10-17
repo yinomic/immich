@@ -2202,22 +2202,6 @@
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -2492,22 +2476,6 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -3488,22 +3456,6 @@
         "operationId": "uploadAsset",
         "parameters": [
           {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "x-immich-checksum",
             "in": "header",
             "description": "sha1 checksum that can be used for duplicate detection before the file is uploaded",
@@ -3996,22 +3948,6 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -4606,22 +4542,6 @@
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4695,14 +4615,6 @@
             }
           },
           {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "size",
             "required": false,
             "in": "query",
@@ -4715,14 +4627,6 @@
             ],
             "schema": {
               "$ref": "#/components/schemas/AssetMediaSize"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
             }
           }
         ],
@@ -4784,22 +4688,6 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -4864,22 +4752,6 @@
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -4939,28 +4811,12 @@
             }
           },
           {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "sessionId",
             "required": true,
             "in": "path",
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           }
@@ -5015,28 +4871,12 @@
             }
           },
           {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "sessionId",
             "required": true,
             "in": "path",
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           },
@@ -5126,28 +4966,12 @@
             }
           },
           {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "sessionId",
             "required": true,
             "in": "path",
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
               "type": "string"
             }
           },
@@ -5862,24 +5686,7 @@
       "post": {
         "description": "Download a ZIP archive containing the specified assets. The assets must have been previously requested via the \"getDownloadInfo\" endpoint.",
         "operationId": "downloadArchive",
-        "parameters": [
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5940,24 +5747,7 @@
       "post": {
         "description": "Retrieve information about how to request a download for the specified assets or album. The response includes groups of assets that can be downloaded together.",
         "operationId": "getDownloadInfo",
-        "parameters": [
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -8927,59 +8717,6 @@
         "x-immich-state": "Stable"
       }
     },
-    "/search/explore": {
-      "get": {
-        "description": "Retrieve data for the explore section, such as popular people and places.",
-        "operationId": "getExploreData",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SearchExploreResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Retrieve explore data",
-        "tags": [
-          "Search"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v1",
-            "state": "Added"
-          },
-          {
-            "version": "v1",
-            "state": "Beta"
-          },
-          {
-            "version": "v2",
-            "state": "Stable"
-          }
-        ],
-        "x-immich-permission": "asset.read",
-        "x-immich-state": "Stable"
-      }
-    },
     "/search/large-assets": {
       "post": {
         "deprecated": true,
@@ -9837,24 +9574,7 @@
       "post": {
         "description": "Search for assets based on various metadata criteria.",
         "operationId": "searchAssets",
-        "parameters": [
-          {
-            "name": "key",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "slug",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -14999,10 +14719,6 @@
       "description": "A session represents an authenticated login session for a user. Sessions also appear in the web application as \"Authorized devices\"."
     },
     {
-      "name": "Shared links",
-      "description": "A shared link is a public url that provides access to a specific album, asset, or collection of assets. A shared link can be protected with a password, include a specific slug, allow or disallow downloads, and optionally include an expiration date."
-    },
-    {
       "name": "Stacks",
       "description": "A stack is a group of related assets. One asset is the \"primary\" asset, and the rest are \"child\" assets. On the main timeline, stack parents are included by default, while child assets are hidden."
     },
@@ -16202,10 +15918,6 @@
             "format": "date-time",
             "type": "string"
           },
-          "hasSharedLink": {
-            "description": "Has shared link",
-            "type": "boolean"
-          },
           "id": {
             "description": "Album ID",
             "format": "uuid",
@@ -16246,7 +15958,6 @@
           "assetCount",
           "createdAt",
           "description",
-          "hasSharedLink",
           "id",
           "isActivityEnabled",
           "shared",
@@ -16739,11 +16450,6 @@
           "favorite": {
             "default": true,
             "description": "Copy favorite status",
-            "type": "boolean"
-          },
-          "sharedLinks": {
-            "default": true,
-            "description": "Copy shared links",
             "type": "boolean"
           },
           "sidecar": {
@@ -22472,41 +22178,6 @@
         ],
         "type": "object"
       },
-      "SearchExploreItem": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/AssetResponseDto"
-          },
-          "value": {
-            "description": "Explore value",
-            "type": "string"
-          }
-        },
-        "required": [
-          "data",
-          "value"
-        ],
-        "type": "object"
-      },
-      "SearchExploreResponseDto": {
-        "properties": {
-          "fieldName": {
-            "description": "Explore field name",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/SearchExploreItem"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "fieldName",
-          "items"
-        ],
-        "type": "object"
-      },
       "SearchFacetCountResponseDto": {
         "properties": {
           "count": {
@@ -23497,36 +23168,6 @@
         "required": [
           "action"
         ],
-        "type": "object"
-      },
-      "SharedLinksResponse": {
-        "properties": {
-          "enabled": {
-            "description": "Whether shared links are enabled",
-            "type": "boolean"
-          },
-          "sidebarWeb": {
-            "description": "Whether shared links appear in web sidebar",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "enabled",
-          "sidebarWeb"
-        ],
-        "type": "object"
-      },
-      "SharedLinksUpdate": {
-        "properties": {
-          "enabled": {
-            "description": "Whether shared links are enabled",
-            "type": "boolean"
-          },
-          "sidebarWeb": {
-            "description": "Whether shared links appear in web sidebar",
-            "type": "boolean"
-          }
-        },
         "type": "object"
       },
       "SignUpDto": {
@@ -27683,9 +27324,6 @@
           "recentlyAdded": {
             "$ref": "#/components/schemas/RecentlyAddedResponse"
           },
-          "sharedLinks": {
-            "$ref": "#/components/schemas/SharedLinksResponse"
-          },
           "tags": {
             "$ref": "#/components/schemas/TagsResponse"
           }
@@ -27701,7 +27339,6 @@
           "purchase",
           "ratings",
           "recentlyAdded",
-          "sharedLinks",
           "tags"
         ],
         "type": "object"
@@ -27740,9 +27377,6 @@
           },
           "recentlyAdded": {
             "$ref": "#/components/schemas/RecentlyAddedUpdate"
-          },
-          "sharedLinks": {
-            "$ref": "#/components/schemas/SharedLinksUpdate"
           },
           "tags": {
             "$ref": "#/components/schemas/TagsUpdate"

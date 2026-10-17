@@ -9,7 +9,6 @@ import {
   ChecksumAlgorithm,
   MemoryType,
   Permission,
-  SharedLinkType,
   UserAvatarColor,
   UserStatus,
 } from 'src/enum.js';
@@ -158,35 +157,6 @@ export type Stack = {
   ownerId: string;
   assets: ShallowDehydrateObject<MapAsset>[];
   assetCount?: number;
-};
-
-export type AuthSharedLink = {
-  id: string;
-  expiresAt: Date | null;
-  userId: string;
-  albumId: string | null;
-  showExif: boolean;
-  allowUpload: boolean;
-  allowDownload: boolean;
-  password: string | null;
-};
-
-export type SharedLink = {
-  id: string;
-  album?: ShallowDehydrateObject<Album> | null;
-  albumId: string | null;
-  allowDownload: boolean;
-  allowUpload: boolean;
-  assets: ShallowDehydrateObject<MapAsset>[];
-  createdAt: Date;
-  description: string | null;
-  expiresAt: Date | null;
-  key: Buffer;
-  password: string | null;
-  showExif: boolean;
-  type: SharedLinkType;
-  userId: string;
-  slug: string | null;
 };
 
 export type Album = Selectable<AlbumTable> & {

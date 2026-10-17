@@ -56,10 +56,6 @@ export class TimelineService extends BaseService {
       await this.requireAccess({ auth, permission: Permission.TagRead, ids: [dto.tagId] });
     }
 
-    if (auth.sharedLink && !auth.sharedLink.showExif) {
-      dto.withCoordinates = false;
-    }
-
     // eslint-disable-next-line unicorn/prefer-early-return
     if (dto.withPartners) {
       const isRequestedLocked = dto.visibility === AssetVisibility.Locked;

@@ -8,7 +8,6 @@ import {
   MetadataSearchDto,
   PlacesResponseDto,
   RandomSearchDto,
-  SearchExploreResponseDto,
   SearchPlacesDto,
   SearchResponseDto,
   SearchStatisticsResponseDto,
@@ -25,7 +24,7 @@ export class SearchController {
   constructor(private service: SearchService) {}
 
   @Post('metadata')
-  @Authenticated({ permission: Permission.AssetRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetRead })
   @HttpCode(HttpStatus.OK)
   @Endpoint({
     summary: 'Search assets by metadata',
@@ -74,17 +73,6 @@ export class SearchController {
   })
   searchLargeAssets(@Auth() auth: AuthDto, @Query() dto: LargeAssetSearchDto): Promise<AssetResponseDto[]> {
     return this.service.searchLargeAssets(auth, dto);
-  }
-
-  @Get('explore')
-  @Authenticated({ permission: Permission.AssetRead })
-  @Endpoint({
-    summary: 'Retrieve explore data',
-    description: 'Retrieve data for the explore section, such as popular people and places.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  getExploreData(@Auth() auth: AuthDto): Promise<SearchExploreResponseDto[]> {
-    return this.service.getExploreData(auth);
   }
 
   @Get('places')

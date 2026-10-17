@@ -12,7 +12,6 @@ export const albumFactory = Sync.makeFactory<AlbumResponseDto>({
   id: Sync.each(() => faker.string.uuid()),
   shared: false,
   albumUsers: [],
-  hasSharedLink: false,
   isActivityEnabled: true,
   order: AssetOrder.Desc,
 });

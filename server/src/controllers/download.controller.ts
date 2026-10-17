@@ -14,7 +14,7 @@ export class DownloadController {
   constructor(private service: DownloadService) {}
 
   @Post('info')
-  @Authenticated({ permission: Permission.AssetDownload, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetDownload })
   @Endpoint({
     summary: 'Retrieve download information',
     description:
@@ -26,7 +26,7 @@ export class DownloadController {
   }
 
   @Post('archive')
-  @Authenticated({ permission: Permission.AssetDownload, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetDownload })
   @FileResponse()
   @HttpCode(HttpStatus.OK)
   @Endpoint({

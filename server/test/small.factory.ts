@@ -1,6 +1,6 @@
 import { v4, v7 } from 'uuid';
 import { expect } from 'vitest';
-import { AuthApiKey, AuthSharedLink, AuthUser, Library, UserAdmin } from 'src/database.js';
+import { AuthApiKey, AuthUser, Library, UserAdmin } from 'src/database.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { QueueStatisticsDto } from 'src/dtos/queue.dto.js';
 import { Permission, UserStatus } from 'src/enum.js';
@@ -18,7 +18,6 @@ export const newEmbedding = () => {
 const authFactory = ({
   apiKey,
   session,
-  sharedLink,
   user,
 }: {
   apiKey?: Partial<AuthApiKey>;
@@ -27,13 +26,10 @@ const authFactory = ({
     Partial<UserAdmin>,
     'createdAt' | 'updatedAt' | 'deletedAt' | 'fileCreatedAt' | 'fileModifiedAt' | 'localDateTime' | 'profileChangedAt'
   >;
-  sharedLink?: Partial<AuthSharedLink>;
 } = {}) => {
   const auth: AuthDto = {
     user: authUserFactory(userAdminFactory(user ?? {})),
   };
-
-  const userId = auth.user.id;
 
   if (apiKey) {
     auth.apiKey = authApiKeyFactory(apiKey);
@@ -46,35 +42,7 @@ const authFactory = ({
     };
   }
 
-  if (sharedLink) {
-    auth.sharedLink = authSharedLinkFactory({ ...sharedLink, userId });
-  }
-
   return auth;
-};
-
-const authSharedLinkFactory = (sharedLink: Partial<AuthSharedLink> = {}) => {
-  const {
-    id = newUuid(),
-    expiresAt = null,
-    userId = newUuid(),
-    showExif = true,
-    albumId = null,
-    allowUpload = false,
-    allowDownload = true,
-    password = null,
-  } = sharedLink;
-
-  return {
-    id,
-    albumId,
-    expiresAt,
-    userId,
-    showExif,
-    allowUpload,
-    allowDownload,
-    password,
-  };
 };
 
 const authApiKeyFactory = (apiKey: Partial<AuthApiKey> = {}) => ({

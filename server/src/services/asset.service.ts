@@ -77,10 +77,6 @@ export class AssetService extends BaseService {
       throw new BadRequestException('Asset not found');
     }
 
-    if (auth.sharedLink && !auth.sharedLink.showExif) {
-      return mapAsset(asset, { stripMetadata: true, withStack: true, auth });
-    }
-
     const data = mapAsset(asset, { withStack: true, auth });
 
     return data;

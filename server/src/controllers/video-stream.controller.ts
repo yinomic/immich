@@ -28,7 +28,7 @@ export class VideoStreamController {
   ) {}
 
   @Get(':id/video/stream/main.m3u8')
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Header('Cache-Control', 'no-cache')
   @Header('Content-Type', HLS_PLAYLIST_CONTENT_TYPE)
   @ApiProduces(HLS_PLAYLIST_CONTENT_TYPE)
@@ -42,7 +42,7 @@ export class VideoStreamController {
   }
 
   @Get(':id/video/stream/:sessionId/:variantIndex/playlist.m3u8')
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Header('Cache-Control', 'no-cache')
   @Header('Content-Type', HLS_PLAYLIST_CONTENT_TYPE)
   @ApiProduces(HLS_PLAYLIST_CONTENT_TYPE)
@@ -66,7 +66,7 @@ export class VideoStreamController {
 
   @Get(':id/video/stream/:sessionId/:variantIndex/:filename')
   @FileResponse()
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Endpoint({
     summary: 'Get HLS segment or init file',
     description: 'Streams an HLS init segment (init.mp4) or media segment (seg_N.m4s).',
@@ -94,7 +94,7 @@ export class VideoStreamController {
 
   @Delete(':id/video/stream/:sessionId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Authenticated({ permission: Permission.AssetView, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetView })
   @Endpoint({
     summary: 'End HLS streaming session',
     description: 'Releases server resources for the streaming session.',

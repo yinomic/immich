@@ -608,12 +608,6 @@ export type RecentlyAddedResponse = {
     /** Whether the recently added page appears in the web sidebar */
     sidebarWeb: boolean;
 };
-export type SharedLinksResponse = {
-    /** Whether shared links are enabled */
-    enabled: boolean;
-    /** Whether shared links appear in web sidebar */
-    sidebarWeb: boolean;
-};
 export type TagsResponse = {
     /** Whether tags are enabled */
     enabled: boolean;
@@ -631,7 +625,6 @@ export type UserPreferencesResponseDto = {
     purchase: PurchaseResponse;
     ratings: RatingsResponse;
     recentlyAdded: RecentlyAddedResponse;
-    sharedLinks: SharedLinksResponse;
     tags: TagsResponse;
 };
 export type AlbumsUpdate = {
@@ -695,12 +688,6 @@ export type RecentlyAddedUpdate = {
     /** Whether the recently added page appears in the web sidebar */
     sidebarWeb?: boolean;
 };
-export type SharedLinksUpdate = {
-    /** Whether shared links are enabled */
-    enabled?: boolean;
-    /** Whether shared links appear in web sidebar */
-    sidebarWeb?: boolean;
-};
 export type TagsUpdate = {
     /** Whether tags are enabled */
     enabled?: boolean;
@@ -719,7 +706,6 @@ export type UserPreferencesUpdateDto = {
     purchase?: PurchaseUpdate;
     ratings?: RatingsUpdate;
     recentlyAdded?: RecentlyAddedUpdate;
-    sharedLinks?: SharedLinksUpdate;
     tags?: TagsUpdate;
 };
 export type SessionResponseDto = {
@@ -789,8 +775,6 @@ export type AlbumResponseDto = {
     description: string;
     /** UTC representation of (local) end date (latest asset) */
     endDate?: string;
-    /** Has shared link */
-    hasSharedLink: boolean;
     /** Album ID */
     id: string;
     /** Activity feed enabled */
@@ -1037,8 +1021,6 @@ export type AssetCopyDto = {
     albums?: boolean;
     /** Copy favorite status */
     favorite?: boolean;
-    /** Copy shared links */
-    sharedLinks?: boolean;
     /** Copy sidecar file */
     sidecar?: boolean;
     /** Source asset ID */
@@ -1816,16 +1798,6 @@ export type QueueJobResponseDto = {
     name: JobName;
     /** Job creation timestamp */
     timestamp: number;
-};
-export type SearchExploreItem = {
-    data: AssetResponseDto;
-    /** Explore value */
-    value: string;
-};
-export type SearchExploreResponseDto = {
-    /** Explore field name */
-    fieldName: string;
-    items: SearchExploreItem[];
 };
 export type IdsFilter = {
     all?: string[];
@@ -3821,18 +3793,13 @@ export function deleteAlbum({ id }: {
 /**
  * Retrieve an album
  */
-export function getAlbumInfo({ id, key, slug }: {
+export function getAlbumInfo({ id }: {
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: AlbumResponseDto;
-    }>(`/albums/${encodeURIComponent(id)}${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/albums/${encodeURIComponent(id)}`, {
         ...opts
     }));
 }
@@ -3887,18 +3854,13 @@ export function addAssetsToAlbum({ id, bulkIdsDto }: {
 /**
  * Retrieve album map markers
  */
-export function getAlbumMapMarkers({ id, key, slug }: {
+export function getAlbumMapMarkers({ id }: {
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: MapMarkerResponseDto[];
-    }>(`/albums/${encodeURIComponent(id)}/map-markers${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/albums/${encodeURIComponent(id)}/map-markers`, {
         ...opts
     }));
 }
@@ -4110,9 +4072,7 @@ export function deleteAssets({ assetBulkDeleteDto }: {
 /**
  * Upload asset
  */
-export function uploadAsset({ key, slug, xImmichChecksum, assetMediaCreateDto }: {
-    key?: string;
-    slug?: string;
+export function uploadAsset({ xImmichChecksum, assetMediaCreateDto }: {
     xImmichChecksum?: string;
     assetMediaCreateDto: AssetMediaCreateDto;
 }, opts?: Oazapfts.RequestOpts) {
@@ -4122,10 +4082,7 @@ export function uploadAsset({ key, slug, xImmichChecksum, assetMediaCreateDto }:
     } | {
         status: 201;
         data: AssetMediaResponseDto;
-    }>(`/assets${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, oazapfts.multipart({
+    }>("/assets", oazapfts.multipart({
         ...opts,
         method: "POST",
         body: assetMediaCreateDto,
@@ -4234,18 +4191,13 @@ export function getAssetStatistics({ isFavorite, isTrashed, visibility }: {
 /**
  * Retrieve an asset
  */
-export function getAssetInfo({ id, key, slug }: {
+export function getAssetInfo({ id }: {
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: AssetResponseDto;
-    }>(`/assets/${encodeURIComponent(id)}${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/assets/${encodeURIComponent(id)}`, {
         ...opts
     }));
 }
@@ -4363,19 +4315,15 @@ export function getAssetMetadataByKey({ id, key }: {
 /**
  * Download original asset
  */
-export function downloadAsset({ edited, id, key, slug }: {
+export function downloadAsset({ edited, id }: {
     edited?: boolean;
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: Blob;
     }>(`/assets/${encodeURIComponent(id)}/original${QS.query(QS.explode({
-        edited,
-        key,
-        slug
+        edited
     }))}`, {
         ...opts
     }));
@@ -4383,21 +4331,17 @@ export function downloadAsset({ edited, id, key, slug }: {
 /**
  * View asset thumbnail
  */
-export function viewAsset({ edited, id, key, size, slug }: {
+export function viewAsset({ edited, id, size }: {
     edited?: boolean;
     id: string;
-    key?: string;
     size?: AssetMediaSize;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: Blob;
     }>(`/assets/${encodeURIComponent(id)}/thumbnail${QS.query(QS.explode({
         edited,
-        key,
-        size,
-        slug
+        size
     }))}`, {
         ...opts
     }));
@@ -4405,52 +4349,37 @@ export function viewAsset({ edited, id, key, size, slug }: {
 /**
  * Play asset video
  */
-export function playAssetVideo({ id, key, slug }: {
+export function playAssetVideo({ id }: {
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: Blob;
-    }>(`/assets/${encodeURIComponent(id)}/video/playback${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/assets/${encodeURIComponent(id)}/video/playback`, {
         ...opts
     }));
 }
 /**
  * Get HLS main playlist
  */
-export function getMainPlaylist({ id, key, slug }: {
+export function getMainPlaylist({ id }: {
     id: string;
-    key?: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: string;
-    }>(`/assets/${encodeURIComponent(id)}/video/stream/main.m3u8${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/assets/${encodeURIComponent(id)}/video/stream/main.m3u8`, {
         ...opts
     }));
 }
 /**
  * End HLS streaming session
  */
-export function endSession({ id, key, sessionId, slug }: {
+export function endSession({ id, sessionId }: {
     id: string;
-    key?: string;
     sessionId: string;
-    slug?: string;
 }, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    return oazapfts.ok(oazapfts.fetchText(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}`, {
         ...opts,
         method: "DELETE"
     }));
@@ -4458,21 +4387,16 @@ export function endSession({ id, key, sessionId, slug }: {
 /**
  * Get HLS media playlist
  */
-export function getMediaPlaylist({ id, key, sessionId, slug, variantIndex, xImmichHlsPos }: {
+export function getMediaPlaylist({ id, sessionId, variantIndex, xImmichHlsPos }: {
     id: string;
-    key?: string;
     sessionId: string;
-    slug?: string;
     variantIndex: number;
     xImmichHlsPos?: number;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: string;
-    }>(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}/${encodeURIComponent(variantIndex)}/playlist.m3u8${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}/${encodeURIComponent(variantIndex)}/playlist.m3u8`, {
         ...opts,
         headers: oazapfts.mergeHeaders(opts?.headers, {
             "x-immich-hls-pos": xImmichHlsPos
@@ -4482,22 +4406,17 @@ export function getMediaPlaylist({ id, key, sessionId, slug, variantIndex, xImmi
 /**
  * Get HLS segment or init file
  */
-export function getSegment({ filename, id, key, sessionId, slug, variantIndex, xImmichHlsMsn }: {
+export function getSegment({ filename, id, sessionId, variantIndex, xImmichHlsMsn }: {
     filename: string;
     id: string;
-    key?: string;
     sessionId: string;
-    slug?: string;
     variantIndex: number;
     xImmichHlsMsn?: number;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: Blob;
-    }>(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}/${encodeURIComponent(variantIndex)}/${encodeURIComponent(filename)}${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, {
+    }>(`/assets/${encodeURIComponent(id)}/video/stream/${encodeURIComponent(sessionId)}/${encodeURIComponent(variantIndex)}/${encodeURIComponent(filename)}`, {
         ...opts,
         headers: oazapfts.mergeHeaders(opts?.headers, {
             "x-immich-hls-msn": xImmichHlsMsn
@@ -4666,18 +4585,13 @@ export function getUserConfigDefaults(opts?: Oazapfts.RequestOpts) {
 /**
  * Download asset archive
  */
-export function downloadArchive({ key, slug, downloadArchiveDto }: {
-    key?: string;
-    slug?: string;
+export function downloadArchive({ downloadArchiveDto }: {
     downloadArchiveDto: DownloadArchiveDto;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchBlob<{
         status: 200;
         data: Blob;
-    }>(`/download/archive${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, oazapfts.json({
+    }>("/download/archive", oazapfts.json({
         ...opts,
         method: "POST",
         body: downloadArchiveDto
@@ -4686,18 +4600,13 @@ export function downloadArchive({ key, slug, downloadArchiveDto }: {
 /**
  * Retrieve download information
  */
-export function getDownloadInfo({ key, slug, downloadInfoDto }: {
-    key?: string;
-    slug?: string;
+export function getDownloadInfo({ downloadInfoDto }: {
     downloadInfoDto: DownloadInfoDto;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 201;
         data: DownloadResponseDto;
-    }>(`/download/info${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, oazapfts.json({
+    }>("/download/info", oazapfts.json({
         ...opts,
         method: "POST",
         body: downloadInfoDto
@@ -5384,17 +5293,6 @@ export function getAssetsByCity(opts?: Oazapfts.RequestOpts) {
     }));
 }
 /**
- * Retrieve explore data
- */
-export function getExploreData(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: SearchExploreResponseDto[];
-    }>("/search/explore", {
-        ...opts
-    }));
-}
-/**
  * Search large assets
  */
 export function searchLargeAssets({ albumIds, city, country, createdAfter, createdBefore, isEncoded, isFavorite, isMotion, isNotInAlbum, isOffline, lensModel, libraryId, make, minFileSize, model, ocr, personIds, rating, size, state, tagIds, takenAfter, takenBefore, trashedAfter, trashedBefore, $type, updatedAfter, updatedBefore, visibility, withDeleted, withExif }: {
@@ -5473,18 +5371,13 @@ export function searchLargeAssets({ albumIds, city, country, createdAfter, creat
 /**
  * Search assets by metadata
  */
-export function searchAssets({ key, slug, metadataSearchDto }: {
-    key?: string;
-    slug?: string;
+export function searchAssets({ metadataSearchDto }: {
     metadataSearchDto: MetadataSearchDto;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: SearchResponseDto;
-    }>(`/search/metadata${QS.query(QS.explode({
-        key,
-        slug
-    }))}`, oazapfts.json({
+    }>("/search/metadata", oazapfts.json({
         ...opts,
         method: "POST",
         body: metadataSearchDto

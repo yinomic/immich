@@ -7,20 +7,17 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ApiBearerAuth, ApiCookieAuth, ApiExtension, ApiOkResponse, ApiQuery, ApiSecurity } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCookieAuth, ApiExtension, ApiOkResponse, ApiSecurity } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthDto } from 'src/dtos/auth.dto.js';
-import { ApiCustomExtension, ImmichQuery, MetadataKey, Permission } from 'src/enum.js';
+import { ApiCustomExtension, MetadataKey, Permission } from 'src/enum.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { AuthService, LoginDetails } from 'src/services/auth.service.js';
 import { getUserAgentDetails } from 'src/utils/request.js';
 
 type AdminRoute = { admin?: true };
-type SharedLinkRoute = { sharedLink?: true };
-type AuthorizedRoute = { permission?: Permission | false; public?: never; setup?: never } & (
-  AdminRoute | SharedLinkRoute
-);
-type PublicRoute = { public: true; setup?: true; permission?: never; admin?: never; sharedLink?: never };
+type AuthorizedRoute = { permission?: Permission | false; public?: never; setup?: never } & AdminRoute;
+type PublicRoute = { public: true; setup?: true; permission?: never; admin?: never };
 export type AuthenticatedOptions = AuthorizedRoute | PublicRoute;
 
 type ReflectorTarget = Parameters<Reflector['get']>[1];
@@ -28,7 +25,7 @@ type ReflectorTarget = Parameters<Reflector['get']>[1];
 /** Resolves the `@Authenticated()` options of a route handler, with the defaults applied. */
 export const getAuthenticatedOptions = (reflector: Reflector, target: ReflectorTarget) => {
   const options = reflector.getAllAndOverride<AuthenticatedOptions | undefined>(MetadataKey.AuthRoute, [target]);
-  return options && { sharedLink: false, admin: false, public: false, setup: false, ...options };
+  return options && { admin: false, public: false, setup: false, ...options };
 };
 
 export const Authenticated = (options: AuthenticatedOptions = {}): MethodDecorator => {
@@ -44,13 +41,6 @@ export const Authenticated = (options: AuthenticatedOptions = {}): MethodDecorat
 
   if (options?.permission) {
     decorators.push(ApiExtension(ApiCustomExtension.Permission, options.permission));
-  }
-
-  if ((options as SharedLinkRoute)?.sharedLink) {
-    decorators.push(
-      ApiQuery({ name: ImmichQuery.SharedLinkKey, type: String, required: false }),
-      ApiQuery({ name: ImmichQuery.SharedLinkSlug, type: String, required: false }),
-    );
   }
 
   return applyDecorators(...decorators);
@@ -110,13 +100,13 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const { admin: adminRoute, sharedLink: sharedLinkRoute, permission } = options;
+    const { admin: adminRoute, permission } = options;
     const request = context.switchToHttp().getRequest<AuthRequest>();
 
     request.user = await this.authService.authenticate({
       headers: request.headers,
       queryParams: request.query as Record<string, string>,
-      metadata: { adminRoute, sharedLinkRoute, permission, uri: request.path },
+      metadata: { adminRoute, permission, uri: request.path },
     });
 
     return true;

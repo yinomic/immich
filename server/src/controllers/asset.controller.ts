@@ -85,7 +85,7 @@ export class AssetController {
   }
 
   @Get(':id')
-  @Authenticated({ permission: Permission.AssetRead, sharedLink: true })
+  @Authenticated({ permission: Permission.AssetRead })
   @Endpoint({
     summary: 'Retrieve an asset',
     description: 'Retrieve detailed information about a specific asset.',

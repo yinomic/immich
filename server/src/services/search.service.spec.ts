@@ -1,13 +1,10 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, vitest } from 'vitest';
-import { mapAsset } from 'src/dtos/asset-response.dto.js';
 import { SearchSuggestionType } from 'src/dtos/search.dto.js';
 import { AssetVisibility } from 'src/enum.js';
 import { SearchService } from 'src/services/search.service.js';
-import { AssetFactory } from 'test/factories/asset.factory.js';
 import { AuthFactory } from 'test/factories/auth.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
-import { getForAsset } from 'test/mappers.js';
 import { ServiceMocks, newTestService } from 'test/utils.js';
 
 vitest.useFakeTimers();
@@ -44,35 +41,6 @@ describe(SearchService.name, () => {
 
       await sut.searchPlaces({ name: 'place' });
       expect(mocks.search.searchPlaces).toHaveBeenCalledWith('place');
-    });
-  });
-
-  describe('getExploreData', () => {
-    it('should get recent assets and assets by city and tag', async () => {
-      const auth = AuthFactory.create();
-      const asset = AssetFactory.from()
-        .exif({ latitude: 42, longitude: 69, city: 'city', state: 'state', country: 'country' })
-        .build();
-      mocks.asset.getAssetIdByCity.mockResolvedValue({
-        fieldName: 'exifInfo.city',
-        items: [{ value: 'city', data: asset.id }],
-      });
-      mocks.asset.getRecentlyCreatedAssetIds.mockResolvedValue({
-        fieldName: 'createdAt',
-        items: [{ value: asset.createdAt, data: asset.id }],
-      });
-      mocks.asset.getByIdsWithAllRelationsButStacks.mockResolvedValue([asset as never]);
-      const expectedResponse = [
-        { fieldName: 'exifInfo.city', items: [{ value: 'city', data: mapAsset(getForAsset(asset)) }] },
-        {
-          fieldName: 'createdAt',
-          items: [{ value: asset.createdAt.toISOString(), data: mapAsset(getForAsset(asset)) }],
-        },
-      ];
-
-      const result = await sut.getExploreData(auth);
-
-      expect(result).toEqual(expectedResponse);
     });
   });
 
