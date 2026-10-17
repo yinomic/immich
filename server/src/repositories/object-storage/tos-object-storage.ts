@@ -133,7 +133,8 @@ export class TosObjectStorage implements ObjectStorage {
     }
 
     // be tolerant about the exact error shape: a 404 from any layer means "absent"
-    const status = (error as { statusCode?: number; status?: number })?.statusCode ?? (error as { status?: number })?.status;
+    const status =
+      (error as { statusCode?: number; status?: number })?.statusCode ?? (error as { status?: number })?.status;
     return status === 404 || /404|NotFound|NoSuchKey/i.test((error as Error)?.message ?? '');
   }
 
