@@ -483,3 +483,15 @@ pnpm --filter @immich/sdk build
 3. `lib/utils.spec.ts`（111/126/141/157）：4 处 `sharedLinkFactory` 用例
 4. `lib/utils/asset-utils.ts:29`、`lib/utils/file-uploader.ts:20`：引用已删的 `$lib/utils/shared-links`
 5. `lib/utils/timeline-util.ts:149`：返回对象缺少 `people` 字段（类型仍要求，需同步改类型定义）
+
+### Round 24（SDK 清理：12 → 9）
+- `search-manager.svelte.ts`：删掉 OCR/smart 分支（`ocr`、`queryAssetId`、`queryType: 'smart'` 等），只保留元数据搜索
+- `asQueryString` 从已删除的 `shared-links.ts` 移到通用 `lib/utils.ts`，`asset-utils.ts` / `file-uploader.ts` 改从那里导入
+- 回滚了 timeline 类型里删 `people` 字段的尝试（会连带 `thumbnail-util.ts` 5 处报错，性价比低，留给专门一轮）
+
+**剩余 9 处（下轮）**
+1. `lib/managers/search-manager.svelte.ts`(56/105)：`MetadataSearchDto` 收窄后的对象字面量类型
+2. `lib/utils.spec.ts`(111/126/141/157)：4 处 `sharedLinkFactory` 用例（改用 asset 或直接删）
+3. `lib/utils.ts`(17/19)：`PersonResponseDto` / `SharedLinkResponseDto` 导入与 `getSharedLink` 一族（连同 `asset.service.ts` 的使用点）
+4. `lib/utils/thumbnail-util.spec.ts`(104)、`test-data/factories/asset-factory.ts`(54)：对象字面量多余字段
+5. `lib/utils/timeline-util.ts`：`people` 字段与 `TimelineAsset` 类型（建议连同 `thumbnail-util.ts` 一起在本轮做，需一次性改类型 + 3 个使用点）
