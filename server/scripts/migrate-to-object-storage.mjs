@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * One-time migration: move an existing library from the local filesystem into an
- * S3-compatible bucket (Volcengine TOS, Tencent COS, MinIO, ...).
+ * One-time migration: move an existing library from the local filesystem into a
+ * Volcengine TOS bucket.
  *
  * The server stores the object key in the database once the library is remote, so
  * this script uploads every local file and rewrites the stored paths. Run it while
- * the server is stopped, i.e. before switching IMMICH_STORAGE_BACKEND to `s3`.
+ * the server is stopped, i.e. before switching IMMICH_STORAGE_BACKEND to `tos`.
  *
  *   DB_URL=postgres://... IMMICH_MEDIA_LOCATION=/data \
- *   S3_ENDPOINT=... S3_BUCKET=... S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=... \
+ *   TOS_ENDPOINT=tos-cn-beijing.volces.com TOS_REGION=cn-beijing TOS_BUCKET=... \
+ *   TOS_ACCESS_KEY_ID=... TOS_ACCESS_KEY_SECRET=... \
  *   node scripts/migrate-to-object-storage.mjs --dry-run
  *
  * Options:
@@ -16,7 +17,7 @@
  *   --delete-local   remove the local file after a successful upload
  *   --limit <n>      only process the first n files (handy for a first test)
  */
-import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { TosClient } from '@volcengine/tos-sdk';
 import { createReadStream } from 'node:fs';
 import { access, stat, unlink } from 'node:fs/promises';
 import { extname, relative } from 'node:path';
@@ -30,31 +31,21 @@ const limit = limitIndex === -1 ? Number.POSITIVE_INFINITY : Number(args[limitIn
 
 const dbUrl = process.env.DB_URL;
 const mediaLocation = process.env.IMMICH_MEDIA_LOCATION;
-const bucket = process.env.S3_BUCKET;
-const endpoint = process.env.S3_ENDPOINT;
-const region = process.env.S3_REGION ?? 'auto';
-const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-const forcePathStyle = (process.env.S3_FORCE_PATH_STYLE ?? 'true') !== 'false';
-const prefix = (process.env.S3_PREFIX ?? '').replace(/\/?$/, (m) => (m ? '/' : ''));
+const bucket = process.env.TOS_BUCKET;
+const endpoint = process.env.TOS_ENDPOINT;
+const region = process.env.TOS_REGION ?? 'cn-beijing';
+const accessKeyId = process.env.TOS_ACCESS_KEY_ID;
+const accessKeySecret = process.env.TOS_ACCESS_KEY_SECRET;
+const prefix = (process.env.TOS_PREFIX ?? '').replace(/\/?$/, (m) => (m ? '/' : ''));
 
-for (const [name, value] of Object.entries({ DB_URL: dbUrl, IMMICH_MEDIA_LOCATION: mediaLocation, S3_BUCKET: bucket, S3_ENDPOINT: endpoint })) {
+for (const [name, value] of Object.entries({ DB_URL: dbUrl, IMMICH_MEDIA_LOCATION: mediaLocation, TOS_BUCKET: bucket, TOS_ENDPOINT: endpoint })) {
   if (!value) {
     console.error(`Missing required environment variable ${name}`);
     process.exit(2);
   }
 }
 
-const s3 = new S3Client({
-  endpoint,
-  region,
-  forcePathStyle,
-  credentials: { accessKeyId, secretAccessKey },
-  // Many S3-compatible services (TOS, COS) reject `aws-chunked` uploads with
-  // trailing checksums, which the SDK v3 enables by default.
-  requestChecksumCalculation: 'WHEN_REQUIRED',
-  responseChecksumValidation: 'WHEN_REQUIRED',
-});
+const tos = new TosClient({ accessKeyId, accessKeySecret, endpoint, region, bucket });
 
 const CONTENT_TYPES = {
   '.jpg': 'image/jpeg',
@@ -117,10 +108,11 @@ const run = async () => {
     }
 
     const contentType = CONTENT_TYPES[extname(item.path).toLowerCase()];
-    await s3.send(
-      new PutObjectCommand({ Bucket: bucket, Key: key, Body: createReadStream(item.path), ContentLength: size, ContentType: contentType }),
-    );
-    await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    await tos.putObject({ bucket, key, body: createReadStream(item.path), contentLength: size, contentType });
+    const { data: head } = await tos.headObject({ bucket, key });
+    if (Number(head['content-length']) !== size) {
+      throw new Error(`uploaded size mismatch for ${key}`);
+    }
 
     await client.query(`update ${item.table} set "${item.column}" = $1 where id = $2`, [key, item.id]);
 
@@ -142,7 +134,7 @@ const run = async () => {
   }
 
   console.log(`Done: ${uploaded} file(s) migrated, ${skipped} skipped.`);
-  console.log('Next step: set IMMICH_STORAGE_BACKEND=s3 and restart the server.');
+  console.log('Next step: set IMMICH_STORAGE_BACKEND=tos and restart the server.');
 };
 
 run().catch((error) => {

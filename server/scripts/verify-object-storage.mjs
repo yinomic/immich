@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 /**
- * Smoke test for the configured object storage: verifies credentials, endpoint,
- * path-style addressing and presigned URLs before you trust the bucket.
+ * Smoke test for the configured Volcengine TOS bucket: verifies credentials, endpoint
+ * and presigned URLs before you trust it.
  *
- *   S3_ENDPOINT=... S3_REGION=... S3_BUCKET=... \
- *   S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=... \
+ *   TOS_ENDPOINT=tos-cn-beijing.volces.com TOS_REGION=cn-beijing TOS_BUCKET=... \
+ *   TOS_ACCESS_KEY_ID=... TOS_ACCESS_KEY_SECRET=... \
  *   node scripts/verify-object-storage.mjs
  *
  * It writes one small object under `_verify/`, reads it back, fetches a presigned
  * URL over the network, then deletes the object again.
  */
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { TosClient } from '@volcengine/tos-sdk';
 
-const { S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_FORCE_PATH_STYLE, S3_PREFIX } =
-  process.env;
+const { TOS_ENDPOINT, TOS_REGION, TOS_BUCKET, TOS_ACCESS_KEY_ID, TOS_ACCESS_KEY_SECRET, TOS_PREFIX } = process.env;
 
-const required = { S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY };
+const required = { TOS_ENDPOINT, TOS_REGION, TOS_BUCKET, TOS_ACCESS_KEY_ID, TOS_ACCESS_KEY_SECRET };
 const missing = Object.entries(required)
   .filter(([, value]) => !value)
   .map(([key]) => key);
@@ -25,17 +23,15 @@ if (missing.length > 0) {
   process.exit(2);
 }
 
-const client = new S3Client({
-  endpoint: S3_ENDPOINT,
-  region: S3_REGION,
-  forcePathStyle: (S3_FORCE_PATH_STYLE ?? 'true') !== 'false',
-  credentials: { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY },
-  // TOS/COS reject the `aws-chunked` transfer encoding that SDK v3 uses by default
-  requestChecksumCalculation: 'WHEN_REQUIRED',
-  responseChecksumValidation: 'WHEN_REQUIRED',
+const client = new TosClient({
+  accessKeyId: TOS_ACCESS_KEY_ID,
+  accessKeySecret: TOS_ACCESS_KEY_SECRET,
+  endpoint: TOS_ENDPOINT,
+  region: TOS_REGION,
+  bucket: TOS_BUCKET,
 });
 
-const prefix = (S3_PREFIX ?? '').replace(/\/?$/, (m) => (m ? '/' : ''));
+const prefix = (TOS_PREFIX ?? '').replace(/\/?$/, (m) => (m ? '/' : ''));
 const key = `${prefix}_verify/immich-storage-check.txt`;
 const body = Buffer.from(`immich object storage check ${new Date().toISOString()}\n`);
 
@@ -55,12 +51,12 @@ const step = async (name, fn) => {
 };
 
 const main = async () => {
-  console.log(`endpoint ${S3_ENDPOINT}\nregion   ${S3_REGION}\nbucket   ${S3_BUCKET}\nkey      ${key}\n`);
+  console.log(`endpoint ${TOS_ENDPOINT}\nregion   ${TOS_REGION}\nbucket   ${TOS_BUCKET}\nkey      ${key}\n`);
 
   const results = [];
   results.push(
     await step('PUT object', async () => {
-      await client.send(new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: body, ContentType: 'text/plain' }));
+      await client.putObject({ bucket: TOS_BUCKET, key, body, contentType: 'text/plain' });
     }),
   );
   if (!results.at(-1)) {
@@ -70,19 +66,14 @@ const main = async () => {
 
   results.push(
     await step('HEAD object', async () => {
-      const head = await client.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: key }));
-      return `${head.ContentLength} bytes, type ${head.ContentType ?? 'n/a'}`;
+      const { data: head } = await client.headObject({ bucket: TOS_BUCKET, key });
+      return `${head['content-length']} bytes`;
     }),
   );
 
   results.push(
     await step('GET object', async () => {
-      const response = await client.send(new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }));
-      const chunks = [];
-      for await (const chunk of response.Body) {
-        chunks.push(chunk);
-      }
-      const received = Buffer.concat(chunks);
+      const { data: received } = await client.getObject({ bucket: TOS_BUCKET, key });
       if (!received.equals(body)) {
         throw new Error('content mismatch');
       }
@@ -92,7 +83,7 @@ const main = async () => {
 
   results.push(
     await step('presigned GET', async () => {
-      const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }), { expiresIn: 60 });
+      const url = client.getPreSignedUrl({ bucket: TOS_BUCKET, key, method: 'GET', expires: 60 });
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`http ${response.status}`);
@@ -107,7 +98,7 @@ const main = async () => {
 
   results.push(
     await step('DELETE object', async () => {
-      await client.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+      await client.deleteObject({ bucket: TOS_BUCKET, key });
     }),
   );
 
