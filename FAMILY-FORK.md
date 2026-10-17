@@ -495,3 +495,15 @@ pnpm --filter @immich/sdk build
 3. `lib/utils.ts`(17/19)：`PersonResponseDto` / `SharedLinkResponseDto` 导入与 `getSharedLink` 一族（连同 `asset.service.ts` 的使用点）
 4. `lib/utils/thumbnail-util.spec.ts`(104)、`test-data/factories/asset-factory.ts`(54)：对象字面量多余字段
 5. `lib/utils/timeline-util.ts`：`people` 字段与 `TimelineAsset` 类型（建议连同 `thumbnail-util.ts` 一起在本轮做，需一次性改类型 + 3 个使用点）
+
+### Round 25（SDK 清理：web tsc 归零，但 svelte-check 暴露真正的工作量）
+在 `sdk-regen-wip` 上把 `pnpm --filter immich-web check:typescript` 清到 **0 错**（9 → 0）：
+- `search-manager`：移除 smart/ocr 分支，返回空的 `personIds`
+- `utils.ts`：删除 `getSharedLink`/`setSharedLink`/`getPeopleThumbnailUrl` 与所有 shared link 参数
+- `asset.service.ts`：去掉分享弹窗相关接线；`utils.spec.ts`：删除 4 个 shared link 用例
+
+**但 `check:svelte` 报 182 个错误 / 46 个文件**——因为 `tsc --noEmit` **不检查 `.svelte` 文件**，而大量组件仍在 import 已删除的模块（`shared-link.service`、`activity-manager`、`person*.service`、`face store`）。这才是 SDK 清理真正剩下的工作量，之前几轮我只看 tsc 才误以为"只剩 9 处"。
+
+**教训**：web 侧验证必须同时跑 `check:typescript` **和** `check:svelte`；只看 tsc 会严重低估改动面（本轮 0 vs 182 的差距就是证据）。
+
+**建议**：这属于"死页面/死组件"的清扫，与五项功能需求无关（主分支已全绿可用）。是否继续磨这 182 处，建议由用户决定——若继续，应专门开一轮，按"svelte-check 报错文件 → 删组件或改引用 → 重跑 svelte-check"的循环推进。
