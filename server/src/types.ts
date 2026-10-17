@@ -370,10 +370,6 @@ export type JobItem =
   | { name: JobName.SidecarQueueAll; data: IBaseJob }
   | { name: JobName.SidecarCheck; data: IEntityJob }
   | { name: JobName.SidecarWrite; data: IEntityJob }
-
-  // Smart Search
-  | { name: JobName.SmartSearchQueueAll; data: IBaseJob }
-  | { name: JobName.SmartSearch; data: IEntityJob }
   | { name: JobName.AssetEmptyTrash; data?: IBaseJob }
 
   // Duplicate Detection

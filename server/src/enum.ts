@@ -813,7 +813,6 @@ export enum QueueName {
   ThumbnailGeneration = 'thumbnailGeneration',
   MetadataExtraction = 'metadataExtraction',
   VideoConversion = 'videoConversion',
-  SmartSearch = 'smartSearch',
   BackgroundTask = 'backgroundTask',
   StorageTemplateMigration = 'storageTemplateMigration',
   Migration = 'migration',
@@ -891,9 +890,6 @@ export enum JobName {
   SidecarQueueAll = 'SidecarQueueAll',
   SidecarCheck = 'SidecarCheck',
   SidecarWrite = 'SidecarWrite',
-
-  SmartSearchQueueAll = 'SmartSearchQueueAll',
-  SmartSearch = 'SmartSearch',
 
   StorageTemplateMigration = 'StorageTemplateMigration',
   StorageTemplateMigrationSingle = 'StorageTemplateMigrationSingle',

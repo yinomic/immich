@@ -22,7 +22,6 @@ const QueuesResponseLegacySchema = z
     [QueueName.ThumbnailGeneration]: QueueResponseLegacySchema,
     [QueueName.MetadataExtraction]: QueueResponseLegacySchema,
     [QueueName.VideoConversion]: QueueResponseLegacySchema,
-    [QueueName.SmartSearch]: QueueResponseLegacySchema,
     [QueueName.StorageTemplateMigration]: QueueResponseLegacySchema,
     [QueueName.Migration]: QueueResponseLegacySchema,
     [QueueName.BackgroundTask]: QueueResponseLegacySchema,

@@ -165,7 +165,7 @@ export class JobService extends BaseService {
           break;
         }
 
-        const jobs: JobItem[] = [{ name: JobName.SmartSearch, data: item.data }];
+        const jobs: JobItem[] = [];
 
         if (asset.type === AssetType.Video) {
           jobs.push({ name: JobName.AssetEncodeVideo, data: item.data });

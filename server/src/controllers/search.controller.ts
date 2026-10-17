@@ -76,9 +76,6 @@ export class SearchController {
     return this.service.searchLargeAssets(auth, dto);
   }
 
-  @Post('smart')
-  @Authenticated({ permission: Permission.AssetRead })
-  @HttpCode(HttpStatus.OK)
   @Get('explore')
   @Authenticated({ permission: Permission.AssetRead })
   @Endpoint({
