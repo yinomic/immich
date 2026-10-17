@@ -1,4 +1,4 @@
-import { AssetTypeEnum, AssetVisibility, type MetadataSearchDto, type SmartSearchDto } from '@immich/sdk';
+import { AssetTypeEnum, AssetVisibility, type MetadataSearchDto } from '@immich/sdk';
 import type { DateTime } from 'luxon';
 import { SvelteSet } from 'svelte/reactivity';
 import { goto } from '$app/navigation';

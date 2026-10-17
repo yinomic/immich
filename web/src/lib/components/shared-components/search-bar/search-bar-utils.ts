@@ -1,4 +1,4 @@
-import { getAllPeople, type PersonResponseDto, type TagResponseDto } from '@immich/sdk';
+import { type PersonResponseDto, type TagResponseDto } from '@immich/sdk';
 import { DateTime } from 'luxon';
 import { t } from 'svelte-i18n';
 import type { SvelteSet } from 'svelte/reactivity';
@@ -135,18 +135,6 @@ export const getSearchMediaTitle = (mediaType: MediaType) => {
       return;
     }
   }
-};
-
-export const getPeople = async (selected: SvelteSet<string>): Promise<PersonResponseDto[]> => {
-  const $t = get(t);
-  try {
-    const res = await getAllPeople({ withHidden: false });
-    res.people.sort((a, b) => (selected.has(a.id) ? -1 : selected.has(b.id) ? 1 : 0));
-    return res.people;
-  } catch (error) {
-    handleError(error, $t('errors.failed_to_get_people'));
-  }
-  return [];
 };
 
 export const getSearchPeopleTitle = (people: PersonResponseDto[], selected: SvelteSet<string>) => {
