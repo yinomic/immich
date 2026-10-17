@@ -94,7 +94,8 @@ export class TosObjectStorage implements ObjectStorage {
   }
 
   async delete(keys: string[]): Promise<void> {
-    const objects = keys.map((key) => ({ key: this.objectKey(key) })).filter(({ key }) => key.length > 0);
+    // filter before prefixing, otherwise an empty key would target the prefix itself
+    const objects = keys.filter((key) => key.length > 0).map((key) => ({ key: this.objectKey(key) }));
     if (objects.length === 0) {
       return;
     }
@@ -130,7 +131,10 @@ export class TosObjectStorage implements ObjectStorage {
     if (error instanceof TosClientError) {
       return true;
     }
-    return /404|NotFound/i.test((error as Error)?.message ?? '');
+
+    // be tolerant about the exact error shape: a 404 from any layer means "absent"
+    const status = (error as { statusCode?: number; status?: number })?.statusCode ?? (error as { status?: number })?.status;
+    return status === 404 || /404|NotFound|NoSuchKey/i.test((error as Error)?.message ?? '');
   }
 
   private objectKey(key: string): string {
