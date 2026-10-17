@@ -45,7 +45,17 @@ for (const [name, value] of Object.entries({ DB_URL: dbUrl, IMMICH_MEDIA_LOCATIO
   }
 }
 
-const tos = new TosClient({ accessKeyId, accessKeySecret, endpoint, region, bucket });
+// created lazily: a --dry-run must work without credentials
+let tos;
+const getClient = () => {
+  if (!tos) {
+    if (!accessKeyId || !accessKeySecret) {
+      throw new Error('TOS_ACCESS_KEY_ID and TOS_ACCESS_KEY_SECRET are required to upload');
+    }
+    tos = new TosClient({ accessKeyId, accessKeySecret, endpoint, region, bucket });
+  }
+  return tos;
+};
 
 const CONTENT_TYPES = {
   '.jpg': 'image/jpeg',
@@ -91,7 +101,15 @@ const run = async () => {
 
   let uploaded = 0;
   let skipped = 0;
+  let outside = 0;
   for (const item of work) {
+    // Derived files (thumbnails, previews, transcodes) live in the local cache by
+    // design and must stay there - only library files belong in the bucket.
+    if (!item.path.startsWith(`${mediaLocation}/`)) {
+      outside++;
+      continue;
+    }
+
     const key = keyFor(item.path);
     try {
       await access(item.path);
@@ -108,8 +126,9 @@ const run = async () => {
     }
 
     const contentType = CONTENT_TYPES[extname(item.path).toLowerCase()];
-    await tos.putObject({ bucket, key, body: createReadStream(item.path), contentLength: size, contentType });
-    const { data: head } = await tos.headObject({ bucket, key });
+    const client = getClient();
+    await client.putObject({ bucket, key, body: createReadStream(item.path), contentLength: size, contentType });
+    const { data: head } = await client.headObject({ bucket, key });
     if (Number(head['content-length']) !== size) {
       throw new Error(`uploaded size mismatch for ${key}`);
     }
@@ -131,6 +150,10 @@ const run = async () => {
   if (dryRun) {
     console.log('Dry run finished, nothing was changed.');
     return;
+  }
+
+  if (outside > 0) {
+    console.log(`Skipped ${outside} derived file(s) outside ${mediaLocation} (they stay in the local cache).`);
   }
 
   console.log(`Done: ${uploaded} file(s) migrated, ${skipped} skipped.`);

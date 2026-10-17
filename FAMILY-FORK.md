@@ -333,7 +333,7 @@
 - **PostgreSQL 16**（stock 镜像即可，**不需要** vectorchord/pgvector —— 向量已移到云/本地向量库）
 - **Redis / Valkey**（任务队列 + 多实例事件）
 - **不需要** machine-learning 容器
-- 对象存储：火山 TOS / 腾讯 COS / MinIO（S3 兼容）；本地文件系统也仍可用（默认）
+- 对象存储：**火山引擎 TOS**（官方 SDK；本地文件系统仍可用，默认）
 - **不需要搜索相关服务**：语义搜索与向量库已在 Round 17-19 全部移除（只保留本地关系型的元数据搜索，零额外成本）
 
 ### 9.2 compose（推荐写法）
@@ -523,41 +523,43 @@ pnpm --filter @immich/sdk build
 
 即"迁移已有照片 → 从桶里读出来"这条链路已经跑通。
 
-### 10. 对象存储接入清单（火山 TOS / 腾讯 COS）
+### 10. 对象存储接入清单（火山引擎 TOS）
 
-**10.1 填什么**
-| 项 | 火山 TOS | 腾讯 COS |
-|---|---|---|
-| `S3_ENDPOINT` | `https://tos-s3-<region>.volces.com`（如 `cn-beijing`） | `https://cos.<region>.myqcloud.com`（如 `ap-guangzhou`） |
-| `S3_REGION` | 与 endpoint 的 region 一致 | 与 endpoint 的 region 一致 |
-| `S3_FORCE_PATH_STYLE` | `true`（未实测；遇到 `PathStyleDomainForbidden` 就改 `false`） | **`false`**（实测必须；path-style 会被拒绝） |
-| `S3_BUCKET` | 桶名 | 桶名（形如 `name-appid`） |
-| 密钥 | 账号的 AK/SK（建议用子账号 + 只读写该桶的策略） | 访问密钥的 SecretId/SecretKey |
+**10.1 配置（只用 TOS）**
+```ini
+IMMICH_STORAGE_BACKEND=tos
+TOS_ENDPOINT=tos-cn-beijing.volces.com     # 不带协议、不带桶名
+TOS_REGION=cn-beijing                      # 与 endpoint 地域一致
+TOS_BUCKET=your-bucket
+TOS_ACCESS_KEY_ID=...
+TOS_ACCESS_KEY_SECRET=...
+# TOS_PREFIX=immich/                       # 可选
+TOS_PRESIGN_TTL=3600
+IMMICH_SOFT_DELETE_ONLY=true               # 默认开启
+```
 
-**10.2 代码里的三个关键点（都已处理）**
-1. **不要用 `aws-chunked` 上传**：SDK v3 默认启用尾部校验和，TOS/COS 常直接拒绝 → 已设为 `requestChecksumCalculation/responseChecksumValidation: 'WHEN_REQUIRED'`。
-2. **COS 必须 virtual-hosted 风格**：实测 `S3_FORCE_PATH_STYLE=true` 会在 PUT 时返回 `403 PathStyleDomainForbidden`（"must be addressed using COS virtual-styled domain"），改成 `false` 后 PUT/HEAD/GET/预签名 GET 全部通过。（TOS 未实测。）
-3. **COS 的多对象删除需要 `Content-MD5`**：批量删除会返回 `InvalidRequest: Missing required header for this request: Content-MD5` → `S3ObjectStorage.delete()` 已加**降级为逐个删除**的逻辑（仅在该错误时触发，其他 provider 仍走批量）。
+**10.2 实现说明**
+- 走 `@volcengine/tos-sdk` 官方 SDK：`putObject / getObject / getObjectV2 / headObject / deleteMultiObjects / getPreSignedUrl`
+- 因此**不需要**任何 S3 兼容层的绕法（path-style、`aws-chunked`、批量删除 `Content-MD5` 都已随 S3 实现删除）
+- 密钥建议用子账号 + 只读写该桶的策略；**默认软删除下不需要删除权限**
 
-**10.2.1 腾讯云子账号需要的权限（实测踩到）**
-- 能上传/读取：`cos:PutObject`、`cos:GetObject`、`cos:HeadObject`（已通过）
-- **删除需要额外授权**：`cos:DeleteObject` 与 `cos:DeleteMultipleObjects`——实测当前密钥单对象删除返回 `403 AccessDenied`，未授权时"删除照片"会在服务端报错。
+**10.3 软删除（默认开启）**
+四层保证照片删不掉：删除资产只进回收站（不删行/不删文件）→ `force` 永久删除降级为回收站 → 清空回收站被跳过 → 存储层 `delete()` 只记日志。
+想真正删除：`IMMICH_SOFT_DELETE_ONLY=false` 并给密钥补删除权限。
 
-**10.3 CORS 需不需要？**
-- **浏览时间线/看原图一般不需要**：缩略图由服务端从本地缓存直接返回；原图走 `302` 到预签名 URL，浏览器在 `<img>/<video>` 里加载跨域资源不受同源限制。
-- **只有当你用 `fetch`/XHR 直接拉预签名 URL 时才需要**给桶配 CORS（`AllowedOrigin` = 你的站点域名，`AllowedMethod` 含 `GET`、`HEAD`，`ExposeHeaders` 含 `Content-Length`、`Content-Range`）。
-- 预签名有效期默认 3600s（`S3_PRESIGN_TTL` 可调）。时间线快速滚动时同一张图会命中浏览器缓存，不会反复签名。
+**10.4 上线顺序**
+1. 建桶 → 建子账号与密钥（读写即可）
+2. 先保持 `IMMICH_STORAGE_BACKEND=local` 跑起来
+3. 填好 `TOS_*` 后先跑连通性验证：`cd server && set -a && . <(grep '^TOS_' ../docker/.env) && set +a && node scripts/verify-object-storage.mjs`（PUT/HEAD/GET/预签名/删除）
+4. 迁移旧照片：`node scripts/migrate-to-object-storage.mjs --dry-run` 看清单，去掉 `--dry-run` 正式执行（可加 `--delete-local`）
+5. 改 `IMMICH_STORAGE_BACKEND=tos` 重启，日志应出现 `Using Volcengine TOS (...)`
+6. 验证：上传照片 → 桶里出现 `upload/...` → 时间线能看到 → 点开原图返回 302 到 TOS 预签名 URL
 
-**10.4 上线顺序（推荐）**
-1. 建桶 → 建子账号/密钥（只给该桶的读写权限）
-2. 保持 `IMMICH_STORAGE_BACKEND=local`，先把现有照片照常跑起来
-3. 停服务 → `server/scripts/migrate-to-object-storage.mjs --dry-run` 看清单 → 去掉 `--dry-run` 正式迁移 → 需要的话加 `--delete-local`
-4. 改 `.env`：`IMMICH_STORAGE_BACKEND=s3` + `S3_*`，启动后确认日志出现 `Using S3 object storage (...)`
-5. 验证：`GET /assets/:id/original` 返回 302 到预签名 URL；桶里只有 `upload/` 等，**没有** `thumbs/`（缩略图在本地 `/cache`，可随时删）
+**10.5 注意**
+- `UPLOAD_LOCATION` 本地目录在 TOS 模式下基本闲置（原图在桶里；缩略图在 `/cache`）；备份时要保的是桶
+- 未实现浏览器直传（上传流量走服务器）；家庭场景带宽足够
+- 桶不要给 `upload/` 配生命周期过期规则
 
-**10.5 还需要注意**
-- 跨域直传（客户端把照片直接 PUT 到桶）**没有实现**，上传流量仍走你的服务器；家庭场景带宽足够，若需要可后续加预签名 PUT。
-- 桶的存储类型/生命周期建议保持默认，不要给 `upload/` 配过期删除规则。
 
 ### Round 29（改为只支持火山引擎 TOS + 软删除开关默认开启）
 
