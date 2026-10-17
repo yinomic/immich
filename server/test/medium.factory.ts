@@ -632,8 +632,6 @@ const assetJobStatusInsert = (
 ): Insertable<AssetJobStatusTable> => {
   const date = DateTime.now().minus({ days: 15 }).toISO();
   const defaults: Omit<Insertable<AssetJobStatusTable>, 'assetId'> = {
-    duplicatesDetectedAt: date,
-    facesRecognizedAt: date,
     metadataExtractedAt: date,
   };
 

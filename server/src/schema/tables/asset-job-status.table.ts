@@ -7,11 +7,5 @@ export class AssetJobStatusTable {
   assetId!: string;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
-  facesRecognizedAt!: Timestamp | null;
-
-  @Column({ type: 'timestamp with time zone', nullable: true })
   metadataExtractedAt!: Timestamp | null;
-
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  duplicatesDetectedAt!: Timestamp | null;
 }

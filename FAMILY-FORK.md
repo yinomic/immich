@@ -780,6 +780,13 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 
 **顺带清掉的 web 侧**（由一个子代理并行完成，仅动 `web/`）：地图设置里的「包含共享的伙伴资产」开关、`mapSettings.withPartners`、`Map.svelte` / `MapTimelinePanel` / photos / recently-added / geolocation / album 页里的 `withPartners`、timeline-manager 里的伙伴判断。
 
+**踩到的坑：只 DROP 表还不够，必须同时清 `migration_overrides`**
+第一次做完后镜像起来报 **schema drift**，`immich-admin schema-check` 的清单是：
+1. `asset_job_status.facesRecognizedAt` / `duplicatesDetectedAt` 「missing and needs to be created」→ 因为我只在迁移里 DROP 了列，却**忘了从 `schema/tables/asset-job-status.table.ts` 里删掉这两个列定义**（drift 的 source 是代码里的 kysely 表定义，target 才是数据库）；
+2. `function_partner_delete_audit` / `index_activity_like_idx` / `trigger_activity_updatedAt` / `trigger_partner_delete_audit` / `trigger_partner_updatedAt` 「exists but is no longer needed」→ 这些是 **`migration_overrides` 表**里的行（初始迁移用 `INSERT INTO migration_overrides` 记录那些无法从代码推导的函数/触发器/自定义索引）。表被 DROP 掉了，但登记行还在，drift 就一直报。`migration_overrides` 是 `OverrideDrop` 类型的差异源。
+
+修法：迁移里补 `DELETE FROM migration_overrides WHERE name IN (...)`，并把两个列从表定义与 upsert 里删掉。修完后在**全新空库**上用镜像启动 → 4 个迁移全部成功 + **`No schema drift detected`** + `/api/server/ping` 200。
+
 **仍然保留的（有意为之）**：
 - **相册协作**（`album_user`、`AddUsersModal`、Owner/Editor/Viewer 角色）：这是**可用功能而不是死代码**，而且它需要第二个用户才有意义。应用目前是单账号，要不要连它一起删由你决定——告诉我一声我就清。
 - `asset.duplicateId`：仍挂在 `PUT /assets` 的批量更新 DTO 与搜索结果投影上，删它属于 API 变更而非死代码清理。
