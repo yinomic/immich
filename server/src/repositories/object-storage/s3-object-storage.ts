@@ -42,6 +42,10 @@ export class S3ObjectStorage implements ObjectStorage {
       region: options.region,
       forcePathStyle: options.forcePathStyle ?? true,
       credentials: { accessKeyId: options.accessKeyId, secretAccessKey: options.secretAccessKey },
+      // TOS and COS reject the `aws-chunked` transfer encoding with trailing
+      // checksums that SDK v3 uses by default, so only send checksums if required.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
 
     this.logger.setContext(S3ObjectStorage.name);

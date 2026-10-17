@@ -507,3 +507,18 @@ pnpm --filter @immich/sdk build
 **教训**：web 侧验证必须同时跑 `check:typescript` **和** `check:svelte`；只看 tsc 会严重低估改动面（本轮 0 vs 182 的差距就是证据）。
 
 **建议**：这属于"死页面/死组件"的清扫，与五项功能需求无关（主分支已全绿可用）。是否继续磨这 182 处，建议由用户决定——若继续，应专门开一轮，按"svelte-check 报错文件 → 删组件或改引用 → 重跑 svelte-check"的循环推进。
+
+### Round 26（迁移工具：把已有本地库搬进桶，并端到端验证）
+新增 `server/scripts/migrate-to-object-storage.mjs`（放在 server 包内，因为 ESM 从**脚本所在目录**解析依赖）：
+- 扫描 `asset.originalPath` 与 `asset_file.path` 里仍为绝对路径的行，把本地文件上传到桶（key = 相对 `IMMICH_MEDIA_LOCATION` 的路径，与服务端 `upload/<user>/xx/yy/<file>` 方案天然一致）
+- 每个文件上传后校验（HeadObject）再更新数据库路径；支持 `--dry-run` / `--delete-local` / `--limit n`
+- 上传时带 `ContentType` / `ContentLength`
+
+**顺带修掉一个真实的兼容性问题**：AWS SDK v3 默认对上传启用 `aws-chunked` + 尾部校验和，**TOS/COS 这类 S3 兼容服务常会拒绝**。服务端 `S3ObjectStorage` 与迁移脚本都改为 `requestChecksumCalculation/responseChecksumValidation: 'WHEN_REQUIRED'`。
+
+**端到端验证（本机 s3rver，无云凭证）**
+1. `--dry-run --limit 4`：正确列出 4 个本地文件 → 对象 key
+2. 真实迁移 `--limit 2`：桶中出现对象、数据库 `originalPath` 变为对象 key
+3. 以 `IMMICH_STORAGE_BACKEND=s3` 启动服务，访问被迁移资产：`GET /assets/:id/original` → **302 到预签名 URL** → 拉取 **200（6402 字节）**；`/thumbnail` → 200
+
+即"迁移已有照片 → 从桶里读出来"这条链路已经跑通。
