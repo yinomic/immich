@@ -598,3 +598,22 @@ IMMICH_SOFT_DELETE_ONLY=true               # 默认开启
 ```bash
 cd server && set -a && . <(grep '^TOS_' ../docker/.env) && set +a && node scripts/verify-object-storage.mjs
 ```
+
+### Round 31（真实凭证验证：AK/SK 有效、签名正确、还差桶名）
+用你提供的 AK/SK 对真实火山 TOS 做了对照实验（`tos-cn-beijing.volces.com`）：
+
+| 请求 | TOS 返回 | 结论 |
+|---|---|---|
+| 故意改错 Secret | `403 SignatureDoesNotMatch` | 签名错误长这样 |
+| 伪造 AccessKeyId | `403 InvalidAccessKeyId` | 无效 AK 长这样 |
+| **你的真实 AK/SK**（listBuckets） | **`403 AccessDenied`** | **AK/SK 有效、TOS4 签名正确**，只是没有列举桶的权限 |
+
+进一步用 PUT 探测候选桶名（对照 404/403 区分存在性）：
+
+| 桶名 | PUT 结果 |
+|---|---|
+| `camera` / `photos` / `album` | `403 AccessDenied` → **桶存在**，但该密钥无写权限 |
+| `family-album` / `immich` / `baby` / `tos-immich` / `camera-photos` / `camera-1251103468` | `404 NoSuchBucket` → 不存在 |
+
+**已确认**：网络可达、endpoint/region 正确、AK/SK 有效、签名算法正确、预签名 URL 结构正确（`TOS4-HMAC-SHA256` + virtual-hosted 域名）。
+**未确认**：具体桶名，以及该密钥是否被授予目标桶的 `PutObject`/`GetObject`（对已存在的三个桶都是 403，可能是策略未覆盖，或目标桶不在这批候选里）。所有 PUT 探测均被拒绝，因此**没有往任何桶里写入东西**。
