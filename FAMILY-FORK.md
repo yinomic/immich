@@ -919,3 +919,43 @@ flutter build apk --release                    # 三合一
 | `apksigner verify` | `Verifies`，v2 方案为 true |
 | `unzip -t` | zip 完整性 OK |
 | 包内原生库 | `libflutter.so`、`libnative_core_ffi.so`、`libsqlite3.so`、`libsqlite3_connection_pool.so`（三种 ABI 各一份） |
+
+
+---
+
+## Round 39 — 排查「服务器版本与 app 版本不兼容」提示
+
+现象：装上 Round 38 的 APK 后，app 提示版本不兼容。排查结论如下。
+
+### 这句提示来自哪里
+只来自 `mobile/lib/utils/version_compatibility.dart`（上游代码，本仓库**未改过**，`git diff main` 为空），登录页在「服务器地址校验通过、进入账号密码表单」时显示。判定只用 **major**：
+
+| 条件 | 提示 |
+|---|---|
+| `app.major < server.major` | Your mobile app version is not compatible… |
+| `app.major > server.major + 1` | Your server version is not compatible… |
+
+实跑验证（`flutter test` 里直接调用该函数）：
+
+| app | server | 结果 |
+|---|---|---|
+| 3.3.0-rc.0 | 3.3.0-rc.0 | **COMPATIBLE** |
+| 3.3.0-rc.0 | 3.3.0 / 2.0.0 | COMPATIBLE |
+| 3.3.0-rc.0 | 1.0.0 / 0.0.0 | 报「server 版本不兼容」 |
+
+也就是说：**只有 app 读到的 server 版本 major ≤ 1 才会报**，其中 `0.0.0` 是 `ServerInfoNotifier` 的初始值——即「`GET /api/server/version` 没取到」时 app 会误判。真实版本两侧完全一致（APK versionName `3.3.0-rc.0`；服务端 `server/package.json` 同样是 `3.3.0-rc.0`）。
+
+### 服务端侧实测（本机跑同版本镜像）
+- `GET /api/server/version` → `{"major":3,"minor":3,"patch":0,"prerelease":0,"featureLevel":1}` ✅
+- `GET /api/server/config`、`GET /api/server/features` 的**每一个必填字段**都和 app 的 Dart DTO（`mobile/generated/openapi`）对得上，没有缺字段 ✅
+- app 侧解析链路用真实响应实跑：`ServerVersionResponseDto.fromJson` → `ServerVersion.fromDto` → 判定 = **COMPATIBLE** ✅
+- 本仓库对 version 相关代码的改动只有「关掉服务端主动外呼的版本检查」（`disableVersionCheck`），不影响 `/server/version`
+
+### 本轮改动（消除误判）
+`mobile/lib/utils/version_compatibility.dart`：`serverVersion.major == 0`（= 版本没读到的占位值）时**不再提示**，真实的 major 差距仍然提示。`flutter test` 覆盖三种情况。
+
+### 需要你确认的两件事（用于定位你那边到底是哪种情况）
+1. 提示的**原文**是哪一句？「Your **mobile app** version is not compatible…」= 装的是旧版 app（major < 3）；「Your **server** version is not compatible…」= app 没读到服务端版本。
+2. 用手机浏览器打开 `http://<你的服务器>:2283/api/server/version`，看返回的 `major` 是多少：
+   - `major:3` → 服务端是最新的，问题在 app 侧（未读到版本 / 装的是旧包），换用本轮的 APK 即可；
+   - `major:1` 或 `2` → 你**正在运行的容器还是旧镜像**，需要 `docker compose pull`（或重新 `docker build`）后 `docker compose up -d --force-recreate`。
