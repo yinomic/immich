@@ -6,11 +6,9 @@ import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
 import 'package:immich_mobile/infrastructure/repositories/settings.repository.dart';
 import 'package:immich_mobile/presentation/actions/action.widget.dart';
 import 'package:immich_mobile/presentation/actions/share.action.dart';
-import 'package:immich_mobile/presentation/actions/share_link.action.dart';
 import 'package:immich_ui/immich_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../factories/local_asset_factory.dart';
 import '../../factories/remote_asset_factory.dart';
 import '../presentation_context.dart';
 
@@ -120,28 +118,6 @@ void main() {
 
     testWidgets('is hidden when nothing is selected', (tester) async {
       await pumpShare(tester, selection: const {});
-
-      expect(find.byType(ImmichIconButton), findsNothing);
-    });
-  });
-
-  group('ShareLinkAction', () {
-    testWidgets('offers a link for a remote asset', (tester) async {
-      await tester.pumpTestWidget(
-        context,
-        const ActionIconButton(action: ShareLinkAction(source: .timeline)),
-        overrides: context.selected({RemoteAssetFactory.create()}),
-      );
-
-      expect(find.byType(ImmichIconButton), findsOneWidget);
-    });
-
-    testWidgets('is hidden for a local-only asset', (tester) async {
-      await tester.pumpTestWidget(
-        context,
-        const ActionIconButton(action: ShareLinkAction(source: .timeline)),
-        overrides: context.selected({LocalAssetFactory.create()}),
-      );
 
       expect(find.byType(ImmichIconButton), findsNothing);
     });

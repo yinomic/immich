@@ -7,25 +7,17 @@ class RemoteAlbumOption extends StatelessWidget {
   const RemoteAlbumOption({
     super.key,
     this.onAddPhotos,
-    this.onAddUsers,
     this.onDeleteAlbum,
-    this.onLeaveAlbum,
-    this.onCreateSharedLink,
     this.onToggleAlbumOrder,
     this.onEditAlbum,
-    this.onShowOptions,
     this.iconColor,
     this.iconShadows,
   });
 
   final VoidCallback? onAddPhotos;
-  final VoidCallback? onAddUsers;
   final VoidCallback? onDeleteAlbum;
-  final VoidCallback? onLeaveAlbum;
-  final VoidCallback? onCreateSharedLink;
   final VoidCallback? onToggleAlbumOrder;
   final VoidCallback? onEditAlbum;
-  final VoidCallback? onShowOptions;
   final Color? iconColor;
   final List<Shadow>? iconShadows;
 
@@ -51,28 +43,6 @@ class RemoteAlbumOption extends StatelessWidget {
       );
     }
 
-    if (onAddUsers != null) {
-      menuChildren.add(
-        BaseActionButton(
-          label: context.t.album_viewer_page_share_add_users,
-          iconData: Icons.group_add,
-          onPressed: onAddUsers,
-          menuItem: true,
-        ),
-      );
-    }
-
-    if (onLeaveAlbum != null) {
-      menuChildren.add(
-        BaseActionButton(
-          label: context.t.leave_album,
-          iconData: Icons.person_remove_rounded,
-          onPressed: onLeaveAlbum,
-          menuItem: true,
-        ),
-      );
-    }
-
     if (onToggleAlbumOrder != null) {
       menuChildren.add(
         BaseActionButton(
@@ -81,23 +51,6 @@ class RemoteAlbumOption extends StatelessWidget {
           onPressed: onToggleAlbumOrder,
           menuItem: true,
         ),
-      );
-    }
-
-    if (onCreateSharedLink != null) {
-      menuChildren.add(
-        BaseActionButton(
-          label: context.t.create_shared_link,
-          iconData: Icons.link,
-          onPressed: onCreateSharedLink,
-          menuItem: true,
-        ),
-      );
-    }
-
-    if (onShowOptions != null) {
-      menuChildren.add(
-        BaseActionButton(label: context.t.options, iconData: Icons.settings, onPressed: onShowOptions, menuItem: true),
       );
     }
 

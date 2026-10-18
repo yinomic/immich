@@ -82,13 +82,6 @@ const SearchPlacesSchema = z
   })
   .meta({ id: 'SearchPlacesDto' });
 
-const SearchPeopleSchema = z
-  .object({
-    name: z.string().describe('Person name to search for'),
-    withHidden: stringToBool.optional().describe('Include hidden people'),
-  })
-  .meta({ id: 'SearchPeopleDto' });
-
 const PlacesResponseSchema = z
   .object({
     name: z.string().describe('Place name'),
@@ -381,7 +374,6 @@ export class LargeAssetSearchDto extends createZodDto(LargeAssetSearchSchema) {}
 export class MetadataSearchDto extends createZodDto(MetadataSearchSchema) {}
 export class StatisticsSearchDto extends createZodDto(StatisticsSearchSchema) {}
 export class SearchPlacesDto extends createZodDto(SearchPlacesSchema) {}
-export class SearchPeopleDto extends createZodDto(SearchPeopleSchema) {}
 export class PlacesResponseDto extends createZodDto(PlacesResponseSchema) {}
 export class SearchSuggestionRequestDto extends createZodDto(SearchSuggestionRequestSchema) {}
 

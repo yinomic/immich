@@ -14,14 +14,12 @@ import 'package:immich_mobile/providers/infrastructure/remote_album.provider.dar
 import 'package:immich_mobile/providers/infrastructure/timeline.provider.dart';
 import 'package:immich_mobile/providers/timeline/multiselect.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
-import 'package:immich_mobile/widgets/album/remote_album_shared_user_icons.dart';
 
 class RemoteAlbumSliverAppBar extends ConsumerStatefulWidget {
-  const RemoteAlbumSliverAppBar({super.key, required this.kebabMenu, this.onEditTitle, this.onActivity});
+  const RemoteAlbumSliverAppBar({super.key, required this.kebabMenu, this.onEditTitle});
 
   final Widget kebabMenu;
   final void Function()? onEditTitle;
-  final void Function()? onActivity;
 
   @override
   ConsumerState<RemoteAlbumSliverAppBar> createState() => _MesmerizingSliverAppBarState();
@@ -82,11 +80,6 @@ class _MesmerizingSliverAppBarState extends ConsumerState<RemoteAlbumSliverAppBa
           onPressed: () => context.pushRoute(SlideshowRoute(timeline: ref.read(timelineServiceProvider))),
           icon: Icon(Icons.slideshow_outlined, color: actionIconColor, shadows: actionIconShadows),
         ),
-        if (currentAlbum.isActivityEnabled && currentAlbum.isShared)
-          IconButton(
-            icon: Icon(Icons.chat_outlined, color: actionIconColor, shadows: actionIconShadows),
-            onPressed: widget.onActivity,
-          ),
         widget.kebabMenu,
       ],
       title: Builder(
@@ -271,7 +264,6 @@ class _ExpandedBackgroundState extends ConsumerState<_ExpandedBackground> with S
                       ),
                     ),
                   ),
-                const Padding(padding: EdgeInsets.only(top: 8.0), child: RemoteAlbumSharedUserIcons()),
               ],
             ),
           ),

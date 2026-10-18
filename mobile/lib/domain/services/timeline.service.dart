@@ -29,11 +29,9 @@ enum TimelineOrigin {
   lockedFolder,
   video,
   place,
-  person,
   map,
   search,
   deepLink,
-  albumActivities,
   folder,
   recentlyAdded,
 }
@@ -73,9 +71,6 @@ class TimelineFactory {
   TimelineService video(String userId) => TimelineService(_timelineRepository.video(userId, groupBy));
 
   TimelineService place(String place) => TimelineService(_timelineRepository.place(place, groupBy));
-
-  TimelineService person(List<String> userIds, String personId) =>
-      TimelineService(_timelineRepository.person(userIds, personId, groupBy));
 
   TimelineService fromAssets(List<BaseAsset> assets, TimelineOrigin type) =>
       TimelineService(_timelineRepository.fromAssets(assets, type));

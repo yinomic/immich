@@ -566,15 +566,6 @@ export type MemoriesResponse = {
     /** Whether memories appear in web sidebar */
     sidebarWeb: boolean;
 };
-export type PeopleResponse = {
-    /** Whether people are enabled */
-    enabled: boolean;
-    /** People face threshold */
-    minimumFaces?: number;
-    /** Whether people appear in web sidebar */
-    sidebarWeb: boolean;
-    updateStrategy: PersonUpdateStrategy;
-};
 export type PurchaseResponse = {
     /** Date until which to hide buy button */
     hideBuyButtonUntil: string;
@@ -602,7 +593,6 @@ export type UserPreferencesResponseDto = {
     emailNotifications: EmailNotificationsResponse;
     folders: FoldersResponse;
     memories: MemoriesResponse;
-    people: PeopleResponse;
     purchase: PurchaseResponse;
     ratings: RatingsResponse;
     recentlyAdded: RecentlyAddedResponse;
@@ -642,15 +632,6 @@ export type MemoriesUpdate = {
     /** Whether memories appear in web sidebar */
     sidebarWeb?: boolean;
 };
-export type PeopleUpdate = {
-    /** Whether people are enabled */
-    enabled?: boolean;
-    /** People face threshold */
-    minimumFaces?: number;
-    /** Whether people appear in web sidebar */
-    sidebarWeb?: boolean;
-    updateStrategy?: PersonUpdateStrategy;
-};
 export type PurchaseUpdate = {
     /** Date until which to hide buy button */
     hideBuyButtonUntil?: string;
@@ -679,7 +660,6 @@ export type UserPreferencesUpdateDto = {
     emailNotifications?: EmailNotificationsUpdate;
     folders?: FoldersUpdate;
     memories?: MemoriesUpdate;
-    people?: PeopleUpdate;
     purchase?: PurchaseUpdate;
     ratings?: RatingsUpdate;
     recentlyAdded?: RecentlyAddedUpdate;
@@ -1526,10 +1506,6 @@ export type MapReverseGeocodeResponseDto = {
     state: string | null;
 };
 export type MemoryDataDto = {
-    /** Person ID (birthday memories) */
-    personId?: string;
-    /** Name of the person when the memory was created (birthday memories) */
-    personName?: string;
     /** Year of the memory */
     year: number;
 };
@@ -2777,58 +2753,6 @@ export type SyncAssetExifV1 = {
     /** Time zone */
     timeZone: string | null;
 };
-export type SyncAssetFaceDeleteV1 = {
-    /** Asset face ID */
-    assetFaceId: string;
-};
-export type SyncAssetFaceV1 = {
-    /** Asset ID */
-    assetId: string;
-    /** Bounding box X1 */
-    boundingBoxX1: number;
-    /** Bounding box X2 */
-    boundingBoxX2: number;
-    /** Bounding box Y1 */
-    boundingBoxY1: number;
-    /** Bounding box Y2 */
-    boundingBoxY2: number;
-    /** Asset face ID */
-    id: string;
-    /** Image height */
-    imageHeight: number;
-    /** Image width */
-    imageWidth: number;
-    /** Person ID */
-    personId: string | null;
-    /** Source type */
-    sourceType: string;
-};
-export type SyncAssetFaceV3 = {
-    /** Asset ID */
-    assetId: string;
-    /** Bounding box X1 */
-    boundingBoxX1: number;
-    /** Bounding box X2 */
-    boundingBoxX2: number;
-    /** Bounding box Y1 */
-    boundingBoxY1: number;
-    /** Bounding box Y2 */
-    boundingBoxY2: number;
-    /** Face deleted at */
-    deletedAt: string | null;
-    /** Asset face ID */
-    id: string;
-    /** Image height */
-    imageHeight: number;
-    /** Image width */
-    imageWidth: number;
-    /** Is the face visible in the asset */
-    isVisible: boolean;
-    /** Person ID */
-    personId: string | null;
-    /** Source type */
-    sourceType: string;
-};
 export type SyncAssetMetadataDeleteV1 = {
     /** Asset ID */
     assetId: string;
@@ -2844,44 +2768,6 @@ export type SyncAssetMetadataV1 = {
     value: {
         [key: string]: any;
     };
-};
-export type SyncAssetOcrDeleteV1 = {
-    /** Original asset ID of the deleted OCR entry */
-    assetId: string;
-    /** Timestamp when the OCR entry was deleted */
-    deletedAt: string;
-    /** Audit row ID of the deleted OCR entry */
-    id: string;
-};
-export type SyncAssetOcrV1 = {
-    /** Asset ID */
-    assetId: string;
-    /** Confidence score of the bounding box */
-    boxScore: number;
-    /** OCR entry ID */
-    id: string;
-    /** Whether the OCR entry is visible */
-    isVisible: boolean;
-    /** Recognized text content */
-    text: string;
-    /** Confidence score of the recognized text */
-    textScore: number;
-    /** Top-left X coordinate (normalized 0–1) */
-    x1: number;
-    /** Top-right X coordinate (normalized 0–1) */
-    x2: number;
-    /** Bottom-right X coordinate (normalized 0–1) */
-    x3: number;
-    /** Bottom-left X coordinate (normalized 0–1) */
-    x4: number;
-    /** Top-left Y coordinate (normalized 0–1) */
-    y1: number;
-    /** Top-right Y coordinate (normalized 0–1) */
-    y2: number;
-    /** Bottom-right Y coordinate (normalized 0–1) */
-    y3: number;
-    /** Bottom-left Y coordinate (normalized 0–1) */
-    y4: number;
 };
 export type SyncAssetV1 = {
     /** Checksum */
@@ -3085,32 +2971,6 @@ export type SyncMemoryV2 = {
     /** Show at */
     showAt: string | null;
     "type": MemoryType;
-    /** Updated at */
-    updatedAt: string;
-};
-export type SyncPersonDeleteV1 = {
-    /** Person ID */
-    personId: string;
-};
-export type SyncPersonV1 = {
-    /** Birth date */
-    birthDate: string | null;
-    /** Color */
-    color: string | null;
-    /** Created at */
-    createdAt: string;
-    /** Face asset ID */
-    faceAssetId: string | null;
-    /** Person ID */
-    id: string;
-    /** Is favorite */
-    isFavorite: boolean;
-    /** Is hidden */
-    isHidden: boolean;
-    /** Person name */
-    name: string;
-    /** Owner ID */
-    ownerId: string;
     /** Updated at */
     updatedAt: string;
 };
@@ -5890,7 +5750,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withStacked }: {
+export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, slug, tagId, timeBucket, userId, visibility, withCoordinates, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -5898,7 +5758,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
     key?: string;
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
-    personId?: string;
     slug?: string;
     tagId?: string;
     timeBucket: string;
@@ -5918,7 +5777,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
         key,
         order,
         orderBy,
-        personId,
         slug,
         tagId,
         timeBucket,
@@ -5933,7 +5791,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, userId, visibility, withCoordinates, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, slug, tagId, userId, visibility, withCoordinates, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -5941,7 +5799,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
     key?: string;
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
-    personId?: string;
     slug?: string;
     tagId?: string;
     userId?: string;
@@ -5960,7 +5817,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
         key,
         order,
         orderBy,
-        personId,
         slug,
         tagId,
         userId,
@@ -6465,7 +6321,6 @@ export enum NotificationType {
     JobFailed = "JobFailed",
     BackupFailed = "BackupFailed",
     SystemMessage = "SystemMessage",
-    ClusterGroupRequest = "ClusterGroupRequest",
     Custom = "Custom"
 }
 export enum UserAvatarColor {
@@ -6492,10 +6347,6 @@ export enum CalendarHeatmapType {
 export enum AssetOrder {
     Asc = "asc",
     Desc = "desc"
-}
-export enum PersonUpdateStrategy {
-    Self = "self",
-    Everyone = "everyone"
 }
 export enum AssetVisibility {
     Archive = "archive",
@@ -6738,8 +6589,7 @@ export enum MemorySearchOrder {
     Random = "random"
 }
 export enum MemoryType {
-    OnThisDay = "on_this_day",
-    Birthday = "birthday"
+    OnThisDay = "on_this_day"
 }
 export enum WorkflowType {
     AssetV1 = "AssetV1"
@@ -6837,8 +6687,6 @@ export enum SyncEntityType {
     AssetEditDeleteV1 = "AssetEditDeleteV1",
     AssetMetadataV1 = "AssetMetadataV1",
     AssetMetadataDeleteV1 = "AssetMetadataDeleteV1",
-    AssetOcrV1 = "AssetOcrV1",
-    AssetOcrDeleteV1 = "AssetOcrDeleteV1",
     AlbumV1 = "AlbumV1",
     AlbumV2 = "AlbumV2",
     AlbumDeleteV1 = "AlbumDeleteV1",
@@ -6865,12 +6713,6 @@ export enum SyncEntityType {
     MemoryToAssetDeleteV1 = "MemoryToAssetDeleteV1",
     StackV1 = "StackV1",
     StackDeleteV1 = "StackDeleteV1",
-    PersonV1 = "PersonV1",
-    PersonDeleteV1 = "PersonDeleteV1",
-    AssetFaceV1 = "AssetFaceV1",
-    AssetFaceV2 = "AssetFaceV2",
-    AssetFaceV3 = "AssetFaceV3",
-    AssetFaceDeleteV1 = "AssetFaceDeleteV1",
     UserMetadataV1 = "UserMetadataV1",
     UserMetadataDeleteV1 = "UserMetadataDeleteV1",
     SyncAckV1 = "SyncAckV1",

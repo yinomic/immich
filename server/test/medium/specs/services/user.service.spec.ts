@@ -1,6 +1,6 @@
 import { Kysely } from 'kysely';
 import { DateTime } from 'luxon';
-import { ImmichEnvironment, JobName, JobStatus, PersonUpdateStrategy, UserAvatarColor } from 'src/enum.js';
+import { ImmichEnvironment, JobName, JobStatus, UserAvatarColor } from 'src/enum.js';
 import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { CryptoRepository } from 'src/repositories/crypto.repository.js';
 import { EventRepository } from 'src/repositories/event.repository.js';
@@ -220,32 +220,6 @@ describe(UserService.name, () => {
 
       await expect(sut.getMyPreferences(auth)).resolves.toMatchObject({
         download: { includeEmbeddedVideos: false },
-      });
-      await expect(sut.updateMyPreferences(auth, dto)).resolves.toMatchObject(dto);
-      await expect(sut.getMyPreferences(auth)).resolves.toMatchObject(dto);
-    });
-
-    it('should update the minimum face count', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const auth = factory.auth({ user: { id: user.id } });
-
-      const dto = { people: { minimumFaces: 2 } };
-
-      await expect(sut.getMyPreferences(auth)).resolves.toMatchObject({ people: { minimumFaces: 3 } });
-      await expect(sut.updateMyPreferences(auth, dto)).resolves.toMatchObject(dto);
-      await expect(sut.getMyPreferences(auth)).resolves.toMatchObject(dto);
-    });
-
-    it('should update the person update strategy', async () => {
-      const { sut, ctx } = setup();
-      const { user } = await ctx.newUser();
-      const auth = factory.auth({ user: { id: user.id } });
-
-      const dto = { people: { updateStrategy: PersonUpdateStrategy.Self } };
-
-      await expect(sut.getMyPreferences(auth)).resolves.toMatchObject({
-        people: { updateStrategy: PersonUpdateStrategy.Everyone },
       });
       await expect(sut.updateMyPreferences(auth, dto)).resolves.toMatchObject(dto);
       await expect(sut.getMyPreferences(auth)).resolves.toMatchObject(dto);

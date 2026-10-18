@@ -6,7 +6,6 @@ enum FeatureHighlight {
   shareQuality(image: 'assets/feature_message/share_quality.webp'),
   slideshow(image: 'assets/feature_message/slideshow.webp'),
   recentlyAdded(image: 'assets/feature_message/recently_added.webp'),
-  ocr(image: 'assets/feature_message/ocr.webp'),
   openInImmich(image: 'assets/feature_message/open_in_immich.webp', platform: [.android]),
   uploadToAlbum();
 
@@ -22,7 +21,6 @@ enum FeatureHighlight {
     FeatureHighlight.shareQuality => t.share_quality_title,
     FeatureHighlight.slideshow => t.slideshow_title,
     FeatureHighlight.recentlyAdded => t.recently_added_title,
-    FeatureHighlight.ocr => t.ocr_title,
     FeatureHighlight.openInImmich => t.open_in_immich_title,
     FeatureHighlight.uploadToAlbum => t.upload_to_album_title,
   };
@@ -31,7 +29,6 @@ enum FeatureHighlight {
     FeatureHighlight.shareQuality => t.share_quality_body,
     FeatureHighlight.slideshow => t.slideshow_body,
     FeatureHighlight.recentlyAdded => t.recently_added_body,
-    FeatureHighlight.ocr => t.ocr_body,
     FeatureHighlight.openInImmich => t.open_in_immich_body,
     FeatureHighlight.uploadToAlbum => t.upload_to_album_body,
   };

@@ -40,16 +40,6 @@ class SearchService {
   }
 
   // ignore: unused-code
-  Future<List<SearchExploreResponseDto>?> getExploreData() async {
-    try {
-      return await _apiService.searchApi.getExploreData();
-    } catch (error, stackTrace) {
-      _log.severe("Failed to getExploreData", error, stackTrace);
-    }
-    return null;
-  }
-
-  // ignore: unused-code
   Future<List<AssetResponseDto>?> getAllPlaces() async {
     try {
       return await _apiService.searchApi.getAssetsByCity();

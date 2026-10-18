@@ -83,9 +83,6 @@ export const AssetOrderBySchema = z.enum(AssetOrderBy).describe('Asset sorting p
 export enum MemoryType {
   /** pictures taken on this day X years ago */
   OnThisDay = 'on_this_day',
-
-  /** pictures of a person, shown leading up to their birthday */
-  Birthday = 'birthday',
 }
 
 export const MemoryTypeSchema = z.enum(MemoryType).describe('Memory type').meta({ id: 'MemoryType' });
@@ -306,7 +303,6 @@ export const StorageFolderSchema = z.enum(StorageFolder).describe('Storage folde
 export enum SystemMetadataKey {
   MediaLocation = 'MediaLocation',
   ReverseGeocodingState = 'reverse-geocoding-state',
-  FacialRecognitionState = 'facial-recognition-state',
   MemoriesState = 'memories-state',
   AdminOnboarding = 'admin-onboarding',
   MaintenanceMode = 'maintenance-mode',
@@ -349,16 +345,6 @@ export const UserAvatarColorSchema = z
   .enum(UserAvatarColor)
   .describe('User avatar color')
   .meta({ id: 'UserAvatarColor' });
-
-export enum PersonUpdateStrategy {
-  Self = 'self',
-  Everyone = 'everyone',
-}
-
-export const PersonUpdateStrategySchema = z
-  .enum(PersonUpdateStrategy)
-  .describe('Which person records to update when editing a person')
-  .meta({ id: 'PersonUpdateStrategy' });
 
 export enum UserStatus {
   Active = 'active',
@@ -843,8 +829,6 @@ export enum JobName {
 
   VersionCheck = 'VersionCheck',
 
-  // OCR
-
   // Workflow
   WorkflowAssetTrigger = 'WorkflowAssetTrigger',
 
@@ -941,6 +925,7 @@ export enum SyncRequestType {
   AssetExifsV1 = 'AssetExifsV1',
   AssetEditsV1 = 'AssetEditsV1',
   AssetMetadataV1 = 'AssetMetadataV1',
+  /** @deprecated OCR was removed from this build */
   AssetOcrV1 = 'AssetOcrV1',
   /** @deprecated partner sharing was removed from this build */
   PartnersV1 = 'PartnersV1',
@@ -991,8 +976,6 @@ export enum SyncEntityType {
   AssetEditDeleteV1 = 'AssetEditDeleteV1',
   AssetMetadataV1 = 'AssetMetadataV1',
   AssetMetadataDeleteV1 = 'AssetMetadataDeleteV1',
-  AssetOcrV1 = 'AssetOcrV1',
-  AssetOcrDeleteV1 = 'AssetOcrDeleteV1',
 
   /** @deprecated */
   /** @deprecated */
@@ -1033,15 +1016,8 @@ export enum SyncEntityType {
   StackV1 = 'StackV1',
   StackDeleteV1 = 'StackDeleteV1',
 
-  PersonV1 = 'PersonV1',
-  PersonDeleteV1 = 'PersonDeleteV1',
-
   /** @deprecated */
-  AssetFaceV1 = 'AssetFaceV1',
   /** @deprecated */
-  AssetFaceV2 = 'AssetFaceV2',
-  AssetFaceV3 = 'AssetFaceV3',
-  AssetFaceDeleteV1 = 'AssetFaceDeleteV1',
 
   UserMetadataV1 = 'UserMetadataV1',
   UserMetadataDeleteV1 = 'UserMetadataDeleteV1',
@@ -1069,7 +1045,6 @@ export enum NotificationType {
   JobFailed = 'JobFailed',
   BackupFailed = 'BackupFailed',
   SystemMessage = 'SystemMessage',
-  ClusterGroupRequest = 'ClusterGroupRequest',
   Custom = 'Custom',
 }
 
@@ -1124,7 +1099,6 @@ export enum ConfigVisibility {
 }
 
 export enum ApiTag {
-  Activities = 'Activities',
   Albums = 'Albums',
   ApiKeys = 'API keys',
   Authentication = 'Authentication',
@@ -1137,8 +1111,6 @@ export enum ApiTag {
   DatabaseBackups = 'Database Backups (admin)',
   Deprecated = 'Deprecated',
   Download = 'Download',
-  Duplicates = 'Duplicates',
-  Faces = 'Faces',
   Integrity = 'Integrity (admin)',
   Jobs = 'Jobs',
   Libraries = 'Libraries',
@@ -1147,8 +1119,6 @@ export enum ApiTag {
   Memories = 'Memories',
   Notifications = 'Notifications',
   NotificationsAdmin = 'Notifications (admin)',
-  ClusterGroups = 'Cluster groups',
-  People = 'People',
   Plugins = 'Plugins',
   Queues = 'Queues',
   Search = 'Search',
@@ -1174,7 +1144,6 @@ export const WorkflowTriggerSchema = z
 
 export enum WorkflowType {
   AssetV1 = 'AssetV1',
-  // AssetPersonV1 = 'AssetPersonV1',
 }
 
 export const WorkflowTypeSchema = z.enum(WorkflowType).describe('Workflow type').meta({ id: 'WorkflowType' });

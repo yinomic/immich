@@ -20,8 +20,6 @@ class RemoteAlbumEntity extends Table with DriftDefaultsMixin {
   TextColumn get thumbnailAssetId =>
       text().references(RemoteAssetEntity, #id, onDelete: KeyAction.setNull).nullable()();
 
-  BoolColumn get isActivityEnabled => boolean().withDefault(const Constant(true))();
-
   IntColumn get order => intEnum<AlbumAssetOrder>()();
 
   @override

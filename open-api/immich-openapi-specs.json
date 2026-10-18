@@ -12350,17 +12350,6 @@
             }
           },
           {
-            "name": "personId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets containing a specific person (face recognition)",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
             "name": "slug",
             "required": false,
             "in": "query",
@@ -12537,17 +12526,6 @@
             "description": "Date to group and order assets by (takenAt for date taken, createdAt for date added to Immich)",
             "schema": {
               "$ref": "#/components/schemas/AssetOrderBy"
-            }
-          },
-          {
-            "name": "personId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets containing a specific person (face recognition)",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
             }
           },
           {
@@ -14312,10 +14290,6 @@
   },
   "tags": [
     {
-      "name": "Activities",
-      "description": "An activity is a like or a comment made by a user on an asset or album."
-    },
-    {
       "name": "Albums",
       "description": "An album is a collection of assets that can be shared with other users or via shared links."
     },
@@ -14401,7 +14375,7 @@
     },
     {
       "name": "Search",
-      "description": "Endpoints related to searching assets via text, smart search, optical character recognition (OCR), and other filters like person, album, and other metadata. Search endpoints usually support pagination and sorting."
+      "description": "Endpoints related to searching assets by text and other metadata filters. Search endpoints usually support pagination and sorting."
     },
     {
       "name": "Server",
@@ -14452,24 +14426,8 @@
       "description": "A workflow is a set of actions that run whenever a triggering event occurs. Workflows also can include filters to further limit execution."
     },
     {
-      "name": "Duplicates",
-      "description": "Duplicates endpoints."
-    },
-    {
-      "name": "Faces",
-      "description": "Faces endpoints."
-    },
-    {
       "name": "Integrity (admin)",
       "description": "Integrity (admin) endpoints."
-    },
-    {
-      "name": "Cluster groups",
-      "description": "Cluster groups endpoints."
-    },
-    {
-      "name": "People",
-      "description": "People endpoints."
     },
     {
       "name": "Sync",
@@ -18505,16 +18463,6 @@
       },
       "MemoryDataDto": {
         "properties": {
-          "personId": {
-            "description": "Person ID (birthday memories)",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "personName": {
-            "description": "Name of the person when the memory was created (birthday memories)",
-            "type": "string"
-          },
           "year": {
             "description": "Year of the memory",
             "maximum": 9999,
@@ -18646,8 +18594,7 @@
       "MemoryType": {
         "description": "Memory type",
         "enum": [
-          "on_this_day",
-          "birthday"
+          "on_this_day"
         ],
         "type": "string"
       },
@@ -19655,7 +19602,6 @@
           "JobFailed",
           "BackupFailed",
           "SystemMessage",
-          "ClusterGroupRequest",
           "Custom"
         ],
         "type": "string"
@@ -19888,55 +19834,6 @@
         ],
         "type": "object"
       },
-      "PeopleResponse": {
-        "properties": {
-          "enabled": {
-            "description": "Whether people are enabled",
-            "type": "boolean"
-          },
-          "minimumFaces": {
-            "description": "People face threshold",
-            "maximum": 9007199254740991,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "sidebarWeb": {
-            "description": "Whether people appear in web sidebar",
-            "type": "boolean"
-          },
-          "updateStrategy": {
-            "$ref": "#/components/schemas/PersonUpdateStrategy"
-          }
-        },
-        "required": [
-          "enabled",
-          "sidebarWeb",
-          "updateStrategy"
-        ],
-        "type": "object"
-      },
-      "PeopleUpdate": {
-        "properties": {
-          "enabled": {
-            "description": "Whether people are enabled",
-            "type": "boolean"
-          },
-          "minimumFaces": {
-            "description": "People face threshold",
-            "maximum": 9007199254740991,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "sidebarWeb": {
-            "description": "Whether people appear in web sidebar",
-            "type": "boolean"
-          },
-          "updateStrategy": {
-            "$ref": "#/components/schemas/PersonUpdateStrategy"
-          }
-        },
-        "type": "object"
-      },
       "Permission": {
         "description": "List of permissions",
         "enum": [
@@ -20073,14 +19970,6 @@
           "adminUser.delete",
           "adminSession.read",
           "adminAuth.unlinkAll"
-        ],
-        "type": "string"
-      },
-      "PersonUpdateStrategy": {
-        "description": "Which person records to update when editing a person",
-        "enum": [
-          "self",
-          "everyone"
         ],
         "type": "string"
       },
@@ -23819,182 +23708,6 @@
         ],
         "type": "object"
       },
-      "SyncAssetFaceDeleteV1": {
-        "properties": {
-          "assetFaceId": {
-            "description": "Asset face ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetFaceId"
-        ],
-        "type": "object"
-      },
-      "SyncAssetFaceV1": {
-        "properties": {
-          "assetId": {
-            "description": "Asset ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "boundingBoxX1": {
-            "description": "Bounding box X1",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxX2": {
-            "description": "Bounding box X2",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxY1": {
-            "description": "Bounding box Y1",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxY2": {
-            "description": "Bounding box Y2",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "id": {
-            "description": "Asset face ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "imageHeight": {
-            "description": "Image height",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "imageWidth": {
-            "description": "Image width",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "personId": {
-            "description": "Person ID",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "description": "Source type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetId",
-          "boundingBoxX1",
-          "boundingBoxX2",
-          "boundingBoxY1",
-          "boundingBoxY2",
-          "id",
-          "imageHeight",
-          "imageWidth",
-          "personId",
-          "sourceType"
-        ],
-        "type": "object"
-      },
-      "SyncAssetFaceV3": {
-        "properties": {
-          "assetId": {
-            "description": "Asset ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "boundingBoxX1": {
-            "description": "Bounding box X1",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxX2": {
-            "description": "Bounding box X2",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxY1": {
-            "description": "Bounding box Y1",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "boundingBoxY2": {
-            "description": "Bounding box Y2",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "deletedAt": {
-            "description": "Face deleted at",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "nullable": true,
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "id": {
-            "description": "Asset face ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "imageHeight": {
-            "description": "Image height",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "imageWidth": {
-            "description": "Image width",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "isVisible": {
-            "description": "Is the face visible in the asset",
-            "type": "boolean"
-          },
-          "personId": {
-            "description": "Person ID",
-            "nullable": true,
-            "type": "string"
-          },
-          "sourceType": {
-            "description": "Source type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetId",
-          "boundingBoxX1",
-          "boundingBoxX2",
-          "boundingBoxY1",
-          "boundingBoxY2",
-          "deletedAt",
-          "id",
-          "imageHeight",
-          "imageWidth",
-          "isVisible",
-          "personId",
-          "sourceType"
-        ],
-        "type": "object"
-      },
       "SyncAssetMetadataDeleteV1": {
         "properties": {
           "assetId": {
@@ -24036,122 +23749,6 @@
           "assetId",
           "key",
           "value"
-        ],
-        "type": "object"
-      },
-      "SyncAssetOcrDeleteV1": {
-        "properties": {
-          "assetId": {
-            "description": "Original asset ID of the deleted OCR entry",
-            "type": "string"
-          },
-          "deletedAt": {
-            "description": "Timestamp when the OCR entry was deleted",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "id": {
-            "description": "Audit row ID of the deleted OCR entry",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetId",
-          "deletedAt",
-          "id"
-        ],
-        "type": "object"
-      },
-      "SyncAssetOcrV1": {
-        "properties": {
-          "assetId": {
-            "description": "Asset ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "boxScore": {
-            "description": "Confidence score of the bounding box",
-            "format": "double",
-            "type": "number"
-          },
-          "id": {
-            "description": "OCR entry ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "isVisible": {
-            "description": "Whether the OCR entry is visible",
-            "type": "boolean"
-          },
-          "text": {
-            "description": "Recognized text content",
-            "type": "string"
-          },
-          "textScore": {
-            "description": "Confidence score of the recognized text",
-            "format": "double",
-            "type": "number"
-          },
-          "x1": {
-            "description": "Top-left X coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "x2": {
-            "description": "Top-right X coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "x3": {
-            "description": "Bottom-right X coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "x4": {
-            "description": "Bottom-left X coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "y1": {
-            "description": "Top-left Y coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "y2": {
-            "description": "Top-right Y coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "y3": {
-            "description": "Bottom-right Y coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          },
-          "y4": {
-            "description": "Bottom-left Y coordinate (normalized 0–1)",
-            "format": "double",
-            "type": "number"
-          }
-        },
-        "required": [
-          "assetId",
-          "boxScore",
-          "id",
-          "isVisible",
-          "text",
-          "textScore",
-          "x1",
-          "x2",
-          "x3",
-          "x4",
-          "y1",
-          "y2",
-          "y3",
-          "y4"
         ],
         "type": "object"
       },
@@ -24639,8 +24236,6 @@
           "AssetEditDeleteV1",
           "AssetMetadataV1",
           "AssetMetadataDeleteV1",
-          "AssetOcrV1",
-          "AssetOcrDeleteV1",
           "AlbumV1",
           "AlbumV2",
           "AlbumDeleteV1",
@@ -24667,12 +24262,6 @@
           "MemoryToAssetDeleteV1",
           "StackV1",
           "StackDeleteV1",
-          "PersonV1",
-          "PersonDeleteV1",
-          "AssetFaceV1",
-          "AssetFaceV2",
-          "AssetFaceV3",
-          "AssetFaceDeleteV1",
           "UserMetadataV1",
           "UserMetadataDeleteV1",
           "SyncAckV1",
@@ -24925,93 +24514,6 @@
           "seenAt",
           "showAt",
           "type",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "SyncPersonDeleteV1": {
-        "properties": {
-          "personId": {
-            "description": "Person ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "personId"
-        ],
-        "type": "object"
-      },
-      "SyncPersonV1": {
-        "properties": {
-          "birthDate": {
-            "description": "Birth date",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "nullable": true,
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "color": {
-            "description": "Color",
-            "nullable": true,
-            "type": "string"
-          },
-          "createdAt": {
-            "description": "Created at",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "faceAssetId": {
-            "description": "Face asset ID",
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "description": "Person ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "isFavorite": {
-            "description": "Is favorite",
-            "type": "boolean"
-          },
-          "isHidden": {
-            "description": "Is hidden",
-            "type": "boolean"
-          },
-          "name": {
-            "description": "Person name",
-            "type": "string"
-          },
-          "ownerId": {
-            "description": "Owner ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "updatedAt": {
-            "description": "Updated at",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "birthDate",
-          "color",
-          "createdAt",
-          "faceAssetId",
-          "id",
-          "isFavorite",
-          "isHidden",
-          "name",
-          "ownerId",
           "updatedAt"
         ],
         "type": "object"
@@ -26537,9 +26039,6 @@
           "memories": {
             "$ref": "#/components/schemas/MemoriesResponse"
           },
-          "people": {
-            "$ref": "#/components/schemas/PeopleResponse"
-          },
           "purchase": {
             "$ref": "#/components/schemas/PurchaseResponse"
           },
@@ -26560,7 +26059,6 @@
           "emailNotifications",
           "folders",
           "memories",
-          "people",
           "purchase",
           "ratings",
           "recentlyAdded",
@@ -26590,9 +26088,6 @@
           },
           "memories": {
             "$ref": "#/components/schemas/MemoriesUpdate"
-          },
-          "people": {
-            "$ref": "#/components/schemas/PeopleUpdate"
           },
           "purchase": {
             "$ref": "#/components/schemas/PurchaseUpdate"

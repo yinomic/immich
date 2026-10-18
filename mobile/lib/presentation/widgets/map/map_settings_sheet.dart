@@ -65,11 +65,6 @@ class _MapSettingsSheetState extends ConsumerState<MapSettingsSheet> {
                 onChanged: (includeArchive) =>
                     ref.read(mapStateProvider.notifier).switchIncludeArchived(includeArchive),
               ),
-              MapSettingsListTile(
-                title: context.t.map_settings_include_show_partners,
-                selected: mapState.withPartners,
-                onChanged: (withPartners) => ref.read(mapStateProvider.notifier).switchWithPartners(withPartners),
-              ),
               if (useCustomRange) ...[
                 MapTimeRange(
                   timeRange: mapState.timeRange,

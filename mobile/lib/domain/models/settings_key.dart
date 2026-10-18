@@ -59,7 +59,6 @@ enum SettingsKey<T> {
   mapCustomTo<DateTime?>(),
   mapIncludeArchived<bool>(),
   mapThemeMode<ThemeMode>(codec: EnumCodec(ThemeMode.values)),
-  mapWithPartners<bool>(),
 
   // Cleanup
   cleanupKeepFavorites<bool>(),

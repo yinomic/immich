@@ -125,7 +125,6 @@ export class AssetTable {
   @ForeignKeyColumn(() => StackTable, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
   stackId!: string | null;
 
-  @Column({ type: 'uuid', nullable: true, index: true })
   @Column({ enum: assets_status_enum, default: AssetStatus.Active })
   status!: Generated<AssetStatus>;
 

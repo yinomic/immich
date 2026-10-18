@@ -12,7 +12,6 @@ import 'package:immich_mobile/presentation/widgets/album/album_tile.dart';
 import 'package:immich_mobile/presentation/widgets/asset_viewer/sheet_tile.widget.dart';
 import 'package:immich_mobile/providers/asset_viewer/asset_viewer.provider.dart';
 import 'package:immich_mobile/providers/infrastructure/album.provider.dart';
-import 'package:immich_mobile/providers/user.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 
 class AppearsInDetails extends ConsumerWidget {
@@ -35,7 +34,6 @@ class AppearsInDetails extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final userId = ref.watch(currentUserProvider)?.id;
     final assetAlbums = ref.watch(albumsContainingAssetProvider(remoteAssetId));
 
     return assetAlbums.when(
@@ -60,10 +58,8 @@ class AppearsInDetails extends ConsumerWidget {
                 child: Column(
                   spacing: 12,
                   children: albums.map((album) {
-                    final isOwner = album.ownerId == userId;
                     return AlbumTile(
                       album: album,
-                      isOwner: isOwner,
                       onAlbumSelected: (album) async {
                         ref.invalidate(assetViewerProvider);
                         unawaited(context.router.popAndPush(RemoteAlbumRoute(album: album)));

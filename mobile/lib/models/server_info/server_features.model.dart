@@ -11,16 +11,8 @@ abstract class ServerFeatures with _$ServerFeatures {
     required bool map,
     required bool oauthEnabled,
     required bool passwordLogin,
-    @Default(false) bool ocr,
-    @Default(false) bool smartSearch,
   }) = _ServerFeatures;
 
-  factory ServerFeatures.fromDto(ServerFeaturesDto dto) => ServerFeatures(
-    trash: dto.trash,
-    map: dto.map,
-    oauthEnabled: dto.oauth,
-    passwordLogin: dto.passwordLogin,
-    ocr: dto.ocr,
-    smartSearch: dto.smartSearch,
-  );
+  factory ServerFeatures.fromDto(ServerFeaturesDto dto) =>
+      ServerFeatures(trash: dto.trash, map: dto.map, oauthEnabled: dto.oauth, passwordLogin: dto.passwordLogin);
 }

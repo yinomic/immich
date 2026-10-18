@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/domain/services/timeline.service.dart';
 import 'package:immich_mobile/presentation/widgets/timeline/timeline.state.dart';
@@ -35,11 +34,7 @@ final timelineUsersProvider = StreamProvider<List<String>>((ref) {
     return Stream.value([]);
   }
 
-  // Drift re-emits a fresh but content-identical list on unrelated table updates,
-  // which would dispose and rebuild the timeline service mid-load
-  return ref
-      .watch(driftProvider)
-      .timelineRepository
-      .watchTimelineUserIds(currentUserId)
-      .distinct(const ListEquality<String>().equals);
+  // The family album has a single account, so the timeline only ever contains
+  // assets owned by the signed-in user
+  return Stream.value([currentUserId]);
 });

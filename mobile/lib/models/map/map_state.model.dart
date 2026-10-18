@@ -11,7 +11,6 @@ abstract class MapState with _$MapState {
     @Default(ThemeMode.system) ThemeMode themeMode,
     @Default(false) bool showFavoriteOnly,
     @Default(false) bool includeArchived,
-    @Default(false) bool withPartners,
     @Default(0) int relativeTime,
     @Default(false) bool shouldRefetchMarkers,
     @Default(AsyncLoading<String>()) AsyncValue<String> lightStyleFetched,

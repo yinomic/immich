@@ -38,7 +38,6 @@ class _TagDetailsState extends ConsumerState<TagDetails> {
       ..setFilter(
         .new(
           tags: {tag},
-          people: {},
           location: const .new(),
           camera: const .new(),
           date: const .new(),

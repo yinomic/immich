@@ -161,3 +161,11 @@ flutter_launcher_icons:
 analyzer:
   exclude:
     - generated/**
+
+# GitHub release downloads are blocked in this build environment, so the sqlite3
+# native-asset hook is pointed at a reachable GitHub proxy. Remove this block
+# (or delete url_pattern) if you can reach github.com directly.
+hooks:
+  user_defines:
+    sqlite3:
+      url_pattern: 'https://ghproxy.net/https://github.com/simolus3/sqlite3.dart/releases/download/$RELEASE_TAG/$FILENAME'

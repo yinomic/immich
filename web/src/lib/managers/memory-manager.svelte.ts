@@ -352,10 +352,6 @@ class MemoryManager {
       }
     }
 
-    if (this.#filters.$for) {
-      this.memories.sort((a, b) => Number(b.type === MemoryType.Birthday) - Number(a.type === MemoryType.Birthday));
-    }
-
     if (this.#total === undefined) {
       const { total } = await memoriesStatistics(this.#filters);
       this.#total = total;

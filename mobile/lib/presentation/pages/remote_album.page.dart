@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/domain/models/album/album.model.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
-import 'package:immich_mobile/domain/models/server_capability.model.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/generated/translations.g.dart';
 import 'package:immich_mobile/presentation/widgets/album/pending_uploads_banner.widget.dart';
@@ -15,9 +14,7 @@ import 'package:immich_mobile/presentation/widgets/remote_album/album_option.wid
 import 'package:immich_mobile/presentation/widgets/timeline/timeline.widget.dart';
 import 'package:immich_mobile/providers/infrastructure/album.provider.dart';
 import 'package:immich_mobile/providers/infrastructure/current_album.provider.dart';
-import 'package:immich_mobile/providers/infrastructure/remote_album.provider.dart';
 import 'package:immich_mobile/providers/infrastructure/timeline.provider.dart';
-import 'package:immich_mobile/providers/server_info.provider.dart';
 import 'package:immich_mobile/providers/user.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/widgets/common/immich_toast.dart';
@@ -67,38 +64,6 @@ class _RemoteAlbumPageState extends ConsumerState<RemoteAlbumPage> {
         msg: context.t.assets_added_to_album_count(count: added),
         toastType: ToastType.success,
       );
-    }
-  }
-
-  Future<void> addUsers(BuildContext context) async {
-    final newUsers = await context.pushRoute<List<String>>(UserSelectionRoute(album: _album));
-
-    if (newUsers == null || newUsers.isEmpty) {
-      return;
-    }
-
-    try {
-      if (!context.mounted) {
-        return;
-      }
-
-      await ref.read(remoteAlbumProvider.notifier).addUsers(_album.id, newUsers);
-      ref.invalidate(remoteAlbumSharedUsersProvider(_album.id));
-      if (!context.mounted) {
-        return;
-      }
-
-      ImmichToast.show(
-        context: context,
-        msg: context.t.users_added_to_album_count(count: newUsers.length),
-        toastType: ToastType.success,
-      );
-    } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ImmichToast.show(context: context, msg: "Failed to add users to album: $e", toastType: ToastType.error);
     }
   }
 
@@ -181,18 +146,8 @@ class _RemoteAlbumPageState extends ConsumerState<RemoteAlbumPage> {
     }
   }
 
-  Future<void> showActivity(BuildContext context) async {
-    unawaited(context.pushRoute(ActivitiesRoute(album: _album)));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final isOwner = user != null ? user.id == _album.ownerId : false;
-    final editorCanUpdate = ref.watch(
-      serverInfoProvider.select((state) => state.serverVersion.supports(.albumEditorUpdate)),
-    );
-
     return ProviderScope(
       overrides: [
         timelineServiceProvider.overrideWith((ref) {
@@ -204,30 +159,15 @@ class _RemoteAlbumPageState extends ConsumerState<RemoteAlbumPage> {
       ],
       child: Timeline(
         topSliverWidget: PendingUploadsBanner(albumId: _album.id),
-        appBar: FutureBuilder<bool>(
-          future: ref
-              .watch(remoteAlbumServiceProvider)
-              .getUserRole(_album.id, user?.id ?? '')
-              .then((role) => role == AlbumUserRole.editor),
-          builder: (_, snapshot) {
-            final isEditor = snapshot.data ?? false;
-            final canEdit = isOwner || (isEditor && editorCanUpdate);
-
-            return RemoteAlbumSliverAppBar(
-              kebabMenu: _AlbumKebabMenu(
-                album: _album,
-                onDeleteAlbum: () => deleteAlbum(context),
-                onAddUsers: () => addUsers(context),
-                onAddPhotos: isOwner || isEditor ? () => addAssets(context) : null,
-                onToggleAlbumOrder: () => toggleAlbumOrder(),
-                onEditAlbum: canEdit ? () => showEditTitleAndDescription(context) : null,
-                onCreateSharedLink: () => unawaited(context.pushRoute(SharedLinkEditRoute(albumId: _album.id))),
-                onShowOptions: () => context.pushRoute(AlbumOptionsRoute(album: _album)),
-              ),
-              onEditTitle: canEdit ? () => showEditTitleAndDescription(context) : null,
-              onActivity: () => showActivity(context),
-            );
-          },
+        appBar: RemoteAlbumSliverAppBar(
+          kebabMenu: _AlbumKebabMenu(
+            album: _album,
+            onDeleteAlbum: () => deleteAlbum(context),
+            onAddPhotos: () => addAssets(context),
+            onToggleAlbumOrder: () => toggleAlbumOrder(),
+            onEditAlbum: () => showEditTitleAndDescription(context),
+          ),
+          onEditTitle: () => showEditTitleAndDescription(context),
         ),
         bottomSheet: RemoteAlbumBottomSheet(album: _album),
       ),
@@ -388,22 +328,16 @@ class _EditAlbumDialogState extends ConsumerState<_EditAlbumDialog> {
 class _AlbumKebabMenu extends ConsumerWidget {
   final RemoteAlbum album;
   final VoidCallback? onDeleteAlbum;
-  final VoidCallback? onAddUsers;
   final VoidCallback? onAddPhotos;
   final VoidCallback? onToggleAlbumOrder;
   final VoidCallback? onEditAlbum;
-  final VoidCallback? onCreateSharedLink;
-  final VoidCallback? onShowOptions;
 
   const _AlbumKebabMenu({
     required this.album,
     this.onDeleteAlbum,
-    this.onAddUsers,
     this.onAddPhotos,
     this.onToggleAlbumOrder,
     this.onEditAlbum,
-    this.onCreateSharedLink,
-    this.onShowOptions,
   });
 
   double _calculateScrollProgress(FlexibleSpaceBarSettings? settings) {
@@ -439,12 +373,9 @@ class _AlbumKebabMenu extends ConsumerWidget {
       iconColor: iconColor,
       iconShadows: iconShadows,
       onDeleteAlbum: isOwner ? onDeleteAlbum : null,
-      onAddUsers: isOwner ? onAddUsers : null,
       onAddPhotos: onAddPhotos,
       onToggleAlbumOrder: isOwner ? onToggleAlbumOrder : null,
       onEditAlbum: onEditAlbum,
-      onCreateSharedLink: isOwner ? onCreateSharedLink : null,
-      onShowOptions: onShowOptions,
     );
   }
 }

@@ -21,18 +21,6 @@ class TimelineRepository extends DatabaseAccessor<Drift> with $TimelineRepositor
 
   Drift get _db => attachedDatabase;
 
-  Stream<List<String>> watchTimelineUserIds(String userId) {
-    final query = _db.partnerEntity.selectOnly()
-      ..addColumns([_db.partnerEntity.sharedById])
-      ..where(_db.partnerEntity.inTimeline.equals(true) & _db.partnerEntity.sharedWithId.equals(userId));
-
-    return query
-        .map((row) => row.read(_db.partnerEntity.sharedById)!)
-        .watch()
-        // Add current user ID to the list
-        .map((users) => users..add(userId));
-  }
-
   TimelineQuery main(List<String> userIds, GroupAssetsBy groupBy) => (
     bucketSource: () => _watchMainBucket(userIds, groupBy: groupBy),
     assetSource: (offset, count) => _getMainBucketAssets(userIds, offset: offset, count: count),
@@ -366,13 +354,6 @@ class TimelineRepository extends DatabaseAccessor<Drift> with $TimelineRepositor
     origin: TimelineOrigin.place,
   );
 
-  TimelineQuery person(List<String> userIds, String personId, GroupAssetsBy groupBy) => (
-    bucketSource: () => _watchPersonBucket(userIds, personId, groupBy: groupBy),
-    assetSource: (offset, count) =>
-        _getPersonBucketAssets(userIds, personId, groupBy: groupBy, offset: offset, count: count),
-    origin: TimelineOrigin.person,
-  );
-
   Stream<List<Bucket>> _watchPlaceBucket(String place, {GroupAssetsBy groupBy = GroupAssetsBy.day}) {
     if (groupBy == GroupAssetsBy.none) {
       // TODO: implement GroupAssetBy for place
@@ -428,68 +409,6 @@ class TimelineRepository extends DatabaseAccessor<Drift> with $TimelineRepositor
           ..orderBy(_assetDateOrder(groupBy).map((order) => order(_db.remoteAssetEntity)).toList())
           ..limit(count, offset: offset);
     return query.map((row) => row.readTable(_db.remoteAssetEntity).toDto()).get();
-  }
-
-  Expression<bool> _personAssetFilter(List<String> userIds, String personId) {
-    final faceAssetIds = _db.assetFaceEntity.selectOnly()
-      ..addColumns([_db.assetFaceEntity.assetId])
-      ..where(
-        _db.assetFaceEntity.personId.equals(personId) &
-            _db.assetFaceEntity.isVisible.equals(true) &
-            _db.assetFaceEntity.deletedAt.isNull(),
-      );
-    final albumAssetIds = _db.remoteAlbumAssetEntity.selectOnly()..addColumns([_db.remoteAlbumAssetEntity.assetId]);
-    return _db.remoteAssetEntity.id.isInQuery(faceAssetIds) &
-        (_db.remoteAssetEntity.ownerId.isIn(userIds) | _db.remoteAssetEntity.id.isInQuery(albumAssetIds)) &
-        _db.remoteAssetEntity.deletedAt.isNull() &
-        _db.remoteAssetEntity.visibility.equalsValue(AssetVisibility.timeline);
-  }
-
-  Stream<List<Bucket>> _watchPersonBucket(
-    List<String> userIds,
-    String personId, {
-    GroupAssetsBy groupBy = GroupAssetsBy.day,
-  }) {
-    if (groupBy == GroupAssetsBy.none) {
-      final query = _db.remoteAssetEntity.selectOnly()
-        ..addColumns([_db.remoteAssetEntity.id.count()])
-        ..where(_personAssetFilter(userIds, personId));
-
-      return query.map((row) {
-        final count = row.read(_db.remoteAssetEntity.id.count())!;
-        return _generateBuckets(count);
-      }).watchSingle();
-    }
-
-    final assetCountExp = _db.remoteAssetEntity.id.count();
-    final dateExp = _db.remoteAssetEntity.effectiveCreatedAt(groupBy);
-
-    final query = _db.remoteAssetEntity.selectOnly()
-      ..addColumns([assetCountExp, dateExp])
-      ..where(_personAssetFilter(userIds, personId))
-      ..groupBy([dateExp])
-      ..orderBy([OrderingTerm.desc(dateExp)]);
-
-    return query.map((row) {
-      final timeline = row.read(dateExp)!.truncateDate(groupBy);
-      final assetCount = row.read(assetCountExp)!;
-      return TimeBucket(date: timeline, assetCount: assetCount);
-    }).watch();
-  }
-
-  Future<List<BaseAsset>> _getPersonBucketAssets(
-    List<String> userIds,
-    String personId, {
-    required int offset,
-    required int count,
-    GroupAssetsBy groupBy = GroupAssetsBy.day,
-  }) {
-    final query = _db.remoteAssetEntity.select()
-      ..where((_) => _personAssetFilter(userIds, personId))
-      ..orderBy(_assetDateOrder(groupBy))
-      ..limit(count, offset: offset);
-
-    return query.map((row) => row.toDto()).get();
   }
 
   /// Creates a geographic map query that can dynamically filter on changing [TimelineMapOptions]

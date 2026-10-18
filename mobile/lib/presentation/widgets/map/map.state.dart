@@ -23,7 +23,6 @@ abstract class MapState with _$MapState {
     required LatLngBounds bounds,
     @Default(false) bool onlyFavorites,
     @Default(false) bool includeArchived,
-    @Default(false) bool withPartners,
     @Default(0) int relativeDays,
     @Default(TimeRange()) TimeRange timeRange,
   }) = _MapState;
@@ -41,7 +40,6 @@ abstract class MapState with _$MapState {
     bounds: bounds,
     onlyFavorites: onlyFavorites,
     includeArchived: includeArchived,
-    withPartners: withPartners,
     relativeDays: relativeDays,
     timeRange: timeRange,
   );
@@ -78,12 +76,6 @@ class MapStateNotifier extends Notifier<MapState> {
     EventStream.shared.emit(const MapMarkerReloadEvent());
   }
 
-  void switchWithPartners(bool isWithPartners) {
-    unawaited(ref.read(settingsProvider).write(.mapWithPartners, isWithPartners));
-    state = state.copyWith(withPartners: isWithPartners);
-    EventStream.shared.emit(const MapMarkerReloadEvent());
-  }
-
   void setRelativeTime(int relativeDays) {
     unawaited(ref.read(settingsProvider).write(.mapRelativeDate, relativeDays));
     state = state.copyWith(relativeDays: relativeDays);
@@ -104,7 +96,6 @@ class MapStateNotifier extends Notifier<MapState> {
       themeMode: mapConfig.themeMode,
       onlyFavorites: mapConfig.favoritesOnly,
       includeArchived: mapConfig.includeArchived,
-      withPartners: mapConfig.withPartners,
       relativeDays: mapConfig.relativeDays,
       bounds: LatLngBounds(northeast: const LatLng(0, 0), southwest: const LatLng(0, 0)),
       timeRange: TimeRange(from: mapConfig.customFrom, to: mapConfig.customTo),

@@ -20,7 +20,6 @@ class TrashedLocalAssetRepository extends DatabaseAccessor<Drift> with $TrashedL
   Drift get _db => attachedDatabase;
 
   /// Matches remote_asset_entity rows owned by the current user. The asset is unique over (owner, checksum),
-  /// so partners can have a duplicate checksum
   Expression<bool> get _ownedByCurrentUser =>
       _db.remoteAssetEntity.ownerId.isInQuery(_db.selectOnly(_db.authUserEntity)..addColumns([_db.authUserEntity.id]));
 

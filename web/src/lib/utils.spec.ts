@@ -111,31 +111,4 @@ describe('utils', () => {
       expect(semverToName({ major: 3, minor: 0, patch: 0, prerelease: 0, featureLevel: 1 })).toEqual('v3.0.0-rc.0');
     });
   });
-
-  describe('memoryLaneTitle', () => {
-    beforeAll(async () => {
-      addMessages('en', en);
-      await init({ fallbackLocale: 'en', initialLocale: 'en' });
-    });
-
-    const birthday = (data: Partial<MemoryResponseDto['data']>, memoryAt = '2026-09-22T00:00:00.000Z') =>
-      get(memoryLaneTitle)({
-        type: MemoryType.Birthday,
-        memoryAt,
-        data: { year: 1990, personName: 'Alex', ...data },
-      } as MemoryResponseDto);
-
-    it('should name the person whose birthday it is', () => {
-      expect(birthday({ year: 1990 })).toBe("Alex's birthday");
-    });
-
-    it('should not depend on the age, which the viewer shows per photo', () => {
-      expect(birthday({ year: 2025 })).toBe("Alex's birthday");
-      expect(birthday({ year: 2026 }, '2027-01-04T00:00:00.000Z')).toBe("Alex's birthday");
-    });
-
-    it('should fall back when the person has no name', () => {
-      expect(birthday({ personName: undefined })).toBe('Unknown');
-    });
-  });
 });

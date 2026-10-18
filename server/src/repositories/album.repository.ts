@@ -269,12 +269,16 @@ export class AlbumRepository {
     albumUsers: { userId: string; role: AlbumUserRole }[],
     authUserId: string,
   ) {
-    if (albumUsers.every((u) => u.role !== AlbumUserRole.Owner)) {
+    // Albums have exactly one member since album collaboration was removed, so
+    // the owner is inserted as a plain parameter. Binding it as an enum array
+    // through unnest() breaks on a database created by the very process that
+    // runs the migrations: postgres.js caches the type catalogue when it first
+    // connects, before the enum exists, and then serialises the array as a
+    // scalar ("malformed array literal").
+    const owner = albumUsers.find((u) => u.role === AlbumUserRole.Owner);
+    if (!owner) {
       throw new Error('Album must have an owner');
     }
-
-    const userIds = albumUsers.map((u) => u.userId);
-    const roles = albumUsers.map((u) => u.role);
 
     const result = await this.db
       .with('album', (db) => db.insertInto('album').values(album).returningAll())
@@ -286,8 +290,8 @@ export class AlbumRepository {
               .selectFrom('album')
               .select(({ ref }) => [
                 ref('album.id').as('albumId'),
-                sql`unnest(${userIds}::uuid[])`.as('userId'),
-                sql`unnest(${roles}::album_user_role_enum[])`.as('role'),
+                sql`${owner.userId}::uuid`.as('userId'),
+                sql`${owner.role}::album_user_role_enum`.as('role'),
               ]),
           )
           .returning(['album_user.albumId', 'album_user.userId', 'album_user.role']),

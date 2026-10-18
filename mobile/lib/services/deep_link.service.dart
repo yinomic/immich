@@ -1,6 +1,5 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:immich_mobile/data/store.dart';
 import 'package:immich_mobile/domain/models/memory.model.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/domain/services/asset.service.dart' as beta_asset_service;
@@ -50,8 +49,6 @@ class DeepLinkService {
       "memory" => await _buildMemoryDeepLink(queryParams['id']),
       "asset" => await _buildAssetDeepLink(queryParams['id'] ?? '', ref),
       "album" => await _buildAlbumDeepLink(queryParams['id'] ?? ''),
-      "people" => await _buildPeopleDeepLink(queryParams['id'] ?? '', ref),
-      "activity" => await _buildActivityDeepLink(queryParams['albumId'] ?? ''),
       _ => null,
     };
   }
@@ -62,12 +59,10 @@ class DeepLinkService {
     const uuidRegex = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
     final assetRegex = RegExp('/photos/($uuidRegex)');
     final albumRegex = RegExp('/albums/($uuidRegex)');
-    final peopleRegex = RegExp('/people/($uuidRegex)');
 
     if (assetRegex.hasMatch(path)) {
       final assetId = assetRegex.firstMatch(path)?.group(1) ?? '';
-      // /albums/<albumId>/photos/<assetId> links carry the album context,
-      // which drives the like/comment UI in the viewer
+      // /albums/<albumId>/photos/<assetId> links carry the album context
       final albumId = albumRegex.firstMatch(path)?.group(1);
       return _buildAssetDeepLink(assetId, ref, albumId: albumId);
     }
@@ -75,11 +70,6 @@ class DeepLinkService {
       final albumId = albumRegex.firstMatch(path)?.group(1) ?? '';
       return _buildAlbumDeepLink(albumId);
     }
-    if (peopleRegex.hasMatch(path)) {
-      final peopleId = peopleRegex.firstMatch(path)?.group(1) ?? '';
-      return _buildPeopleDeepLink(peopleId, ref);
-    }
-
     return null;
   }
 
@@ -130,25 +120,5 @@ class DeepLinkService {
     }
 
     return RemoteAlbumRoute(album: album);
-  }
-
-  Future<PageRouteInfo?> _buildActivityDeepLink(String albumId) async {
-    final album = await _betaRemoteAlbumService.get(albumId);
-
-    if (album == null || album.isActivityEnabled == false) {
-      return null;
-    }
-
-    return ActivitiesRoute(album: album);
-  }
-
-  Future<PageRouteInfo?> _buildPeopleDeepLink(String personId, WidgetRef ref) async {
-    final person = await ref.read(Store.people.byId(personId).future);
-
-    if (person == null) {
-      return null;
-    }
-
-    return PersonRoute(person: person);
   }
 }

@@ -9,10 +9,9 @@ import 'package:immich_mobile/presentation/widgets/images/thumbnail.widget.dart'
 import 'package:immich_mobile/providers/infrastructure/asset.provider.dart';
 
 class AlbumTile extends ConsumerWidget {
-  const AlbumTile({super.key, required this.album, required this.isOwner, this.onAlbumSelected});
+  const AlbumTile({super.key, required this.album, this.onAlbumSelected});
 
   final RemoteAlbum album;
-  final bool isOwner;
   final Function(RemoteAlbum)? onAlbumSelected;
 
   @override
@@ -27,7 +26,7 @@ class AlbumTile extends ConsumerWidget {
         style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
-        '${context.t.items_count(count: album.assetCount)} • ${isOwner ? context.t.owned : context.t.shared_by_user(user: album.ownerName)}',
+        '${context.t.items_count(count: album.assetCount)} • ${context.t.owned}',
         overflow: TextOverflow.ellipsis,
         style: context.textTheme.bodyMedium?.copyWith(color: context.colorScheme.onSurfaceSecondary),
       ),

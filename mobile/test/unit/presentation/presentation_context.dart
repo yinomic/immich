@@ -60,7 +60,6 @@ class PresentationContext {
     assetServiceProvider.overrideWithValue(service.asset.service),
     cleanupServiceProvider.overrideWithValue(service.cleanup.service),
     remoteAlbumServiceProvider.overrideWithValue(service.album.service),
-    partnerServiceProvider.overrideWithValue(service.partner.service),
     gCastServiceProvider.overrideWithValue(service.cast),
     serverInfoServiceProvider.overrideWithValue(service.serverInfo),
     inLockedViewProvider.overrideWithValue(false),

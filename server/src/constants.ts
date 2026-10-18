@@ -129,7 +129,6 @@ export const ORIENTATION_TO_SHARP_ROTATION: Record<ExifOrientation, SharpRotatio
 } as const;
 
 export const endpointTags: Record<ApiTag, string> = {
-  [ApiTag.Activities]: 'An activity is a like or a comment made by a user on an asset or album.',
   [ApiTag.Albums]: 'An album is a collection of assets that can be shared with other users or via shared links.',
   [ApiTag.ApiKeys]: 'An api key can be used to programmatically access the Immich API.',
   [ApiTag.Assets]: 'An asset is an image or video that has been uploaded to Immich.',
@@ -159,7 +158,7 @@ export const endpointTags: Record<ApiTag, string> = {
   [ApiTag.Queues]:
     'Queues and background jobs are used for processing tasks asynchronously. Queues can be paused and resumed as needed.',
   [ApiTag.Search]:
-    'Endpoints related to searching assets via text, smart search, optical character recognition (OCR), and other filters like person, album, and other metadata. Search endpoints usually support pagination and sorting.',
+    'Endpoints related to searching assets by text and other metadata filters. Search endpoints usually support pagination and sorting.',
   [ApiTag.Server]:
     'Information about the current server deployment, including version and build information, available features, supported media types, and more.',
   [ApiTag.Sessions]:
@@ -182,11 +181,7 @@ export const endpointTags: Record<ApiTag, string> = {
   [ApiTag.Views]: 'Endpoints for specialized views, such as the folder view.',
   [ApiTag.Workflows]:
     'A workflow is a set of actions that run whenever a triggering event occurs. Workflows also can include filters to further limit execution.',
-  [ApiTag.Duplicates]: 'Duplicates endpoints.',
-  [ApiTag.Faces]: 'Faces endpoints.',
   [ApiTag.Integrity]: 'Integrity (admin) endpoints.',
-  [ApiTag.ClusterGroups]: 'Cluster groups endpoints.',
-  [ApiTag.People]: 'People endpoints.',
   [ApiTag.Sync]: 'Sync endpoints.',
 };
 

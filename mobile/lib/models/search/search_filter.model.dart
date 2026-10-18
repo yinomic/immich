@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
-import 'package:immich_mobile/domain/models/person.model.dart';
 import 'package:immich_mobile/domain/models/tag.model.dart';
 import 'package:immich_mobile/utils/option.dart';
 
@@ -47,14 +46,9 @@ abstract class SearchFilter with _$SearchFilter {
   const SearchFilter._();
 
   const factory SearchFilter({
-    String? context,
     String? filename,
     String? description,
-    String? ocr,
-    String? language,
-    String? assetId,
     Set<Tag>? tags,
-    required Set<Person> people,
     required SearchLocationFilter location,
     required SearchCameraFilter camera,
     required SearchDateFilter date,
@@ -64,13 +58,9 @@ abstract class SearchFilter with _$SearchFilter {
   }) = _SearchFilter;
 
   bool get isEmpty {
-    return (context == null || (context != null && context!.isEmpty)) &&
-        (filename == null || (filename!.isEmpty)) &&
+    return (filename == null || (filename!.isEmpty)) &&
         (description == null || (description!.isEmpty)) &&
-        (assetId == null || (assetId!.isEmpty)) &&
-        (ocr == null || (ocr!.isEmpty)) &&
         (tags?.isEmpty ?? true) &&
-        people.isEmpty &&
         location.country == null &&
         location.state == null &&
         location.city == null &&

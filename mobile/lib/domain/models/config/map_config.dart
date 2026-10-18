@@ -13,7 +13,6 @@ abstract class MapConfig with _$MapConfig {
     @Default(false) bool favoritesOnly,
     @Default(false) bool includeArchived,
     @Default(ThemeMode.system) ThemeMode themeMode,
-    @Default(false) bool withPartners,
     DateTime? customFrom,
     DateTime? customTo,
   }) = _MapConfig;
@@ -24,7 +23,6 @@ abstract class MapConfig with _$MapConfig {
     bool? favoritesOnly,
     bool? includeArchived,
     ThemeMode? themeMode,
-    bool? withPartners,
     Option<DateTime>? customFrom,
     Option<DateTime>? customTo,
   }) => MapConfig(
@@ -32,7 +30,6 @@ abstract class MapConfig with _$MapConfig {
     favoritesOnly: favoritesOnly ?? this.favoritesOnly,
     includeArchived: includeArchived ?? this.includeArchived,
     themeMode: themeMode ?? this.themeMode,
-    withPartners: withPartners ?? this.withPartners,
     customFrom: customFrom.patch(this.customFrom),
     customTo: customTo.patch(this.customTo),
   );

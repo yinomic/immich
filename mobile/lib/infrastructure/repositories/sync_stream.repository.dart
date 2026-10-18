@@ -5,12 +5,9 @@ import 'package:drift/drift.dart';
 import 'package:immich_mobile/constants/constants.dart';
 import 'package:immich_mobile/data/db/main/database.dart';
 import 'package:immich_mobile/data/db/main/table/asset/edit.drift.dart';
-import 'package:immich_mobile/data/db/main/table/asset/ocr.drift.dart';
 import 'package:immich_mobile/data/db/main/table/local/album.drift.dart';
 import 'package:immich_mobile/data/db/main/table/memory/asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/memory/memory.drift.dart';
-import 'package:immich_mobile/data/db/main/table/people/asset_face.drift.dart';
-import 'package:immich_mobile/data/db/main/table/people/person.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_user.drift.dart';
@@ -20,7 +17,6 @@ import 'package:immich_mobile/data/db/main/table/remote/exif.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/stack.drift.dart';
 import 'package:immich_mobile/data/db/main/table/user/auth_user.drift.dart';
 import 'package:immich_mobile/data/db/main/table/user/metadata.drift.dart';
-import 'package:immich_mobile/data/db/main/table/user/partner.drift.dart';
 import 'package:immich_mobile/data/db/main/table/user/user.drift.dart';
 import 'package:immich_mobile/domain/models/album/album.model.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
@@ -58,11 +54,8 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
             await _db.localAlbumEntity.update().write(
               const LocalAlbumEntityCompanion(linkedRemoteAlbumId: Value(null)),
             );
-            await _db.assetFaceEntity.deleteAll();
             await _db.memoryAssetEntity.deleteAll();
             await _db.memoryEntity.deleteAll();
-            await _db.partnerEntity.deleteAll();
-            await _db.personEntity.deleteAll();
             await _db.remoteAlbumAssetEntity.deleteAll();
             await _db.remoteAlbumEntity.deleteAll();
             await _db.remoteAlbumUserEntity.deleteAll();
@@ -74,7 +67,6 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
             await _db.userMetadataEntity.deleteAll();
             await _db.remoteAssetCloudIdEntity.deleteAll();
             await _db.assetEditEntity.deleteAll();
-            await _db.assetOcrEntity.deleteAll();
           });
         } finally {
           // re-enable FK even if the transaction throws, otherwise the connection
@@ -180,47 +172,10 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
     }
   }
 
-  Future<void> deletePartnerV1(Iterable<SyncPartnerDeleteV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final partner in data) {
-          batch.delete(
-            _db.partnerEntity,
-            PartnerEntityCompanion(sharedById: Value(partner.sharedById), sharedWithId: Value(partner.sharedWithId)),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: SyncPartnerDeleteV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> updatePartnerV1(Iterable<SyncPartnerV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final partner in data) {
-          final companion = PartnerEntityCompanion(inTimeline: Value(partner.inTimeline));
-
-          batch.insert(
-            _db.partnerEntity,
-            companion.copyWith(sharedById: Value(partner.sharedById), sharedWithId: Value(partner.sharedWithId)),
-            onConflict: DoUpdate((_) => companion),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: SyncPartnerV1', error, stack);
-      rethrow;
-    }
-  }
-
   Future<void> deleteAssetsV1(Iterable<SyncAssetDeleteV1> data, {String debugLabel = 'user'}) async {
     try {
       await _db.batch((batch) {
         for (final asset in data) {
-          // cannot use FK here, so manually cascade
-          batch.deleteWhere(_db.assetFaceEntity, (row) => row.assetId.equals(asset.assetId));
           batch.deleteWhere(_db.remoteAssetEntity, (row) => row.id.equals(asset.assetId));
         }
       });
@@ -511,7 +466,6 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
             final companion = RemoteAlbumEntityCompanion(
               name: Value(album.name),
               description: Value(album.description),
-              isActivityEnabled: Value(album.isActivityEnabled),
               order: Value(album.order.toAlbumAssetOrder()),
               thumbnailAssetId: Value(album.thumbnailAssetId),
               createdAt: Value(album.createdAt),
@@ -551,7 +505,6 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
           final companion = RemoteAlbumEntityCompanion(
             name: Value(album.name),
             description: Value(album.description),
-            isActivityEnabled: Value(album.isActivityEnabled),
             order: Value(album.order.toAlbumAssetOrder()),
             thumbnailAssetId: Value(album.thumbnailAssetId),
             createdAt: Value(album.createdAt),
@@ -788,167 +741,6 @@ class SyncStreamRepository extends DatabaseAccessor<Drift> with $SyncStreamRepos
       rethrow;
     }
   }
-
-  Future<void> updatePeopleV1(Iterable<SyncPersonV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final person in data) {
-          final companion = PersonEntityCompanion(
-            createdAt: Value(person.createdAt),
-            updatedAt: Value(person.updatedAt),
-            ownerId: Value(person.ownerId),
-            name: Value(person.name),
-            faceAssetId: Value(person.faceAssetId),
-            isFavorite: Value(person.isFavorite),
-            isHidden: Value(person.isHidden),
-            color: Value(person.color),
-            birthDate: Value(person.birthDate),
-          );
-
-          batch.insert(
-            _db.personEntity,
-            companion.copyWith(id: Value(person.id)),
-            onConflict: DoUpdate((_) => companion),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: updatePeopleV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> deletePeopleV1(Iterable<SyncPersonDeleteV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final person in data) {
-          batch.deleteWhere(_db.personEntity, (row) => row.id.equals(person.personId));
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: deletePeopleV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> updateAssetFacesV1(Iterable<SyncAssetFaceV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final assetFace in data) {
-          final companion = AssetFaceEntityCompanion(
-            assetId: Value(assetFace.assetId),
-            personId: Value(assetFace.personId),
-            imageWidth: Value(assetFace.imageWidth),
-            imageHeight: Value(assetFace.imageHeight),
-            boundingBoxX1: Value(assetFace.boundingBoxX1),
-            boundingBoxY1: Value(assetFace.boundingBoxY1),
-            boundingBoxX2: Value(assetFace.boundingBoxX2),
-            boundingBoxY2: Value(assetFace.boundingBoxY2),
-            sourceType: Value(assetFace.sourceType),
-          );
-
-          batch.insert(
-            _db.assetFaceEntity,
-            companion.copyWith(id: Value(assetFace.id)),
-            onConflict: DoUpdate((_) => companion),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: updateAssetFacesV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> updateAssetFacesV3(Iterable<SyncAssetFaceV3> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final assetFace in data) {
-          final companion = AssetFaceEntityCompanion(
-            assetId: Value(assetFace.assetId),
-            personId: Value(assetFace.personId),
-            imageWidth: Value(assetFace.imageWidth),
-            imageHeight: Value(assetFace.imageHeight),
-            boundingBoxX1: Value(assetFace.boundingBoxX1),
-            boundingBoxY1: Value(assetFace.boundingBoxY1),
-            boundingBoxX2: Value(assetFace.boundingBoxX2),
-            boundingBoxY2: Value(assetFace.boundingBoxY2),
-            sourceType: Value(assetFace.sourceType),
-            deletedAt: Value(assetFace.deletedAt),
-            isVisible: Value(assetFace.isVisible),
-          );
-
-          batch.insert(
-            _db.assetFaceEntity,
-            companion.copyWith(id: Value(assetFace.id)),
-            onConflict: DoUpdate((_) => companion),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: updateAssetFacesV3', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> deleteAssetFacesV1(Iterable<SyncAssetFaceDeleteV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final assetFace in data) {
-          batch.deleteWhere(_db.assetFaceEntity, (row) => row.id.equals(assetFace.assetFaceId));
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: deleteAssetFacesV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> updateAssetOcrV1(Iterable<SyncAssetOcrV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final assetOcr in data) {
-          final companion = AssetOcrEntityCompanion(
-            assetId: Value(assetOcr.assetId),
-            recognizedText: Value(assetOcr.text),
-            x1: Value(assetOcr.x1),
-            y1: Value(assetOcr.y1),
-            x2: Value(assetOcr.x2),
-            y2: Value(assetOcr.y2),
-            x3: Value(assetOcr.x3),
-            y3: Value(assetOcr.y3),
-            x4: Value(assetOcr.x4),
-            y4: Value(assetOcr.y4),
-            boxScore: Value(assetOcr.boxScore),
-            textScore: Value(assetOcr.textScore),
-            isVisible: Value(assetOcr.isVisible),
-          );
-
-          batch.insert(
-            _db.assetOcrEntity,
-            companion.copyWith(id: Value(assetOcr.id)),
-            onConflict: DoUpdate((_) => companion),
-          );
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: updateAssetOcrV1', error, stack);
-      rethrow;
-    }
-  }
-
-  Future<void> deleteAssetOcrV1(Iterable<SyncAssetOcrDeleteV1> data) async {
-    try {
-      await _db.batch((batch) {
-        for (final assetOcr in data) {
-          batch.deleteWhere(_db.assetOcrEntity, (row) => row.id.equals(assetOcr.id));
-        }
-      });
-    } catch (error, stack) {
-      _logger.severe('Error: deleteAssetOcrV1', error, stack);
-      rethrow;
-    }
-  }
 }
 
 extension on AssetTypeEnum {
@@ -970,14 +762,11 @@ extension on AssetOrder {
 extension on MemoryType {
   MemoryTypeEnum toMemoryType() => switch (this) {
     MemoryType.onThisDay => MemoryTypeEnum.onThisDay,
-    MemoryType.birthday => MemoryTypeEnum.birthday,
   };
 }
 
 extension on api.AlbumUserRole {
   AlbumUserRole toAlbumUserRole() => switch (this) {
-    api.AlbumUserRole.editor => AlbumUserRole.editor,
-    api.AlbumUserRole.viewer => AlbumUserRole.viewer,
     api.AlbumUserRole.owner => AlbumUserRole.owner,
   };
 }

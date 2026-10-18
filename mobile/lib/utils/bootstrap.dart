@@ -56,7 +56,6 @@ abstract final class Bootstrap {
 
     final apiService = ApiService();
     final (dataController, loggerDatabaseWasRecreated) = await DataController.init(
-      apiClient: apiService.apiClient,
       disableStoreWatching: disableStoreWatching,
     );
 

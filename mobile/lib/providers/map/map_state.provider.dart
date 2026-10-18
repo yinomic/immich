@@ -20,7 +20,6 @@ class MapStateNotifier extends Notifier<MapState> {
       themeMode: mapConfig.themeMode,
       showFavoriteOnly: mapConfig.favoritesOnly,
       includeArchived: mapConfig.includeArchived,
-      withPartners: mapConfig.withPartners,
       relativeTime: mapConfig.relativeDays,
       lightStyleFetched: AsyncData(lightStyleUrl),
       darkStyleFetched: AsyncData(darkStyleUrl),

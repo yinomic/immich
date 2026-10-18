@@ -24,27 +24,10 @@ abstract final class UserConverter {
     avatarColor: adminDto.avatarColor.toAvatarColor(),
     memoryEnabled: preferenceDto?.memories.enabled ?? true,
     inTimeline: false,
-    isPartnerSharedBy: false,
-    isPartnerSharedWith: false,
     profileChangedAt: adminDto.profileChangedAt,
     hasProfileImage: adminDto.profileImagePath.isNotEmpty,
     quotaSizeInBytes: adminDto.quotaSizeInBytes ?? 0,
     quotaUsageInBytes: adminDto.quotaUsageInBytes ?? 0,
-  );
-
-  static UserDto fromPartnerDto(PartnerResponseDto dto) => UserDto(
-    id: dto.id,
-    email: dto.email,
-    name: dto.name,
-    isAdmin: false,
-    updatedAt: DateTime.now(),
-    avatarColor: dto.avatarColor.toAvatarColor(),
-    memoryEnabled: false,
-    inTimeline: dto.inTimeline.orElse(null) ?? false,
-    isPartnerSharedBy: false,
-    isPartnerSharedWith: false,
-    profileChangedAt: dto.profileChangedAt,
-    hasProfileImage: dto.profileImagePath.isNotEmpty,
   );
 }
 

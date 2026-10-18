@@ -23,7 +23,6 @@ class MockRemoteAlbumService extends Mock implements RemoteAlbumService {}
 
 class MockMemoryService extends Mock implements MemoryService {}
 
-
 class MockPlatformDeepLink extends Mock implements PlatformDeepLink {}
 
 class MockWidgetRef extends Mock implements WidgetRef {}
@@ -53,8 +52,6 @@ final _album = RemoteAlbum(
   description: '',
   createdAt: DateTime(2026, 6, 12),
   updatedAt: DateTime(2026, 6, 12),
-  isActivityEnabled: true,
-  isShared: true,
   order: AlbumAssetOrder.asc,
   assetCount: 1,
   ownerName: 'Owner',

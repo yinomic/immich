@@ -20,13 +20,10 @@ import 'package:immich_mobile/presentation/actions/restore.action.dart';
 import 'package:immich_mobile/presentation/actions/set_album_cover.action.dart';
 import 'package:immich_mobile/presentation/actions/set_profile_picture.action.dart';
 import 'package:immich_mobile/presentation/actions/share.action.dart';
-import 'package:immich_mobile/presentation/actions/share_link.action.dart';
-import 'package:immich_mobile/presentation/actions/similar_photos.action.dart';
 import 'package:immich_mobile/presentation/actions/slideshow.action.dart';
 import 'package:immich_mobile/presentation/actions/stack.action.dart';
 import 'package:immich_mobile/presentation/actions/upload.action.dart';
 import 'package:immich_mobile/presentation/widgets/action_buttons/base_action_button.widget.dart';
-import 'package:immich_mobile/presentation/widgets/action_buttons/like_activity_action_button.widget.dart';
 import 'package:immich_mobile/routing/router.dart';
 
 class ActionButtonContext {
@@ -59,12 +56,9 @@ class ActionButtonContext {
 
 enum ActionButtonType {
   openInfo,
-  likeActivity,
   share,
-  shareLink,
   cast,
   setAlbumCover,
-  similarPhotos,
   setProfilePicture,
   viewInTimeline,
   slideshow,
@@ -86,9 +80,6 @@ enum ActionButtonType {
     return switch (this) {
       ActionButtonType.advancedInfo => context.advancedTroubleshooting,
       ActionButtonType.share => true,
-      ActionButtonType.shareLink =>
-        !context.isInLockedView && //
-            context.asset.hasRemote,
       ActionButtonType.archive =>
         context.isOwner && //
             !context.isInLockedView && //
@@ -137,14 +128,6 @@ enum ActionButtonType {
             !context.isInLockedView && //
             context.isStacked,
       ActionButtonType.openInBrowser => context.asset.hasRemote && !context.isInLockedView,
-      ActionButtonType.likeActivity =>
-        !context.isInLockedView &&
-            context.currentAlbum != null &&
-            context.currentAlbum!.isActivityEnabled &&
-            context.currentAlbum!.isShared,
-      ActionButtonType.similarPhotos =>
-        !context.isInLockedView && //
-            context.asset is RemoteAsset,
       ActionButtonType.setProfilePicture =>
         !context.isInLockedView && //
             context.asset is RemoteAsset && //
@@ -172,7 +155,6 @@ enum ActionButtonType {
     return switch (this) {
       ActionButtonType.advancedInfo => ActionMenuItem(action: AssetDebugAction(source: context.source)),
       ActionButtonType.share => ActionMenuItem(action: ShareAction(source: context.source)),
-      ActionButtonType.shareLink => ActionMenuItem(action: ShareLinkAction(source: context.source)),
       ActionButtonType.slideshow => const ActionMenuItem(action: SlideshowAction()),
       ActionButtonType.archive ||
       ActionButtonType.unarchive => ActionMenuItem(action: ArchiveAction(source: context.source)),
@@ -191,13 +173,9 @@ enum ActionButtonType {
       ActionButtonType.setAlbumCover => ActionMenuItem(
         action: SetAlbumCoverAction(source: context.source, albumId: context.currentAlbum!.id),
       ),
-      ActionButtonType.likeActivity => LikeActivityActionButton(iconOnly: iconOnly, menuItem: menuItem),
       ActionButtonType.unstack => ActionMenuItem(action: StackAction(source: context.source)),
       ActionButtonType.openInBrowser => ActionMenuItem(
         action: OpenInBrowserAction(remoteId: context.asset.remoteId!, origin: context.timelineOrigin),
-      ),
-      ActionButtonType.similarPhotos => ActionMenuItem(
-        action: SimilarPhotosAction(assetId: (context.asset as RemoteAsset).id),
       ),
       ActionButtonType.setProfilePicture => ActionMenuItem(action: SetProfilePictureAction(asset: context.asset)),
       ActionButtonType.openInfo => BaseActionButton(

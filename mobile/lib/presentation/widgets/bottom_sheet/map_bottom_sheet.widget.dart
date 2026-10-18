@@ -49,8 +49,7 @@ class _ScopedMapTimeline extends StatelessWidget {
             throw Exception('User must be logged in to access archive');
           }
 
-          final withPartners = ref.watch(mapStateProvider.select((s) => s.withPartners));
-          final users = withPartners ? ref.watch(timelineUsersProvider).valueOrNull ?? [user.id] : [user.id];
+          final users = [user.id];
 
           final optionsController = StreamController<TimelineMapOptions>.broadcast();
           ref.onDispose(optionsController.close);

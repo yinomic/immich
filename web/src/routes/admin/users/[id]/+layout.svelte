@@ -162,7 +162,6 @@
             <FeatureSetting title={$t('email_notifications')} state={userPreferences.emailNotifications.enabled} />
             <FeatureSetting title={$t('folders')} state={userPreferences.folders.enabled} />
             <FeatureSetting title={$t('memories')} state={userPreferences.memories.enabled} />
-            <FeatureSetting title={$t('people')} state={userPreferences.people.enabled} />
             <FeatureSetting title={$t('rating')} state={userPreferences.ratings.enabled} />
             <FeatureSetting title={$t('show_supporter_badge')} state={userPreferences.purchase.showSupportBadge} />
             <FeatureSetting title={$t('tags')} state={userPreferences.tags.enabled} />

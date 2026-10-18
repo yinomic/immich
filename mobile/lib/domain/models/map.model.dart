@@ -16,7 +16,6 @@ abstract class TimelineMapOptions with _$TimelineMapOptions {
 
     @Default(false) bool onlyFavorites,
     @Default(false) bool includeArchived,
-    @Default(false) bool withPartners,
     @Default(0) int relativeDays,
 
     @Default(TimeRange()) TimeRange timeRange,

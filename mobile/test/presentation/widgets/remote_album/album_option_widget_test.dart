@@ -71,56 +71,6 @@ void main() {
       expect(find.byIcon(Icons.add_a_photo), findsNothing);
     });
 
-    testWidgets('shows add users option when onAddUsers is provided', (tester) async {
-      bool addUsersCalled = false;
-
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onAddUsers: () => addUsersCalled = true));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.group_add), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.group_add));
-      await tester.pumpAndSettle();
-
-      expect(addUsersCalled, isTrue);
-    });
-
-    testWidgets('hides add users option when onAddUsers is null', (tester) async {
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onEditAlbum: () {}));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.group_add), findsNothing);
-    });
-
-    testWidgets('shows leave album option when onLeaveAlbum is provided', (tester) async {
-      bool leaveAlbumCalled = false;
-
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onLeaveAlbum: () => leaveAlbumCalled = true));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.person_remove_rounded), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.person_remove_rounded));
-      await tester.pumpAndSettle();
-
-      expect(leaveAlbumCalled, isTrue);
-    });
-
-    testWidgets('hides leave album option when onLeaveAlbum is null', (tester) async {
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onEditAlbum: () {}));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.person_remove_rounded), findsNothing);
-    });
-
     testWidgets('shows toggle album order option when onToggleAlbumOrder is provided', (tester) async {
       bool toggleOrderCalled = false;
 
@@ -144,56 +94,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.swap_vert_rounded), findsNothing);
-    });
-
-    testWidgets('shows create shared link option when onCreateSharedLink is provided', (tester) async {
-      bool createSharedLinkCalled = false;
-
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onCreateSharedLink: () => createSharedLinkCalled = true));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.link), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.link));
-      await tester.pumpAndSettle();
-
-      expect(createSharedLinkCalled, isTrue);
-    });
-
-    testWidgets('hides create shared link option when onCreateSharedLink is null', (tester) async {
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onEditAlbum: () {}));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.link), findsNothing);
-    });
-
-    testWidgets('shows options option when onShowOptions is provided', (tester) async {
-      bool showOptionsCalled = false;
-
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onShowOptions: () => showOptionsCalled = true));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.settings), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.settings));
-      await tester.pumpAndSettle();
-
-      expect(showOptionsCalled, isTrue);
-    });
-
-    testWidgets('hides options option when onShowOptions is null', (tester) async {
-      await tester.pumpConsumerWidget(RemoteAlbumOption(onEditAlbum: () {}));
-
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.settings), findsNothing);
     });
 
     testWidgets('shows delete album option when onDeleteAlbum is provided', (tester) async {
@@ -221,7 +121,7 @@ void main() {
       expect(find.byIcon(Icons.delete), findsNothing);
     });
 
-    testWidgets('shows divider before delete album option', (tester) async {
+    testWidgets('separates delete option with divider', (tester) async {
       await tester.pumpConsumerWidget(RemoteAlbumOption(onEditAlbum: () {}, onDeleteAlbum: () {}));
 
       await tester.tap(find.byIcon(Icons.more_vert_rounded));
@@ -232,16 +132,7 @@ void main() {
 
     testWidgets('shows all options when all callbacks are provided', (tester) async {
       await tester.pumpConsumerWidget(
-        RemoteAlbumOption(
-          onEditAlbum: () {},
-          onAddPhotos: () {},
-          onAddUsers: () {},
-          onLeaveAlbum: () {},
-          onToggleAlbumOrder: () {},
-          onCreateSharedLink: () {},
-          onShowOptions: () {},
-          onDeleteAlbum: () {},
-        ),
+        RemoteAlbumOption(onEditAlbum: () {}, onAddPhotos: () {}, onToggleAlbumOrder: () {}, onDeleteAlbum: () {}),
       );
 
       await tester.tap(find.byIcon(Icons.more_vert_rounded));
@@ -249,11 +140,7 @@ void main() {
 
       expect(find.byIcon(Icons.edit), findsOneWidget);
       expect(find.byIcon(Icons.add_a_photo), findsOneWidget);
-      expect(find.byIcon(Icons.group_add), findsOneWidget);
-      expect(find.byIcon(Icons.person_remove_rounded), findsOneWidget);
       expect(find.byIcon(Icons.swap_vert_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.link), findsOneWidget);
-      expect(find.byIcon(Icons.settings), findsOneWidget);
       expect(find.byIcon(Icons.delete), findsOneWidget);
       expect(find.byType(Divider), findsOneWidget);
     });
@@ -266,11 +153,7 @@ void main() {
 
       expect(find.byIcon(Icons.edit), findsNothing);
       expect(find.byIcon(Icons.add_a_photo), findsNothing);
-      expect(find.byIcon(Icons.group_add), findsNothing);
-      expect(find.byIcon(Icons.person_remove_rounded), findsNothing);
       expect(find.byIcon(Icons.swap_vert_rounded), findsNothing);
-      expect(find.byIcon(Icons.link), findsNothing);
-      expect(find.byIcon(Icons.settings), findsNothing);
       expect(find.byIcon(Icons.delete), findsNothing);
     });
 
@@ -303,79 +186,6 @@ void main() {
       final icon = iconButton.icon as Icon;
 
       expect(icon.shadows, equals(shadows));
-    });
-
-    group('owner vs non-owner scenarios', () {
-      testWidgets('owner sees all management options', (tester) async {
-        // Simulating owner scenario - all callbacks provided
-        await tester.pumpConsumerWidget(
-          RemoteAlbumOption(
-            onEditAlbum: () {},
-            onAddPhotos: () {},
-            onAddUsers: () {},
-            onToggleAlbumOrder: () {},
-            onCreateSharedLink: () {},
-            onShowOptions: () {},
-            onDeleteAlbum: () {},
-          ),
-        );
-
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
-        await tester.pumpAndSettle();
-
-        // Owner should see all management options
-        expect(find.byIcon(Icons.edit), findsOneWidget);
-        expect(find.byIcon(Icons.add_a_photo), findsOneWidget);
-        expect(find.byIcon(Icons.group_add), findsOneWidget);
-        expect(find.byIcon(Icons.swap_vert_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.link), findsOneWidget);
-        expect(find.byIcon(Icons.delete), findsOneWidget);
-        // Owner should NOT see leave album
-        expect(find.byIcon(Icons.person_remove_rounded), findsNothing);
-      });
-
-      testWidgets('non-owner with editor role sees limited options', (tester) async {
-        // Simulating non-owner with editor role - can add photos, show options, leave
-        await tester.pumpConsumerWidget(
-          RemoteAlbumOption(onAddPhotos: () {}, onShowOptions: () {}, onLeaveAlbum: () {}),
-        );
-
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
-        await tester.pumpAndSettle();
-
-        // Editor can add photos
-        expect(find.byIcon(Icons.add_a_photo), findsOneWidget);
-        // Can see options
-        expect(find.byIcon(Icons.settings), findsOneWidget);
-        // Can leave album
-        expect(find.byIcon(Icons.person_remove_rounded), findsOneWidget);
-        // Cannot see owner-only options
-        expect(find.byIcon(Icons.edit), findsNothing);
-        expect(find.byIcon(Icons.group_add), findsNothing);
-        expect(find.byIcon(Icons.swap_vert_rounded), findsNothing);
-        expect(find.byIcon(Icons.link), findsNothing);
-        expect(find.byIcon(Icons.delete), findsNothing);
-      });
-
-      testWidgets('non-owner viewer sees minimal options', (tester) async {
-        // Simulating viewer - can only show options and leave
-        await tester.pumpConsumerWidget(RemoteAlbumOption(onShowOptions: () {}, onLeaveAlbum: () {}));
-
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
-        await tester.pumpAndSettle();
-
-        // Can see options
-        expect(find.byIcon(Icons.settings), findsOneWidget);
-        // Can leave album
-        expect(find.byIcon(Icons.person_remove_rounded), findsOneWidget);
-        // Cannot see any other options
-        expect(find.byIcon(Icons.edit), findsNothing);
-        expect(find.byIcon(Icons.add_a_photo), findsNothing);
-        expect(find.byIcon(Icons.group_add), findsNothing);
-        expect(find.byIcon(Icons.swap_vert_rounded), findsNothing);
-        expect(find.byIcon(Icons.link), findsNothing);
-        expect(find.byIcon(Icons.delete), findsNothing);
-      });
     });
   });
 }

@@ -6,15 +6,12 @@ import 'package:drift/drift.dart';
 import 'package:drift/src/runtime/executor/stream_queries.dart' show StreamQueryStore;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:flutter/foundation.dart';
-import 'package:immich_mobile/data/db/main/dao/ocr.dart';
-import 'package:immich_mobile/data/db/main/dao/person.dart';
 import 'package:immich_mobile/data/db/main/dao/user_metadata.dart';
 import 'package:immich_mobile/data/db/main/database.drift.dart';
 import 'package:immich_mobile/data/db/main/database.steps.dart';
 import 'package:immich_mobile/data/db/main/table/app/settings.dart';
 import 'package:immich_mobile/data/db/main/table/app/store.dart';
 import 'package:immich_mobile/data/db/main/table/asset/edit.dart';
-import 'package:immich_mobile/data/db/main/table/asset/ocr.dart';
 import 'package:immich_mobile/data/db/main/table/local/album.dart';
 import 'package:immich_mobile/data/db/main/table/local/album_asset.dart';
 import 'package:immich_mobile/data/db/main/table/local/asset.dart';
@@ -23,8 +20,6 @@ import 'package:immich_mobile/data/db/main/table/local/trashed_asset.dart';
 import 'package:immich_mobile/data/db/main/table/local/trashed_asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/memory/asset.dart';
 import 'package:immich_mobile/data/db/main/table/memory/memory.dart';
-import 'package:immich_mobile/data/db/main/table/people/asset_face.dart';
-import 'package:immich_mobile/data/db/main/table/people/person.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_asset.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_user.dart';
@@ -35,14 +30,12 @@ import 'package:immich_mobile/data/db/main/table/remote/exif.dart';
 import 'package:immich_mobile/data/db/main/table/remote/stack.dart';
 import 'package:immich_mobile/data/db/main/table/user/auth_user.dart';
 import 'package:immich_mobile/data/db/main/table/user/metadata.dart';
-import 'package:immich_mobile/data/db/main/table/user/partner.dart';
 import 'package:immich_mobile/data/db/main/table/user/user.dart';
 import 'package:immich_mobile/infrastructure/repositories/backup.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/local_album.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/local_asset.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/map.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/memory.repository.dart';
-import 'package:immich_mobile/infrastructure/repositories/partner.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/remote_album.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/remote_asset.repository.dart';
 import 'package:immich_mobile/infrastructure/repositories/remote_exif.repository.dart';
@@ -65,7 +58,6 @@ import 'package:sqlite_async/sqlite_async.dart';
     AuthUserEntity,
     UserEntity,
     UserMetadataEntity,
-    PartnerEntity,
     LocalAlbumEntity,
     LocalAssetEntity,
     LocalAlbumAssetEntity,
@@ -78,13 +70,10 @@ import 'package:sqlite_async/sqlite_async.dart';
     MemoryEntity,
     MemoryAssetEntity,
     StackEntity,
-    PersonEntity,
-    AssetFaceEntity,
     StoreEntity,
     TrashedLocalAssetEntity,
     AssetEditEntity,
     SettingsEntity,
-    AssetOcrEntity,
   ],
   include: {'package:immich_mobile/data/db/main/query/merged_asset.drift'},
   daos: [
@@ -94,9 +83,6 @@ import 'package:sqlite_async/sqlite_async.dart';
     LocalAssetRepository,
     MapRepository,
     MemoryRepository,
-    OcrRepository,
-    PartnerRepository,
-    PeopleDatabaseRepository,
     RemoteAlbumRepository,
     RemoteAssetRepository,
     RemoteExifRepository,
@@ -160,7 +146,7 @@ class Drift extends $Drift {
   }
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -379,6 +365,22 @@ class Drift extends $Drift {
                 await m.addColumn(v35.localAssetEntity, v35.localAssetEntity.groupDate);
                 await m.createIndex(v35.idxRemoteAssetGroup);
                 await m.createIndex(v35.idxLocalAssetGroup);
+              },
+              from35To36: (m, v36) async {
+                // Partner sharing, people/faces and OCR are not part of this build.
+                // The tables no longer exist in the target schema, so drop them by name.
+                await customStatement('DROP TABLE IF EXISTS partner_entity');
+                await customStatement('DROP TABLE IF EXISTS person_entity');
+                await customStatement('DROP TABLE IF EXISTS asset_face_entity');
+                await customStatement('DROP TABLE IF EXISTS asset_ocr_entity');
+
+                // Album collaboration is gone: keep only the single owner row and
+                // remap the legacy role index (editor=0, viewer=1, owner=2) to owner
+                await customStatement('DELETE FROM remote_album_user_entity WHERE role != 2');
+                await customStatement('UPDATE remote_album_user_entity SET role = 0');
+
+                // Activities (comments/likes) are gone with the album activity toggle
+                await m.alterTable(TableMigration(v36.remoteAlbumEntity));
               },
             ),
           );

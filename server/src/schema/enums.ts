@@ -3,7 +3,11 @@ import { AlbumUserRole, AssetStatus, AssetVisibility, ChecksumAlgorithm, VideoCo
 
 export const album_user_role_enum = registerEnum({
   name: 'album_user_role_enum',
-  values: [AlbumUserRole.Owner],
+  // 'editor' and 'viewer' are legacy values from before album collaboration was
+  // removed. They stay in the type because PostgreSQL cannot drop enum values in
+  // place and recreating the type would invalidate postgres.js's cached type
+  // information for the running process. The API only ever writes 'owner'.
+  values: [AlbumUserRole.Owner, 'editor', 'viewer'],
 });
 
 export const assets_status_enum = registerEnum({

@@ -793,3 +793,64 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 - 各语言 `i18n/*.json` 里那些已不再被引用的 key（如 `include_shared_partner_assets`、`review_duplicates`）：只影响打包体积，且上游工具会参与校验，未动。
 
 
+
+
+---
+
+## Round 37 — 收尾清理 + 移动端适配（**暂不构建 app**）
+
+目标：`不影响功能的使用，且是因为改造导致的无用功能都删掉，同时将移动端功能进行相应调整，暂不构建app`。
+
+### 1. 服务端：把上一轮遗留的「协作 / 重复检测 / 死开关」收干净
+- **相册协作整体删除**：`PUT /albums/:id/users`、`PUT /albums/:id/user/:userId`、`DELETE /albums/:id/user/:userId` 三个端点与 `AddUsersDto`/`UpdateAlbumUserDto`/`AlbumUserParamDto`、`CreateAlbumDto.albumUsers`、`AlbumUserRole.Editor/Viewer`（只剩 `owner`）、`AlbumResponseDto.shared`、`AlbumStatisticsResponseDto.shared/notShared`、`AlbumAccess.checkSharedAlbumAccess`、`Permission.AlbumShare/AlbumUserCreate/AlbumUserUpdate/AlbumUserDelete`、相册邀请/更新邮件模板与作业、`NotificationType.AlbumInvite/AlbumUpdate`、`emailNotifications.albumInvite/albumUpdate` 偏好。**相册归属保留**：每张相册仍然只有一行 `album_user`，就是 owner。
+  - `AlbumUpdate` 事件**故意保留**：它现在只负责通过 websocket 刷新家里另一台设备的时间线，不再有邮件扇出。
+- **重复检测**：`AssetBulkUpdateDto.duplicateId`、`AssetResponseDto.duplicateId`、`asset.duplicateId` 列 + 索引、`isDuplicate` 搜索过滤全部删除。
+- **死开关与死过滤器**：`ServerFeaturesDto.duplicateDetection/facialRecognition/importFaces/ocr`、`AdminConfigDto.metadata`（人脸导入）、`adminConfig.job.ocr`、`nightlyTasks.clusterNewFaces`、`utils.isFaceImportEnabled`，以及已失效的 `personIds`/`ocr`/`withPeople`/`withFaces` 搜索过滤器与 `StringSimilarityFilter`。
+- **本轮再补一刀（那些功能已经不存在，配置/枚举却还在）**：
+  - 生日回忆（`MemoryType.Birthday`、`BirthdayData`、`MemoryDataDto.personId/personName` 与对应校验）——生日回忆本来就是「按人」的，人已经没了；
+  - 人物偏好（`UserPreferences.people`、`PeopleUpdate/PeopleResponse`、`PersonUpdateStrategy`）——`POST/PATCH /users/me/preferences` 不再接受也不再返回 `people`；
+  - `SearchPeopleDto`、`TimeBucketDto.personId`、`NotificationType.ClusterGroupRequest`、`SystemMetadataKey.FacialRecognitionState`、`ApiTag.Activities/Duplicates/ClusterGroups/People/Faces` 及其描述；
+  - sync 的**实体**类型 `SyncEntityType.Person*/AssetFace*/AssetOcr*` 与 `SyncPersonV1/SyncAssetFaceV1/V3/SyncAssetOcrV1` 等 schema（**请求**类型照旧保留并映射到 `removedSyncType`，老客户端会收到明确的移除提示）。
+- 重新生成 `open-api/immich-openapi-specs.json`（−509 行）、`packages/sdk/src/fetch-client.ts`（−164 行）与移动端 Dart SDK。
+- 新增迁移 `1792194000000-DropDuplicateIdAndSetAlbumRoleDefault`：删 `asset_duplicateId_idx` + `asset.duplicateId` 列，`album_user.role` 默认值改 `owner`。
+
+### 2. 移动端（`mobile/`）：按删除后的 API 调整
+- **删除的功能**（连同页面、入口、provider、本地表一起，不留死按钮）：伙伴共享、分享链接、点赞/评论（activities）、人物/人脸、OCR、重复检测、相册协作者与角色、以及 smart search /「相似照片」（`/search/smart` 与 `SmartSearchDto` 上游已不存在）。另有 `mapWithPartners`、`ServerFeaturesDto` 里的死开关、搜索的 people/OCR 过滤、相册的 All/Shared-with-me/My-albums 过滤条。
+- **规模**：60 个文件删除、87 个修改，约 −7.8k 行；`dart analyze lib test` **0 issue**。
+- **本地数据库升级到 schemaVersion 36**：drop 掉 `partner_entity`、`person_entity`、`asset_face_entity`、`asset_ocr_entity` 与 person/ocr DAO，去掉 `remote_album_entity.is_activity_enabled`，`remote_album_user_entity` 收敛为单行 owner（旧的 editor/viewer 角色索引重映射为 owner）；`test/drift/main/migration_test.dart` **632/632 通过**，即从 1..35 任意版本升级都能得到 v36 结构。
+- 保留：时间线、相册（单 owner）、收藏、归档、回收站、标签、回忆（on-this-day）、地图、元数据搜索、备份上传、设置。
+
+### 3. 顺手抓到并修掉的两个**真 bug**
+1. **删列时把 `@Column` 装饰器留下了** —— 上一轮删 `asset.duplicateId` 时只删了属性行，装饰器 `@Column({ type: 'uuid', nullable: true, index: true })` 就「粘」到了下一行的 `status` 上（`album.isActivityEnabled` 的 `@Column({ type: 'boolean', default: true })` 同样粘到了 `order`）。表现是 schema drift 报 `asset.asset_status_idx` 需要在库里创建。已修，并加了「相邻两个 `@Column(`」的自查。
+2. **空库首次启动后建相册 500** —— `album.repository.create` 用 `unnest(${roles}::album_user_role_enum[])` 绑定角色数组；postgres.js 在**首次连接时**缓存类型目录，而全新库的 `album_user_role_enum` 是**同一个进程刚跑迁移才创建的**，于是数组被序列化成标量，报 `malformed array literal: "owner"`（重启一次就好，所以很容易漏掉——只有「全新库 + 同进程建相册」才会中招）。因为改造后相册恒为单 owner，改成直接绑定标量参数（`${owner.userId}::uuid` / `${owner.role}::album_user_role_enum`），空库首次启动即可建相册。
+   - 教训：**不要靠重建 enum 类型来删枚举值**。PostgreSQL 不能原地删枚举值，而重建类型会让同进程的 postgres.js 类型缓存失效。所以 `album_user_role_enum` 里 `editor`/`viewer` 两个历史值**有意保留**（`schema/enums.ts` 里登记三个值以避免 drift），API 只写 `owner`。
+
+### 4. 验证（本机实跑）
+| 检查 | 结果 |
+|---|---|
+| 空库从零跑迁移（镜像内） | 5 个迁移全部成功；**`No schema drift detected`**（api + microservices 两个 worker 都打印） |
+| 空库**同进程**建相册 | `POST /albums` **201**，`albumUsers` = `[{role: 'owner'}]`，响应里没有 `shared` / `isActivityEnabled` |
+| 功能 smoke（200） | `server/features`、`server/config`、`server/about`、`albums`、`albums/statistics`、`albums/:id`、`PATCH albums/:id`、`timeline/buckets`、`map/markers`、`tags`、`memories`、`users/me`、`users/me/preferences`、`search/places`、`POST search/metadata`、`view/folder/unique-paths` |
+| 已删接口（404） | `/search/explore`、`/people`、`/partners`、`/activities`、`/shared-links`、`/duplicates`、`PUT /albums/:id/users`、`DELETE /albums/:id/user/:userId` |
+| 偏好返回字段 | 只剩 albums/cast/download/emailNotifications/folders/memories/purchase/ratings/recentlyAdded/tags（`people`、`sharedLinks` 都没了） |
+| server | `tsc` 0 错、`eslint --max-warnings 0` 绿、`prettier` 绿、**1520 用例全绿**（1 个 expected fail） |
+| web | `check:typescript` 绿、`check:svelte` **0 错 0 警告**、`prettier` 绿、**485 用例全绿**、`build` 成功 |
+| e2e / CLI | e2e `tsc`+`eslint`+`prettier` 全绿；`@immich/cli check` 0 错 |
+| mobile | `dart analyze lib test` **0 issue**、`dart format` 绿、**1543 用例通过**（1 skipped） |
+| 镜像产物 | 重建成功；bundle 里 `/people`、`/partners`、`/shared-links`、`/utilities/duplicates`、`/search/explore` **均为 0** |
+| 唯一失败用例 | `mobile/test/drift/main/concurrent_migration_test.dart`（两个 isolate 同时迁移同一个 SQLite 文件）。**与本次改动无关**：单独跑 5/5 通过，且把新迁移体换成 `SELECT 1` 后在全量跑里仍然同样失败 → 环境性 flake |
+
+### 5. Android 构建环境（`暂不构建app`，但工具链已就绪，下次直接可用）
+本次把 APK 构建链路打通到「`flutter build apk --release` 能跑到 Gradle 打包」，用户随后说暂不构建，于是停在打包前。已就位：
+- Flutter **3.47.2** 解压在 `~/flutter-sdk`；JDK **21**（`~/.local/jdk/jdk-21.0.9+10`，Gradle 8.14 不支持本机默认的 JDK 25）；Android SDK 在 `~/android-sdk`（`platforms/android-36`、`build-tools/36.0.0`、`platform-tools`、`cmdline-tools/latest`）；NDK **28.2.13676358**（对应 `android-ndk-r28c-linux.zip`，注意**不是** r28b）。
+- Rust + 四个 android target 已装（`native_core` 走 `native_toolchain_rust`）。
+- 环境变量脚本：`~/flutter-env.sh`（JAVA_HOME/ANDROID_HOME/NDK/PATH）。
+- 依赖镜像写进了仓库：`mobile/android/settings.gradle` 与 `build.gradle` 在 `google()/mavenCentral()/gradlePluginPortal()` **之前**插入 `mirrors.cloud.tencent.com/nexus/repository/maven-public`（同时覆盖 Google Maven 与 KSP/中央仓）与阿里云 google/public/gradle-plugin 镜像，原仓库作为回退，所以在墙内墙外都能构建。`~/.gradle/init.d/` 里的 init script 方案**不可行**（会和 Flutter 的 `FAIL_ON_PROJECT_REPOS` 冲突），已弃用。
+- 代码生成（`mise` 不可用时手动跑）：`dart run drift_dev make-migrations`、`dart run build_runner build --delete-conflicting-outputs`、`dart run pigeon`、`dart run easy_localization:generate -S ../i18n`、`dart run bin/generate_keys.dart`；Dart SDK 用 `open-api/bin/generate-dart-sdk.sh`（需要 `openapi-generator-cli` 与 JDK）。
+- **坑**：`sqlite3` 的原生资源钩子会从 GitHub Releases 下载 `.so`（本环境 GitHub 网页/下载被封）。已在 `mobile/pubspec.yaml` 里加 `hooks.user_defines.sqlite3.url_pattern` 指向可达的 GitHub 代理；**能直连 github.com 时可以把这段删掉**。
+- 产物签名：仓库的 `app/build.gradle` 在 `key.jks` 不存在时会退回 debug 签名，所以 `flutter build apk --release` 直接就能出可安装包；要长期自己发布再用 `keytool` 生成 `key.jks` + `key.properties`（都已被 gitignore）。
+
+### 6. 有意保留
+- 各语言 `i18n/*.json` 里已不再引用的 key（如 `birthday_memory_*`、`review_duplicates`、`include_shared_partner_assets`）：只影响体积，上游 i18n 工具参与校验，未动。
+- `album_user_role_enum` 里的 `editor`/`viewer` 历史值（见上文 bug #2）。
+- 用户管理（还能创建多个账号）仍然保留——单账号是我们自己约定，不是死代码；要删说一声。

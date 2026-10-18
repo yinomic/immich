@@ -6,7 +6,6 @@ import 'package:immich_mobile/domain/models/album/album.model.dart';
 import 'package:immich_mobile/domain/models/asset/base_asset.model.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/infrastructure/repositories/remote_album.repository.dart';
-import 'package:immich_mobile/models/albums/album_search.model.dart';
 import 'package:immich_mobile/providers/album/album_sort_by_options.provider.dart';
 import 'package:immich_mobile/repositories/album_api_repository.dart';
 import 'package:immich_mobile/services/foreground_upload.service.dart';
@@ -82,37 +81,18 @@ class RemoteAlbumService {
     return (effectiveOrder == SortOrder.asc ? sorted : sorted.reversed).toList();
   }
 
-  List<RemoteAlbum> searchAlbums(
-    List<RemoteAlbum> albums,
-    String query,
-    String? userId, [
-    QuickFilterMode filterMode = QuickFilterMode.all,
-  ]) {
+  List<RemoteAlbum> searchAlbums(List<RemoteAlbum> albums, String query) {
+    if (query.isEmpty) {
+      return albums;
+    }
+
     final lowerQuery = query.toLowerCase();
-    List<RemoteAlbum> filtered = albums;
-
-    // Apply text search filter
-    if (query.isNotEmpty) {
-      filtered = filtered
-          .where(
-            (album) =>
-                album.name.toLowerCase().contains(lowerQuery) || album.description.toLowerCase().contains(lowerQuery),
-          )
-          .toList();
-    }
-
-    if (userId != null) {
-      switch (filterMode) {
-        case QuickFilterMode.myAlbums:
-          filtered = filtered.where((album) => album.ownerId == userId).toList();
-        case QuickFilterMode.sharedWithMe:
-          filtered = filtered.where((album) => album.ownerId != userId).toList();
-        case QuickFilterMode.all:
-          break;
-      }
-    }
-
-    return filtered;
+    return albums
+        .where(
+          (album) =>
+              album.name.toLowerCase().contains(lowerQuery) || album.description.toLowerCase().contains(lowerQuery),
+        )
+        .toList();
   }
 
   Future<RemoteAlbum> createAlbum({
@@ -137,7 +117,6 @@ class RemoteAlbumService {
     String? name,
     String? description,
     String? thumbnailAssetId,
-    bool? isActivityEnabled,
     AlbumAssetOrder? order,
   }) async {
     final owner = await _repository.getOwner(albumId);
@@ -147,7 +126,6 @@ class RemoteAlbumService {
       name: name,
       description: description,
       thumbnailAssetId: thumbnailAssetId,
-      isActivityEnabled: isActivityEnabled,
       order: order,
     );
 
@@ -159,14 +137,6 @@ class RemoteAlbumService {
 
   Stream<(DateTime, DateTime)> watchDateRange(String albumId) {
     return _repository.watchDateRange(albumId);
-  }
-
-  Future<List<UserDto>> getSharedUsers(String albumId) {
-    return _repository.getSharedUsers(albumId);
-  }
-
-  Future<AlbumUserRole?> getUserRole(String albumId, String userId) {
-    return _repository.getUserRole(albumId, userId);
   }
 
   Future<List<RemoteAsset>> getAssets(String albumId) {
@@ -288,24 +258,6 @@ class RemoteAlbumService {
     await _albumApiRepository.deleteAlbum(albumId);
 
     await _repository.deleteAlbum(albumId);
-  }
-
-  Future<void> addUsers({required String albumId, required List<String> userIds}) async {
-    await _albumApiRepository.addUsers(albumId, userIds);
-
-    return _repository.addUsers(albumId, userIds);
-  }
-
-  Future<void> removeUser(String albumId, {required String userId}) async {
-    await _albumApiRepository.removeUser(albumId, userId: userId);
-
-    return _repository.removeUser(albumId, userId: userId);
-  }
-
-  Future<void> setActivityStatus(String albumId, bool enabled) async {
-    await _albumApiRepository.setActivityStatus(albumId, enabled);
-
-    return _repository.setActivityStatus(albumId, enabled);
   }
 
   Future<int> getCount() {

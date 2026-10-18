@@ -24,13 +24,9 @@ class ApiService {
   late ServerApi serverInfoApi;
   // ignore: unused-code
   late MapApi mapApi;
-  late PartnersApi partnersApi;
-  late PeopleApi peopleApi;
-  late SharedLinksApi sharedLinksApi;
   late SyncApi syncApi;
   // ignore: unused-code
   late SystemConfigApi systemConfigApi;
-  late ActivitiesApi activitiesApi;
   // ignore: unused-code
   late DownloadApi downloadApi;
   late TrashApi trashApi;
@@ -64,12 +60,8 @@ class ApiService {
     serverInfoApi = ServerApi(_apiClient);
     searchApi = SearchApi(_apiClient);
     mapApi = MapApi(_apiClient);
-    partnersApi = PartnersApi(_apiClient);
-    peopleApi = PeopleApi(_apiClient);
-    sharedLinksApi = SharedLinksApi(_apiClient);
     syncApi = SyncApi(_apiClient);
     systemConfigApi = SystemConfigApi(_apiClient);
-    activitiesApi = ActivitiesApi(_apiClient);
     downloadApi = DownloadApi(_apiClient);
     trashApi = TrashApi(_apiClient);
     stacksApi = StacksApi(_apiClient);

@@ -6,6 +6,7 @@ import 'package:immich_mobile/domain/models/store.model.dart';
 import 'package:immich_mobile/domain/services/store.service.dart';
 import 'package:immich_mobile/infrastructure/repositories/store.repository.dart';
 import 'package:immich_mobile/utils/image_url_builder.dart';
+import 'package:openapi/api.dart';
 
 void main() {
   const endpoint = 'http://localhost:3000';
@@ -16,20 +17,30 @@ void main() {
     await StoreService.I.put(StoreKey.serverEndpoint, endpoint);
   });
 
-  group('getFaceThumbnailUrl', () {
-    test('omits the cache buster when updatedAt is null', () {
-      expect(getFaceThumbnailUrl('person-1'), '$endpoint/people/person-1/thumbnail');
+  group('getOriginalUrlForRemoteId', () {
+    test('points at the original endpoint and honours the edited flag', () {
+      expect(getOriginalUrlForRemoteId('asset-1'), '$endpoint/assets/asset-1/original?edited=true');
+      expect(getOriginalUrlForRemoteId('asset-1', edited: false), '$endpoint/assets/asset-1/original?edited=false');
+    });
+  });
+
+  group('getThumbnailUrlForRemoteId', () {
+    test('defaults to the thumbnail size', () {
+      expect(
+        getThumbnailUrlForRemoteId('asset-1'),
+        '$endpoint/assets/asset-1/thumbnail?size=${AssetMediaSize.thumbnail}&edited=true',
+      );
     });
 
-    test('appends the updatedAt cache buster so a changed featured photo busts the cache (#27434)', () {
-      final url = getFaceThumbnailUrl('person-1', updatedAt: DateTime.fromMillisecondsSinceEpoch(1717000000000));
-      expect(url, '$endpoint/people/person-1/thumbnail?c=1717000000000');
+    test('appends the thumbhash as a cache buster when provided', () {
+      final url = getThumbnailUrlForRemoteId('asset-1', thumbhash: 'abc');
+      expect(url, endsWith('&c=abc'));
     });
+  });
 
-    test('a newer updatedAt yields a different url so the image cache key changes', () {
-      final before = getFaceThumbnailUrl('person-1', updatedAt: DateTime.fromMillisecondsSinceEpoch(1));
-      final after = getFaceThumbnailUrl('person-1', updatedAt: DateTime.fromMillisecondsSinceEpoch(2));
-      expect(before, isNot(after));
+  group('getPlaybackUrlForRemoteId', () {
+    test('points at the playback endpoint', () {
+      expect(getPlaybackUrlForRemoteId('asset-1'), '$endpoint/assets/asset-1/video/playback?');
     });
   });
 }

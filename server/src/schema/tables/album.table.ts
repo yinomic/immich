@@ -42,7 +42,6 @@ export class AlbumTable {
   @DeleteDateColumn()
   deletedAt!: Timestamp | null;
 
-  @Column({ type: 'boolean', default: true })
   @Column({ default: AssetOrder.Desc })
   order!: Generated<AssetOrder>;
 

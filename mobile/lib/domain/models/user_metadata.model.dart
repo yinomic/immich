@@ -29,29 +29,23 @@ abstract class Preferences with _$Preferences {
   const factory Preferences({
     @Default(false) bool foldersEnabled,
     @Default(true) bool memoriesEnabled,
-    @Default(true) bool peopleEnabled,
     @Default(false) bool ratingsEnabled,
-    @Default(true) bool sharedLinksEnabled,
     @Default(false) bool tagsEnabled,
     @Default(AvatarColor.primary) AvatarColor userAvatarColor,
     @Default(true) bool showSupportBadge,
-    @Default(3) int minimumFaces,
   }) = _Preferences;
 
   factory Preferences.fromMap(Map<String, Object?> map) {
     return Preferences(
       foldersEnabled: (map["folders"] as Map<String, Object?>?)?["enabled"] as bool? ?? false,
       memoriesEnabled: (map["memories"] as Map<String, Object?>?)?["enabled"] as bool? ?? true,
-      peopleEnabled: (map["people"] as Map<String, Object?>?)?["enabled"] as bool? ?? true,
       ratingsEnabled: (map["ratings"] as Map<String, Object?>?)?["enabled"] as bool? ?? false,
-      sharedLinksEnabled: (map["sharedLinks"] as Map<String, Object?>?)?["enabled"] as bool? ?? true,
       tagsEnabled: (map["tags"] as Map<String, Object?>?)?["enabled"] as bool? ?? false,
       userAvatarColor: AvatarColor.values.firstWhere(
         (e) => e.value == (map["avatar"] as Map<String, Object?>?)?["color"] as String?,
         orElse: () => AvatarColor.primary,
       ),
       showSupportBadge: (map["purchase"] as Map<String, Object?>?)?["showSupportBadge"] as bool? ?? true,
-      minimumFaces: (map["people"] as Map<String, Object?>?)?["minimumFaces"] as int? ?? 3,
     );
   }
 }

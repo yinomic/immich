@@ -124,8 +124,6 @@ final _remoteStats = [
   _Stat(name: 'Memories', load: (db) => db.managers.memoryEntity.count()),
   _Stat(name: 'Memories Assets', load: (db) => db.managers.memoryAssetEntity.count()),
   _Stat(name: 'Stacks', load: (db) => db.managers.stackEntity.count()),
-  _Stat(name: 'People', load: (db) => db.managers.personEntity.count()),
-  _Stat(name: 'AssetFaces', load: (db) => db.managers.assetFaceEntity.count()),
 ];
 
 @RoutePage()

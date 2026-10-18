@@ -111,14 +111,12 @@ void main() {
     when(() => mockSyncApiRepo.deleteSyncAck(any())).thenAnswer((_) async => {});
 
     when(() => mockApi.serverInfoApi).thenReturn(mockServerApi);
-    when(
-      () => mockServerApi.getServerVersion(),
-    ).thenAnswer((_) async => ServerVersionResponseDto(major: 1, minor: 132, patch_: 0, prerelease: null, featureLevel: 1));
+    when(() => mockServerApi.getServerVersion()).thenAnswer(
+      (_) async => ServerVersionResponseDto(major: 1, minor: 132, patch_: 0, prerelease: null, featureLevel: 1),
+    );
 
     when(() => mockSyncStreamRepo.updateUsersV1(any())).thenAnswer(successHandler);
     when(() => mockSyncStreamRepo.deleteUsersV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.updatePartnerV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.deletePartnerV1(any())).thenAnswer(successHandler);
     when(() => mockSyncStreamRepo.updateAssetsV1(any())).thenAnswer(successHandler);
     when(
       () => mockSyncStreamRepo.updateAssetsV1(any(), debugLabel: any(named: 'debugLabel')),
@@ -143,10 +141,6 @@ void main() {
     ).thenAnswer(successHandler);
     when(() => mockSyncStreamRepo.updateUserMetadatasV1(any())).thenAnswer(successHandler);
     when(() => mockSyncStreamRepo.deleteUserMetadatasV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.updatePeopleV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.deletePeopleV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.updateAssetFacesV1(any())).thenAnswer(successHandler);
-    when(() => mockSyncStreamRepo.deleteAssetFacesV1(any())).thenAnswer(successHandler);
     when(() => mockSyncMigrationRepo.v20260128CopyExifWidthHeightToAsset()).thenAnswer(successHandler);
 
     sut = SyncStreamService(
@@ -181,13 +175,7 @@ void main() {
 
   group("SyncStreamService - _handleEvents", () {
     test("processes events and acks successfully when handlers succeed", () async {
-      final events = [
-        SyncStreamStub.userDeleteV1,
-        SyncStreamStub.userV1Admin,
-        SyncStreamStub.userV1User,
-        SyncStreamStub.partnerDeleteV1,
-        SyncStreamStub.partnerV1,
-      ];
+      final events = [SyncStreamStub.userDeleteV1, SyncStreamStub.userV1Admin, SyncStreamStub.userV1User];
 
       await simulateEvents(events);
 
@@ -196,10 +184,6 @@ void main() {
         () => mockSyncApiRepo.ack(["2"]),
         () => mockSyncStreamRepo.updateUsersV1(any()),
         () => mockSyncApiRepo.ack(["5"]),
-        () => mockSyncStreamRepo.deletePartnerV1(any()),
-        () => mockSyncApiRepo.ack(["4"]),
-        () => mockSyncStreamRepo.updatePartnerV1(any()),
-        () => mockSyncApiRepo.ack(["3"]),
       ]);
       verifyNever(() => mockAbortCallbackWrapper());
     });
@@ -223,8 +207,6 @@ void main() {
 
       verifyNever(() => mockSyncStreamRepo.updateUsersV1(any()));
       verifyNever(() => mockSyncStreamRepo.deleteUsersV1(any()));
-      verifyNever(() => mockSyncStreamRepo.updatePartnerV1(any()));
-      verifyNever(() => mockSyncStreamRepo.deletePartnerV1(any()));
       verifyNever(() => mockAbortCallbackWrapper());
       verifyNever(() => mockSyncApiRepo.ack(any()));
     });
@@ -245,7 +227,7 @@ void main() {
       );
       await sut.sync();
 
-      final events = [SyncStreamStub.userDeleteV1, SyncStreamStub.userV1Admin, SyncStreamStub.partnerDeleteV1];
+      final events = [SyncStreamStub.userDeleteV1, SyncStreamStub.userV1Admin, SyncStreamStub.memoryDeleteV1];
 
       when(() => mockSyncStreamRepo.deleteUsersV1(any())).thenAnswer((_) async {
         cancellation.complete();
@@ -255,7 +237,6 @@ void main() {
 
       verify(() => mockSyncStreamRepo.deleteUsersV1(any())).called(1);
       verifyNever(() => mockSyncStreamRepo.updateUsersV1(any()));
-      verifyNever(() => mockSyncStreamRepo.deletePartnerV1(any()));
 
       verify(() => mockAbortCallbackWrapper()).called(1);
 
@@ -286,7 +267,7 @@ void main() {
 
       await sut.sync();
 
-      final events = [SyncStreamStub.userDeleteV1, SyncStreamStub.userV1Admin, SyncStreamStub.partnerDeleteV1];
+      final events = [SyncStreamStub.userDeleteV1, SyncStreamStub.userV1Admin, SyncStreamStub.memoryDeleteV1];
 
       final processingFuture = handleEventsCallback(
         events,
@@ -565,16 +546,15 @@ void main() {
   group('SyncStreamService - Sync Migration', () {
     test('ensure that <2.5.0 migrations run', () async {
       await Store.put(StoreKey.syncMigrationStatus, "[]");
-      when(
-        () => mockServerApi.getServerVersion(),
-      ).thenAnswer((_) async => ServerVersionResponseDto(major: 2, minor: 4, patch_: 1, prerelease: null, featureLevel: 1));
+      when(() => mockServerApi.getServerVersion()).thenAnswer(
+        (_) async => ServerVersionResponseDto(major: 2, minor: 4, patch_: 1, prerelease: null, featureLevel: 1),
+      );
 
       await sut.sync();
 
       verifyInOrder([
         () => mockSyncApiRepo.deleteSyncAck([
           SyncEntityType.assetExifV1,
-          SyncEntityType.partnerAssetExifV1,
           SyncEntityType.albumAssetExifCreateV1,
           SyncEntityType.albumAssetExifUpdateV1,
         ]),
@@ -585,7 +565,6 @@ void main() {
       verifyNever(
         () => mockSyncApiRepo.deleteSyncAck([
           SyncEntityType.assetV1,
-          SyncEntityType.partnerAssetV1,
           SyncEntityType.albumAssetCreateV1,
           SyncEntityType.albumAssetUpdateV1,
         ]),
@@ -593,21 +572,19 @@ void main() {
     });
     test('ensure that >=2.5.0 migrations run', () async {
       await Store.put(StoreKey.syncMigrationStatus, "[]");
-      when(
-        () => mockServerApi.getServerVersion(),
-      ).thenAnswer((_) async => ServerVersionResponseDto(major: 2, minor: 5, patch_: 0, prerelease: null, featureLevel: 1));
+      when(() => mockServerApi.getServerVersion()).thenAnswer(
+        (_) async => ServerVersionResponseDto(major: 2, minor: 5, patch_: 0, prerelease: null, featureLevel: 1),
+      );
       await sut.sync();
 
       verifyInOrder([
         () => mockSyncApiRepo.deleteSyncAck([
           SyncEntityType.assetExifV1,
-          SyncEntityType.partnerAssetExifV1,
           SyncEntityType.albumAssetExifCreateV1,
           SyncEntityType.albumAssetExifUpdateV1,
         ]),
         () => mockSyncApiRepo.deleteSyncAck([
           SyncEntityType.assetV1,
-          SyncEntityType.partnerAssetV1,
           SyncEntityType.albumAssetCreateV1,
           SyncEntityType.albumAssetUpdateV1,
         ]),
@@ -623,9 +600,9 @@ void main() {
         '["${SyncMigrationTask.v20260128_CopyExifWidthHeightToAsset.name}"]',
       );
 
-      when(
-        () => mockServerApi.getServerVersion(),
-      ).thenAnswer((_) async => ServerVersionResponseDto(major: 2, minor: 4, patch_: 1, prerelease: null, featureLevel: 1));
+      when(() => mockServerApi.getServerVersion()).thenAnswer(
+        (_) async => ServerVersionResponseDto(major: 2, minor: 4, patch_: 1, prerelease: null, featureLevel: 1),
+      );
 
       await sut.sync();
 

@@ -11,11 +11,9 @@ class RemoteAlbumFactory {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? thumbnailAssetId,
-    bool isActivityEnabled = false,
     AlbumAssetOrder order = AlbumAssetOrder.desc,
     int assetCount = 0,
     String? ownerName,
-    bool isShared = false,
   }) {
     final albumId = TestUtils.uuid(id);
     return RemoteAlbum(
@@ -26,11 +24,9 @@ class RemoteAlbumFactory {
       createdAt: TestUtils.date(createdAt),
       updatedAt: TestUtils.date(updatedAt),
       thumbnailAssetId: thumbnailAssetId,
-      isActivityEnabled: isActivityEnabled,
       order: order,
       assetCount: assetCount,
       ownerName: ownerName ?? 'owner_$albumId',
-      isShared: isShared,
     );
   }
 }

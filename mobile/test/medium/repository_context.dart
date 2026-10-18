@@ -8,15 +8,12 @@ import 'package:immich_mobile/data/db/main/table/local/trashed_asset.dart';
 import 'package:immich_mobile/data/db/main/table/local/trashed_asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/memory/asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/memory/memory.drift.dart';
-import 'package:immich_mobile/data/db/main/table/people/asset_face.drift.dart';
-import 'package:immich_mobile/data/db/main/table/people/person.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/album_user.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/asset.drift.dart';
 import 'package:immich_mobile/data/db/main/table/remote/cloud_id.drift.dart';
 import 'package:immich_mobile/data/db/main/table/user/auth_user.drift.dart';
-import 'package:immich_mobile/data/db/main/table/user/partner.drift.dart';
 import 'package:immich_mobile/data/db/main/table/user/user.drift.dart';
 import 'package:immich_mobile/domain/models/album/album.model.dart';
 import 'package:immich_mobile/domain/models/album/local_album.model.dart';
@@ -88,18 +85,6 @@ class MediumRepositoryContext {
             name: .new('user_$id'),
             isAdmin: .new(isAdmin ?? false),
             avatarColor: .new(avatarColor ?? TestUtils.randElement(AvatarColor.values)),
-          ),
-        );
-  }
-
-  Future<void> newPartner({required String sharedById, required String sharedWithId, bool? inTimeline}) {
-    return db
-        .into(db.partnerEntity)
-        .insert(
-          PartnerEntityCompanion(
-            sharedById: .new(sharedById),
-            sharedWithId: .new(sharedWithId),
-            inTimeline: .new(inTimeline ?? false),
           ),
         );
   }
@@ -185,7 +170,6 @@ class MediumRepositoryContext {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? description,
-    bool? isActivityEnabled,
     AlbumAssetOrder? order,
     String? thumbnailAssetId,
   }) async {
@@ -199,7 +183,6 @@ class MediumRepositoryContext {
             createdAt: .new(TestUtils.date(createdAt)),
             updatedAt: .new(TestUtils.date(updatedAt)),
             description: .new(description ?? 'Description for album $id'),
-            isActivityEnabled: .new(isActivityEnabled ?? false),
             order: .new(order ?? .asc),
             thumbnailAssetId: .new(thumbnailAssetId),
           ),
@@ -222,48 +205,6 @@ class MediumRepositoryContext {
     return db
         .into(db.remoteAlbumAssetEntity)
         .insert(RemoteAlbumAssetEntityCompanion(albumId: .new(albumId), assetId: .new(assetId)));
-  }
-
-  Future<PersonEntityData> newPerson({String? id, String? ownerId, String? name, bool? isFavorite, bool? isHidden}) {
-    id ??= TestUtils.uuid();
-    return db
-        .into(db.personEntity)
-        .insertReturning(
-          PersonEntityCompanion(
-            id: .new(id),
-            ownerId: .new(TestUtils.uuid(ownerId)),
-            name: .new(name ?? 'person_$id'),
-            isFavorite: .new(isFavorite ?? false),
-            isHidden: .new(isHidden ?? false),
-          ),
-        );
-  }
-
-  Future<AssetFaceEntityData> newFace({String? assetId, String? personId, int? imageWidth, int? imageHeight}) {
-    imageWidth ??= TestUtils.randInt(999) + 2;
-    imageHeight ??= TestUtils.randInt(999) + 2;
-
-    final x1 = TestUtils.randInt(imageWidth - 1);
-    final y1 = TestUtils.randInt(imageHeight - 1);
-    final x2 = x1 + 1 + TestUtils.randInt(imageWidth - x1 - 1);
-    final y2 = y1 + 1 + TestUtils.randInt(imageHeight - y1 - 1);
-
-    return db
-        .into(db.assetFaceEntity)
-        .insertReturning(
-          AssetFaceEntityCompanion(
-            id: .new(TestUtils.uuid()),
-            assetId: .new(TestUtils.uuid(assetId)),
-            personId: .new(TestUtils.uuid(personId)),
-            imageWidth: .new(imageWidth),
-            imageHeight: .new(imageHeight),
-            boundingBoxX1: .new(x1),
-            boundingBoxY1: .new(y1),
-            boundingBoxX2: .new(x2),
-            boundingBoxY2: .new(y2),
-            sourceType: const .new('machine-learning'),
-          ),
-        );
   }
 
   Future<LocalAssetEntityData> newLocalAsset({

@@ -57,7 +57,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
     query
       ..addColumns([assetCount])
       ..addColumns([_db.userEntity.name, _db.userEntity.id])
-      ..addColumns([_db.remoteAlbumUserEntity.userId.count(distinct: true)])
       ..groupBy([_db.remoteAlbumEntity.id]);
 
     if (sortBy.isNotEmpty) {
@@ -79,7 +78,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
                 assetCount: row.read(assetCount) ?? 0,
                 ownerId: row.read(_db.userEntity.id)!,
                 ownerName: row.read(_db.userEntity.name)!,
-                isShared: row.read(_db.remoteAlbumUserEntity.userId.count(distinct: true))! > 0,
               ),
         )
         .get();
@@ -117,7 +115,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
           ..where(_db.remoteAlbumEntity.id.equals(albumId))
           ..addColumns([assetCount])
           ..addColumns([_db.userEntity.name, _db.userEntity.id])
-          ..addColumns([_db.remoteAlbumUserEntity.userId.count(distinct: true)])
           ..groupBy([_db.remoteAlbumEntity.id]);
 
     return query
@@ -128,7 +125,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
                 assetCount: row.read(assetCount) ?? 0,
                 ownerId: row.read(_db.userEntity.id)!,
                 ownerName: row.read(_db.userEntity.name)!,
-                isShared: row.read(_db.remoteAlbumUserEntity.userId.count(distinct: true))! > 0,
               ),
         )
         .getSingleOrNull();
@@ -155,7 +151,7 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
         .map(
           (row) => row
               .readTable(_db.remoteAlbumEntity)
-              .toDto(ownerId: row.read(_db.remoteAlbumUserEntity.userId)!, ownerName: '', isShared: false),
+              .toDto(ownerId: row.read(_db.remoteAlbumUserEntity.userId)!, ownerName: ''),
         )
         .getSingleOrNull();
   }
@@ -169,7 +165,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
         updatedAt: Value(album.updatedAt),
         description: Value(album.description),
         thumbnailAssetId: Value(album.thumbnailAssetId ?? (assetIds.isNotEmpty ? assetIds.first : null)),
-        isActivityEnabled: Value(album.isActivityEnabled),
         order: Value(album.order),
       );
 
@@ -204,7 +199,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
         updatedAt: Value(album.updatedAt),
         description: Value(album.description),
         thumbnailAssetId: Value(album.thumbnailAssetId),
-        isActivityEnabled: Value(album.isActivityEnabled),
         order: Value(album.order),
       ),
     );
@@ -234,44 +228,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
       final maxDate = row.read(_db.remoteAssetEntity.createdAt.max());
       return (minDate ?? DateTime.now(), maxDate ?? DateTime.now());
     }).watchSingle();
-  }
-
-  Future<List<UserDto>> getSharedUsers(String albumId) async {
-    final albumUserRows = await (_db.select(
-      _db.remoteAlbumUserEntity,
-    )..where((row) => row.albumId.equals(albumId) & row.role.isNotValue(AlbumUserRole.owner.index))).get();
-
-    if (albumUserRows.isEmpty) {
-      return [];
-    }
-
-    final userIds = albumUserRows.map((row) => row.userId);
-
-    return (_db.select(_db.userEntity)..where((row) => row.id.isIn(userIds)))
-        .map(
-          (user) => UserDto(
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            memoryEnabled: true,
-            inTimeline: false,
-            isPartnerSharedBy: false,
-            isPartnerSharedWith: false,
-            profileChangedAt: user.profileChangedAt,
-            hasProfileImage: user.hasProfileImage,
-            avatarColor: user.avatarColor,
-          ),
-        )
-        .get();
-  }
-
-  Future<AlbumUserRole?> getUserRole(String albumId, String userId) async {
-    final query = _db.remoteAlbumUserEntity.select()
-      ..where((row) => row.albumId.equals(albumId) & row.userId.equals(userId))
-      ..limit(1);
-
-    final result = await query.getSingleOrNull();
-    return result?.role;
   }
 
   Future<List<RemoteAsset>> getAssets(String albumId) {
@@ -337,34 +293,10 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
         );
   }
 
-  Future<void> addUsers(String albumId, List<String> userIds) {
-    final albumUsers = userIds.map(
-      (assetId) => RemoteAlbumUserEntityCompanion(
-        albumId: Value(albumId),
-        userId: Value(assetId),
-        role: const Value(AlbumUserRole.editor),
-      ),
-    );
-
-    return _db.batch((batch) {
-      batch.insertAll(_db.remoteAlbumUserEntity, albumUsers);
-    });
-  }
-
-  Future<void> removeUser(String albumId, {required String userId}) {
-    return _db.remoteAlbumUserEntity.deleteWhere((row) => row.albumId.equals(albumId) & row.userId.equals(userId));
-  }
-
   Future<void> deleteAlbum(String albumId) async {
     return _db.transaction(() async {
       await _db.remoteAlbumEntity.deleteWhere((table) => table.id.equals(albumId));
     });
-  }
-
-  Future<void> setActivityStatus(String albumId, bool isEnabled) async {
-    final query = _db.update(_db.remoteAlbumEntity)..where((row) => row.id.equals(albumId));
-
-    await query.write(RemoteAlbumEntityCompanion(isActivityEnabled: Value(isEnabled)));
   }
 
   Stream<RemoteAlbum?> watchAlbum(String albumId) {
@@ -395,17 +327,12 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
           ])
           ..where(_db.remoteAlbumEntity.id.equals(albumId))
           ..addColumns([_db.userEntity.name, _db.userEntity.id])
-          ..addColumns([_db.remoteAlbumUserEntity.userId.count(distinct: true)])
           ..groupBy([_db.remoteAlbumEntity.id]);
 
     return query.map((row) {
       final album = row
           .readTable(_db.remoteAlbumEntity)
-          .toDto(
-            ownerId: row.read(_db.userEntity.id)!,
-            ownerName: row.read(_db.userEntity.name)!,
-            isShared: row.read(_db.remoteAlbumUserEntity.userId.count(distinct: true))! > 0,
-          );
+          .toDto(ownerId: row.read(_db.userEntity.id)!, ownerName: row.read(_db.userEntity.name)!);
 
       return album;
     }).watchSingleOrNull();
@@ -466,8 +393,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
             name: row.read(_db.userEntity.name)!,
             memoryEnabled: true,
             inTimeline: false,
-            isPartnerSharedBy: false,
-            isPartnerSharedWith: false,
             profileChangedAt: row.read(_db.userEntity.profileChangedAt)!,
             hasProfileImage: row.read(_db.userEntity.hasProfileImage)!,
             avatarColor: AvatarColor.values[row.read(_db.userEntity.avatarColor)!],
@@ -553,7 +478,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
           ])
           ..where(_db.remoteAlbumEntity.id.isIn(albumIds))
           ..addColumns([assetCount])
-          ..addColumns([_db.remoteAlbumUserEntity.userId.count(distinct: true)])
           ..addColumns([_db.userEntity.name, _db.userEntity.id])
           ..groupBy([_db.remoteAlbumEntity.id]);
 
@@ -564,7 +488,6 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
               .toDto(
                 ownerId: row.read(_db.userEntity.id)!,
                 ownerName: row.read(_db.userEntity.name) ?? '',
-                isShared: row.read(_db.remoteAlbumUserEntity.userId.count(distinct: true))! > 0,
                 assetCount: row.read(assetCount) ?? 0,
               ),
         )
@@ -573,7 +496,7 @@ class RemoteAlbumRepository extends DatabaseAccessor<Drift> with $RemoteAlbumRep
 }
 
 extension on RemoteAlbumEntityData {
-  RemoteAlbum toDto({int assetCount = 0, required String ownerName, required String ownerId, required bool isShared}) {
+  RemoteAlbum toDto({int assetCount = 0, required String ownerName, required String ownerId}) {
     return RemoteAlbum(
       id: id,
       name: name,
@@ -582,11 +505,9 @@ extension on RemoteAlbumEntityData {
       updatedAt: updatedAt,
       description: description,
       thumbnailAssetId: thumbnailAssetId,
-      isActivityEnabled: isActivityEnabled,
       order: order,
       assetCount: assetCount,
       ownerName: ownerName,
-      isShared: isShared,
     );
   }
 }

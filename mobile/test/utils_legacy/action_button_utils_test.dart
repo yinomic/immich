@@ -56,12 +56,7 @@ RemoteAsset createRemoteAsset({
   );
 }
 
-RemoteAlbum createRemoteAlbum({
-  String id = 'test-album-id',
-  String name = 'Test Album',
-  bool isActivityEnabled = false,
-  bool isShared = false,
-}) {
+RemoteAlbum createRemoteAlbum({String id = 'test-album-id', String name = 'Test Album'}) {
   return RemoteAlbum(
     id: id,
     name: name,
@@ -69,8 +64,6 @@ RemoteAlbum createRemoteAlbum({
     description: 'Test Description',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
-    isActivityEnabled: isActivityEnabled,
-    isShared: isShared,
     order: AlbumAssetOrder.asc,
     assetCount: 0,
     ownerName: 'Test Owner',
@@ -138,56 +131,6 @@ void main() {
         );
 
         expect(ActionButtonType.share.shouldShow(context), isTrue);
-      });
-    });
-
-    group('shareLink button', () {
-      test('should show when not in locked view and asset has remote', () {
-        final remoteAsset = createRemoteAsset();
-        final context = ActionButtonContext(
-          asset: remoteAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: null,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.shareLink.shouldShow(context), isTrue);
-      });
-
-      test('should not show when in locked view', () {
-        final remoteAsset = createRemoteAsset();
-        final context = ActionButtonContext(
-          asset: remoteAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: true,
-          currentAlbum: null,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.shareLink.shouldShow(context), isFalse);
-      });
-
-      test('should not show when asset has no remote', () {
-        final localAsset = createLocalAsset();
-        final context = ActionButtonContext(
-          asset: localAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: null,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.shareLink.shouldShow(context), isFalse);
       });
     });
 
@@ -370,40 +313,6 @@ void main() {
         );
 
         expect(ActionButtonType.download.shouldShow(context), isFalse);
-      });
-    });
-
-    group('similar photos button', () {
-      test('should show when not locked and has remote', () {
-        final remoteAsset = createRemoteAsset();
-        final context = ActionButtonContext(
-          asset: remoteAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          isStacked: false,
-          currentAlbum: null,
-          advancedTroubleshooting: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.similarPhotos.shouldShow(context), isTrue);
-      });
-
-      test('should not show when in locked view', () {
-        final remoteAsset = createRemoteAsset();
-        final context = ActionButtonContext(
-          asset: remoteAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: true,
-          currentAlbum: null,
-          isStacked: false,
-          advancedTroubleshooting: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.similarPhotos.shouldShow(context), isFalse);
       });
     });
 
@@ -748,71 +657,6 @@ void main() {
       });
     });
 
-    group('likeActivity button', () {
-      test('should show when not locked, has album, activity enabled, and shared', () {
-        final album = createRemoteAlbum(isActivityEnabled: true, isShared: true);
-        final context = ActionButtonContext(
-          asset: mergedAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: album,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.likeActivity.shouldShow(context), isTrue);
-      });
-
-      test('should not show when activity not enabled', () {
-        final album = createRemoteAlbum(isActivityEnabled: false, isShared: true);
-        final context = ActionButtonContext(
-          asset: mergedAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: album,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.likeActivity.shouldShow(context), isFalse);
-      });
-
-      test('should not show when album not shared', () {
-        final album = createRemoteAlbum(isActivityEnabled: true, isShared: false);
-        final context = ActionButtonContext(
-          asset: mergedAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: album,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.likeActivity.shouldShow(context), isFalse);
-      });
-
-      test('should not show when no album', () {
-        final context = ActionButtonContext(
-          asset: mergedAsset,
-          isOwner: true,
-          isArchived: false,
-          isInLockedView: false,
-          currentAlbum: null,
-          advancedTroubleshooting: false,
-          isStacked: false,
-          source: ActionSource.timeline,
-        );
-
-        expect(ActionButtonType.likeActivity.shouldShow(context), isFalse);
-      });
-    });
-
     group('advancedTroubleshooting button', () {
       test('should show when in advanced troubleshooting mode', () {
         final context = ActionButtonContext(
@@ -926,19 +770,6 @@ void main() {
             isArchived: false,
             isInLockedView: false,
             currentAlbum: album,
-            advancedTroubleshooting: false,
-            isStacked: false,
-            source: ActionSource.timeline,
-          );
-          final widget = buttonType.buildButton(contextWithAlbum);
-          expect(widget, isA<Widget>());
-        } else if (buttonType == ActionButtonType.similarPhotos) {
-          final contextWithAlbum = ActionButtonContext(
-            asset: createRemoteAsset(),
-            isOwner: true,
-            isArchived: false,
-            isInLockedView: false,
-            currentAlbum: null,
             advancedTroubleshooting: false,
             isStacked: false,
             source: ActionSource.timeline,

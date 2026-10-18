@@ -34,17 +34,6 @@ abstract final class SyncStreamStub {
     ack: "2",
   );
 
-  static final partnerV1 = SyncEvent(
-    type: SyncEntityType.partnerV1,
-    data: SyncPartnerV1(inTimeline: true, sharedById: "1", sharedWithId: "2"),
-    ack: "3",
-  );
-  static final partnerDeleteV1 = SyncEvent(
-    type: SyncEntityType.partnerDeleteV1,
-    data: SyncPartnerDeleteV1(sharedById: "3", sharedWithId: "4"),
-    ack: "4",
-  );
-
   static final memoryV1 = SyncEvent(
     type: SyncEntityType.memoryV1,
     data: SyncMemoryV2(
@@ -77,7 +66,7 @@ abstract final class SyncStreamStub {
       ownerId: "user-1",
       seenAt: null,
       showAt: DateTime(2023, 1, 1),
-      type: MemoryType.birthday,
+      type: MemoryType.onThisDay,
       updatedAt: DateTime(2023, 1, 1),
     ),
     ack: "9",

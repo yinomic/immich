@@ -75,7 +75,6 @@ class AlbumApiRepository extends ApiRepository {
     String? name,
     String? description,
     String? thumbnailAssetId,
-    bool? isActivityEnabled,
     AlbumAssetOrder? order,
   }) async {
     AssetOrder? apiOrder;
@@ -94,7 +93,6 @@ class AlbumApiRepository extends ApiRepository {
           albumThumbnailAssetId: thumbnailAssetId == null
               ? const Optional.absent()
               : Optional.present(thumbnailAssetId),
-          isActivityEnabled: isActivityEnabled == null ? const Optional.absent() : Optional.present(isActivityEnabled),
           order: apiOrder == null ? const Optional.absent() : Optional.present(apiOrder),
         ),
       ),
@@ -105,22 +103,6 @@ class AlbumApiRepository extends ApiRepository {
 
   Future<void> deleteAlbum(String albumId) {
     return _api.deleteAlbum(albumId);
-  }
-
-  Future<void> addUsers(String albumId, Iterable<String> userIds) async {
-    final albumUsers = userIds.map((userId) => AlbumUserAddDto(userId: userId)).toList();
-    await checkNull(_api.addUsersToAlbum(albumId, AddUsersDto(albumUsers: albumUsers)));
-  }
-
-  Future<void> removeUser(String albumId, {required String userId}) async {
-    await _api.removeUserFromAlbum(albumId, userId);
-  }
-
-  Future<bool> setActivityStatus(String albumId, bool isEnabled) async {
-    final response = await checkNull(
-      _api.updateAlbumInfo(albumId, UpdateAlbumDto(isActivityEnabled: Optional.present(isEnabled))),
-    );
-    return response.isActivityEnabled;
   }
 }
 
@@ -135,10 +117,8 @@ extension on AlbumResponseDto {
       createdAt: createdAt,
       updatedAt: updatedAt,
       thumbnailAssetId: albumThumbnailAssetId,
-      isActivityEnabled: isActivityEnabled,
       order: order.orElse(null) == AssetOrder.asc ? AlbumAssetOrder.asc : AlbumAssetOrder.desc,
       assetCount: assetCount,
-      isShared: albumUsers.length > 2,
     );
   }
 }

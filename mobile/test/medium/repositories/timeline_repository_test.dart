@@ -102,54 +102,6 @@ void main() {
     });
   });
 
-  group('person assets', () {
-    test('does not duplicate an asset that has multiple face records for the same person', () async {
-      // Regression check for #26723: an INNER JOIN between remote_asset_entity and asset_face_entity
-      // fanned out one asset into N rows when N face records pointed at the same (asset, person) pair
-      final user = await ctx.newUser();
-      final asset = await ctx.newRemoteAsset(ownerId: user.id);
-
-      final person = await ctx.newPerson(ownerId: user.id);
-      await ctx.newFace(assetId: asset.id, personId: person.id);
-      await ctx.newFace(assetId: asset.id, personId: person.id);
-
-      final query = sut.person([user.id], person.id, .day);
-
-      final buckets = await query.bucketSource().first;
-      expect(buckets, hasLength(1));
-      expect(buckets.single.assetCount, 1);
-
-      final assets = await query.assetSource(0, 10);
-      expect(assets, hasLength(1));
-      expect((assets.first as RemoteAsset).id, asset.id);
-    });
-
-    test('orders shifted person assets by effective date (#28852)', () async {
-      final user = await ctx.newUser();
-      final person = await ctx.newPerson(ownerId: user.id);
-      final shiftedLater = await ctx.newRemoteAsset(
-        ownerId: user.id,
-        createdAt: DateTime.utc(2024, 9, 2, 12),
-        localDateTime: DateTime.utc(2024, 9, 3, 12),
-      );
-      final shiftedEarlier = await ctx.newRemoteAsset(
-        ownerId: user.id,
-        createdAt: DateTime.utc(2024, 9, 3, 12),
-        localDateTime: DateTime.utc(2024, 9, 2, 12),
-      );
-      await ctx.newFace(assetId: shiftedLater.id, personId: person.id);
-      await ctx.newFace(assetId: shiftedEarlier.id, personId: person.id);
-
-      final query = sut.person([user.id], person.id, .day);
-
-      final buckets = await query.bucketSource().first;
-      expect(buckets, hasLength(2));
-
-      final assets = await query.assetSource(0, 10);
-      expect(assets.map((asset) => (asset as RemoteAsset).id), [shiftedLater.id, shiftedEarlier.id]);
-    });
-  });
-
   group('live photos', () {
     test('remote-only live photo contains livePhotoVideoId and is marked as a motion photo', () async {
       final user = await ctx.newUser();

@@ -120,7 +120,6 @@ class RepositoryMocks {
 }
 
 class ServiceMocks {
-  final partner = PartnerServiceStub(MockPartnerService());
   final user = UserServiceStub(MockUserService());
   final asset = AssetServiceStub(MockAssetService());
   final album = RemoteAlbumServiceStub(MockRemoteAlbumService());
@@ -138,7 +137,6 @@ class ServiceMocks {
 
   void resetAll() {
     _registerFallbacks();
-    partner.reset();
     user.reset();
     asset.reset();
     album.reset();
@@ -150,7 +148,6 @@ class ServiceMocks {
     reset(upload);
     reset(toast);
     _stubUserService();
-    _stubPartnerService();
     _stubAssetService();
     _stubRemoteAlbumService();
     _stubCleanupService();
@@ -166,15 +163,6 @@ class ServiceMocks {
     when(user.refreshMyUser).thenAnswer((_) async => null);
     when(user.createProfileImage).thenAnswer((_) async => null);
     when(user.watch).thenAnswer((_) => const Stream.empty());
-  }
-
-  void _stubPartnerService() {
-    registerFallbackValue(PartnerDirection.sharedBy);
-    when(partner.getCandidates).thenAnswer((_) => const Stream.empty());
-    when(partner.search).thenAnswer((_) => const Stream.empty());
-    when(partner.update).thenAnswer((_) async {});
-    when(partner.create).thenAnswer((_) async {});
-    when(partner.delete).thenAnswer((_) async {});
   }
 
   void _stubAssetService() {
@@ -292,34 +280,6 @@ extension type const RemoteExifRepositoryStub(MockRemoteExifRepository repo) imp
         dateTimeOriginal: any(named: 'dateTimeOriginal'),
         timeZone: any(named: 'timeZone'),
         location: any(named: 'location'),
-      );
-}
-
-extension type const PartnerServiceStub(MockPartnerService service) implements Stub<MockPartnerService> {
-  Stream<Iterable<User>> Function() get getCandidates =>
-      () => service.getCandidates(any());
-
-  Stream<Iterable<Partner>> Function() get search =>
-      () => service.search(any(), any());
-
-  Future<void> Function() get create =>
-      () => service.create(
-        sharedById: any(named: 'sharedById'),
-        sharedWithId: any(named: 'sharedWithId'),
-        inTimeline: any(named: 'inTimeline'),
-      );
-
-  Future<void> Function() get update =>
-      () => service.update(
-        sharedById: any(named: 'sharedById'),
-        sharedWithId: any(named: 'sharedWithId'),
-        inTimeline: any(named: 'inTimeline'),
-      );
-
-  Future<void> Function() get delete =>
-      () => service.delete(
-        sharedById: any(named: 'sharedById'),
-        sharedWithId: any(named: 'sharedWithId'),
       );
 }
 

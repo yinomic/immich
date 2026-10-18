@@ -2,3 +2,4 @@
 1792191000000-DropSharedLinkTables
 1792192000000-DropEmbeddedAt
 1792193000000-DropActivityAndPartnerTables
+1792194000000-DropDuplicateIdAndSetAlbumRoleDefault

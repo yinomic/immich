@@ -9,12 +9,7 @@ enum AlbumAssetOrder {
   desc,
 }
 
-enum AlbumUserRole {
-  // do not change this order!
-  editor,
-  viewer,
-  owner,
-}
+enum AlbumUserRole { owner }
 
 // Model for an album stored in the server
 @freezed
@@ -27,10 +22,8 @@ abstract class RemoteAlbum with _$RemoteAlbum {
     required DateTime createdAt,
     required DateTime updatedAt,
     String? thumbnailAssetId,
-    required bool isActivityEnabled,
     required AlbumAssetOrder order,
     required int assetCount,
     required String ownerName,
-    required bool isShared,
   }) = _RemoteAlbum;
 }

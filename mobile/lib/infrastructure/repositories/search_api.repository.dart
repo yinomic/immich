@@ -21,39 +21,6 @@ class SearchApiRepository extends ApiRepository {
         ? const Optional<List<String>>.absent()
         : Optional.present(filter.tags!.map((tag) => tag.id).toList());
 
-    if ((filter.context != null && filter.context!.isNotEmpty) ||
-        (filter.assetId != null && filter.assetId!.isNotEmpty)) {
-      return _api.searchSmart(
-        SmartSearchDto(
-          query: filter.context == null ? const Optional.absent() : Optional.present(filter.context),
-          queryAssetId: filter.assetId == null ? const Optional.absent() : Optional.present(filter.assetId),
-          language: filter.language == null ? const Optional.absent() : Optional.present(filter.language),
-          country: filter.location.country == null
-              ? const Optional.absent()
-              : Optional.present(filter.location.country),
-          state: filter.location.state == null ? const Optional.absent() : Optional.present(filter.location.state),
-          city: filter.location.city == null ? const Optional.absent() : Optional.present(filter.location.city),
-          make: filter.camera.make == null ? const Optional.absent() : Optional.present(filter.camera.make),
-          model: filter.camera.model == null ? const Optional.absent() : Optional.present(filter.camera.model),
-          takenAfter: filter.date.takenAfter == null
-              ? const Optional.absent()
-              : Optional.present(filter.date.takenAfter),
-          takenBefore: filter.date.takenBefore == null
-              ? const Optional.absent()
-              : Optional.present(filter.date.takenBefore),
-          visibility: Optional.present(filter.display.isArchive ? AssetVisibility.archive : AssetVisibility.timeline),
-          rating: filter.rating.rating.toOptional(),
-          isFavorite: filter.display.isFavorite ? const Optional.present(true) : const Optional.absent(),
-          isNotInAlbum: filter.display.isNotInAlbum ? const Optional.present(true) : const Optional.absent(),
-          personIds: Optional.present(filter.people.map((e) => e.id).toList()),
-          tagIds: tagIds,
-          type: type == null ? const Optional.absent() : Optional.present(type),
-          page: Optional.present(page),
-          size: const Optional.present(100),
-        ),
-      );
-    }
-
     return _api.searchAssets(
       MetadataSearchDto(
         originalFileName: filter.filename != null && filter.filename!.isNotEmpty
@@ -63,7 +30,6 @@ class SearchApiRepository extends ApiRepository {
         description: filter.description != null && filter.description!.isNotEmpty
             ? Optional.present(filter.description)
             : const Optional.absent(),
-        ocr: filter.ocr != null && filter.ocr!.isNotEmpty ? Optional.present(filter.ocr) : const Optional.absent(),
         state: filter.location.state == null ? const Optional.absent() : Optional.present(filter.location.state),
         city: filter.location.city == null ? const Optional.absent() : Optional.present(filter.location.city),
         make: filter.camera.make == null ? const Optional.absent() : Optional.present(filter.camera.make),
@@ -76,7 +42,6 @@ class SearchApiRepository extends ApiRepository {
         rating: filter.rating.rating.toOptional(),
         isFavorite: filter.display.isFavorite ? const Optional.present(true) : const Optional.absent(),
         isNotInAlbum: filter.display.isNotInAlbum ? const Optional.present(true) : const Optional.absent(),
-        personIds: Optional.present(filter.people.map((e) => e.id).toList()),
         tagIds: tagIds,
         type: type == null ? const Optional.absent() : Optional.present(type),
         page: Optional.present(page),

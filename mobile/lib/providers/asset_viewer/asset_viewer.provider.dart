@@ -17,7 +17,6 @@ abstract class AssetViewerState with _$AssetViewerState {
     @Default(false) bool showingDetails,
     @Default(true) bool showingControls,
     @Default(false) bool isZoomed,
-    @Default(false) bool showingOcr,
     BaseAsset? currentAsset,
 
     /// Physical thumbnail size retained while paging through the viewer.
@@ -46,12 +45,7 @@ class AssetViewerStateNotifier extends Notifier<AssetViewerState> {
       return;
     }
     // Swiping to a neighbor passes no size; keep the tapped tile's so neighbors reuse it.
-    state = state.copyWith(
-      currentAsset: asset,
-      thumbnailSize: thumbnailSize ?? state.thumbnailSize,
-      stackIndex: 0,
-      showingOcr: false,
-    );
+    state = state.copyWith(currentAsset: asset, thumbnailSize: thumbnailSize ?? state.thumbnailSize, stackIndex: 0);
     _watchCurrentAsset(asset);
   }
 
@@ -107,10 +101,6 @@ class AssetViewerStateNotifier extends Notifier<AssetViewerState> {
       return;
     }
     state = state.copyWith(stackIndex: index);
-  }
-
-  void toggleOcr() {
-    state = state.copyWith(showingOcr: !state.showingOcr);
   }
 }
 

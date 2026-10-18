@@ -49,8 +49,6 @@ abstract class UserDto with _$UserDto {
     @Default(AvatarColor.primary) AvatarColor avatarColor,
     @Default(true) bool memoryEnabled,
     @Default(false) bool inTimeline,
-    @Default(false) bool isPartnerSharedBy,
-    @Default(false) bool isPartnerSharedWith,
     @Default(false) bool hasProfileImage,
     @Default(0) int quotaUsageInBytes,
     @Default(0) int quotaSizeInBytes,
@@ -72,8 +70,6 @@ abstract class UserDto with _$UserDto {
         other.avatarColor == avatarColor &&
         other.email == email &&
         other.name == name &&
-        other.isPartnerSharedBy == isPartnerSharedBy &&
-        other.isPartnerSharedWith == isPartnerSharedWith &&
         other.isAdmin == isAdmin &&
         other.memoryEnabled == memoryEnabled &&
         other.inTimeline == inTimeline &&
@@ -93,8 +89,6 @@ abstract class UserDto with _$UserDto {
       avatarColor.hashCode ^
       memoryEnabled.hashCode ^
       inTimeline.hashCode ^
-      isPartnerSharedBy.hashCode ^
-      isPartnerSharedWith.hashCode ^
       hasProfileImage.hashCode ^
       profileChangedAt.hashCode ^
       quotaSizeInBytes.hashCode ^
@@ -139,46 +133,4 @@ class User {
 
   @override
   int get hashCode => Object.hash(id, name, email, profileChangedAt, hasProfileImage, avatarColor);
-}
-
-class Partner extends User {
-  final bool inTimeline;
-
-  @visibleForTesting
-  const Partner({
-    required super.id,
-    required super.name,
-    required super.email,
-    required super.profileChangedAt,
-    required super.hasProfileImage,
-    super.avatarColor,
-    this.inTimeline = false,
-  });
-
-  Partner.fromUser(User user, {this.inTimeline = false})
-    : super(
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        profileChangedAt: user.profileChangedAt,
-        hasProfileImage: user.hasProfileImage,
-        avatarColor: user.avatarColor,
-      );
-
-  @override
-  String toString() {
-    return 'Partner(user: ${super.toString()}, inTimeline: $inTimeline)';
-  }
-
-  @override
-  bool operator ==(covariant Partner other) {
-    if (identical(this, other)) {
-      return true;
-    }
-
-    return super == other && other.inTimeline == inTimeline;
-  }
-
-  @override
-  int get hashCode => Object.hash(super.hashCode, inTimeline);
 }

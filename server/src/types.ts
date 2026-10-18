@@ -24,7 +24,6 @@ import {
   IntegrityReport,
   JobName,
   MemoryType,
-  PersonUpdateStrategy,
   QueueName,
   StorageFolder,
   SyncEntityType,
@@ -486,11 +485,9 @@ export type StorageAsset = {
 };
 
 export type OnThisDayData = { year: number };
-export type BirthdayData = { personId: string; personName: string; year: number };
 
 export interface MemoryData {
   [MemoryType.OnThisDay]: OnThisDayData;
-  [MemoryType.Birthday]: BirthdayData;
 }
 
 export type VersionCheckMetadata = { checkedAt: string; releaseVersion: string };
@@ -528,12 +525,6 @@ export type UserPreferences = {
     enabled: boolean;
     duration: number;
     sidebarWeb: boolean;
-  };
-  people: {
-    enabled: boolean;
-    sidebarWeb: boolean;
-    minimumFaces: number;
-    updateStrategy: PersonUpdateStrategy;
   };
   ratings: {
     enabled: boolean;
