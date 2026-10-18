@@ -175,6 +175,8 @@ describe(AssetMediaService.name, () => {
 
   beforeEach(() => {
     ({ sut, mocks } = newTestService(AssetMediaService));
+    // by default a duplicate is not in the trash, so nothing is restored
+    mocks.trash.restoreAll.mockResolvedValue(0);
   });
 
   describe('getUploadAssetIdByChecksum', () => {
@@ -203,6 +205,34 @@ describe(AssetMediaService.name, () => {
         status: AssetMediaStatus.DUPLICATE,
       });
       expect(mocks.asset.getUploadAssetIdByChecksum).toHaveBeenCalledWith(authStub.admin.user.id, file1);
+    });
+
+    it('should restore the asset when the same file is uploaded again from the trash', async () => {
+      mocks.asset.getUploadAssetIdByChecksum.mockResolvedValue('asset-id');
+      mocks.trash.restoreAll.mockResolvedValue(1);
+
+      await expect(sut.getUploadAssetIdByChecksum(authStub.admin, file1.toString('hex'))).resolves.toEqual({
+        id: 'asset-id',
+        status: AssetMediaStatus.DUPLICATE,
+      });
+
+      expect(mocks.trash.restoreAll).toHaveBeenCalledWith(['asset-id']);
+      expect(mocks.event.emit).toHaveBeenCalledWith('AssetRestoreAll', {
+        assetIds: ['asset-id'],
+        userId: authStub.admin.user.id,
+      });
+    });
+
+    it('should leave a regular duplicate in place', async () => {
+      mocks.asset.getUploadAssetIdByChecksum.mockResolvedValue('asset-id');
+      mocks.trash.restoreAll.mockResolvedValue(0);
+
+      await expect(sut.getUploadAssetIdByChecksum(authStub.admin, file1.toString('hex'))).resolves.toEqual({
+        id: 'asset-id',
+        status: AssetMediaStatus.DUPLICATE,
+      });
+
+      expect(mocks.event.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -381,6 +411,34 @@ describe(AssetMediaService.name, () => {
         data: { files: ['fake_path/asset_1.jpeg', undefined] },
       });
       expect(mocks.user.updateUsage).not.toHaveBeenCalled();
+    });
+
+    it('should restore a duplicate that is still in the trash', async () => {
+      const file = {
+        uuid: 'random-uuid',
+        originalPath: 'fake_path/asset_1.jpeg',
+        mimeType: 'image/jpeg',
+        checksum: Buffer.from('file hash', 'utf8'),
+        originalName: 'asset_1.jpeg',
+        size: 0,
+      };
+      const error = new Error('unique key violation');
+      (error as any).constraint_name = ASSET_CHECKSUM_CONSTRAINT;
+
+      mocks.asset.create.mockRejectedValue(error);
+      mocks.asset.getUploadAssetIdByChecksum.mockResolvedValue(assetEntity.id);
+      mocks.trash.restoreAll.mockResolvedValue(1);
+
+      await expect(sut.uploadAsset(authStub.user1, createDto, file)).resolves.toEqual({
+        id: 'id_1',
+        status: AssetMediaStatus.DUPLICATE,
+      });
+
+      expect(mocks.trash.restoreAll).toHaveBeenCalledWith(['id_1']);
+      expect(mocks.event.emit).toHaveBeenCalledWith('AssetRestoreAll', {
+        assetIds: ['id_1'],
+        userId: authStub.user1.user.id,
+      });
     });
 
     it('should throw an error if the duplicate could not be found by checksum', async () => {

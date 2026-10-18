@@ -3,9 +3,10 @@ import { UploadState, type UploadAsset } from '$lib/types';
 
 function createUploadStore() {
   const uploadAssets = writable<Array<UploadAsset>>([]);
-  const stats = writable<{ errors: number; duplicates: number; success: number; total: number }>({
+  const stats = writable<{ errors: number; duplicates: number; restored: number; success: number; total: number }>({
     errors: 0,
     duplicates: 0,
+    restored: 0,
     success: 0,
     total: 0,
   });
@@ -87,6 +88,9 @@ function createUploadStore() {
           switch (assetToRemove.state) {
             case UploadState.DUPLICATED: {
               stats.duplicates--;
+              if (assetToRemove.restored) {
+                stats.restored--;
+              }
               break;
             }
 
@@ -122,10 +126,10 @@ function createUploadStore() {
 
   const reset = () => {
     uploadAssets.set([]);
-    stats.set({ errors: 0, duplicates: 0, success: 0, total: 0 });
+    stats.set({ errors: 0, duplicates: 0, restored: 0, success: 0, total: 0 });
   };
 
-  const track = (value: 'success' | 'duplicate' | 'error') => {
+  const track = (value: 'success' | 'duplicate' | 'restored' | 'error') => {
     stats.update((stats) => {
       switch (value) {
         case 'success': {
@@ -135,6 +139,11 @@ function createUploadStore() {
 
         case 'duplicate': {
           stats.duplicates++;
+          break;
+        }
+
+        case 'restored': {
+          stats.restored++;
           break;
         }
 

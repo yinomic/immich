@@ -15,6 +15,7 @@
     mdiLoading,
     mdiOpenInNew,
     mdiRestart,
+    mdiRestore,
     mdiTrashCan,
   } from '@mdi/js';
   import { t } from 'svelte-i18n';
@@ -50,7 +51,9 @@
       {:else if uploadAsset.state === UploadState.ERROR}
         <Icon icon={mdiAlertCircle} size="24" class="text-danger" title={$t('error')} />
       {:else if uploadAsset.state === UploadState.DUPLICATED}
-        {#if uploadAsset.isTrashed}
+        {#if uploadAsset.restored}
+          <Icon icon={mdiRestore} size="24" class="text-success" title={$t('asset_restored_from_trash')} />
+        {:else if uploadAsset.isTrashed}
           <Icon icon={mdiTrashCan} size="24" class="text-gray-500" title={$t('asset_skipped_in_trash')} />
         {:else}
           <Icon icon={mdiAlertCircle} size="24" class="text-warning" title={$t('asset_skipped')} />

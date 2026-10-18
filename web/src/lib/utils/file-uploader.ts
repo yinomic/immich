@@ -4,6 +4,7 @@ import {
   AssetVisibility,
   checkBulkUpload,
   getBaseUrl,
+  restoreAssets,
   type AssetMediaResponseDto,
 } from '@immich/sdk';
 import { toastManager } from '@immich/ui';
@@ -18,6 +19,7 @@ import { UploadState } from '$lib/types';
 import { uploadRequest } from '$lib/utils';
 import { ExecutorQueue } from '$lib/utils/executor-queue';
 import { handleError } from './handle-error';
+import { hashFile } from './hash-file';
 
 export const uploadExecutionQueue = new ExecutorQueue({ concurrency: 2 });
 
@@ -112,30 +114,6 @@ function getDeviceAssetId(asset: File) {
   return 'web-' + asset.name + '-' + asset.lastModified;
 }
 
-function hashFile(file: File): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    const worker = new Worker(new URL('$lib/workers/hash-file.ts', import.meta.url), { type: 'module' });
-
-    worker.addEventListener('message', ({ data }: MessageEvent<{ result?: string; error?: string }>) => {
-      worker.terminate();
-
-      if (data.error) {
-        reject(new Error(data.error));
-      } else {
-        resolve(data.result!);
-      }
-    });
-
-    worker.addEventListener('error', (event) => {
-      worker.terminate();
-
-      reject(new Error(event.message));
-    });
-
-    worker.postMessage(file);
-  });
-}
-
 type FileUploaderParams = {
   assetFile: File;
   albumId?: string;
@@ -173,7 +151,7 @@ async function fileUploader({
       formData.append('visibility', AssetVisibility.Locked);
     }
 
-    let responseData: { id: string; status: AssetMediaStatus; isTrashed?: boolean } | undefined;
+    let responseData: { id: string; status: AssetMediaStatus; isTrashed?: boolean; restored?: boolean } | undefined;
     uploadAssetsStore.updateItem(deviceAssetId, { message: $t('asset_hashing') });
     await tick();
     try {
@@ -183,10 +161,24 @@ async function fileUploader({
         results: [checkUploadResult],
       } = await checkBulkUpload({ assetBulkUploadCheckDto: { assets: [{ id: assetFile.name, checksum }] } });
       if (checkUploadResult.action === AssetUploadAction.Reject && checkUploadResult.assetId) {
+        // The exact same file is already on the server, so it is never uploaded twice.
+        // When the only copy sits in the trash, uploading it again means "bring it
+        // back": restore it instead of leaving the user with an invisible asset.
+        let restored = false;
+        if (checkUploadResult.isTrashed) {
+          try {
+            await restoreAssets({ bulkIdsDto: { ids: [checkUploadResult.assetId] } });
+            restored = true;
+          } catch (error) {
+            console.error(`Error restoring trashed duplicate assetId=${checkUploadResult.assetId}`, error);
+          }
+        }
+
         responseData = {
           status: AssetMediaStatus.Duplicate,
           id: checkUploadResult.assetId,
-          isTrashed: checkUploadResult.isTrashed,
+          isTrashed: restored ? false : checkUploadResult.isTrashed,
+          restored,
         };
       }
     } catch (error) {
@@ -212,6 +204,9 @@ async function fileUploader({
 
     if (responseData.status === AssetMediaStatus.Duplicate) {
       uploadAssetsStore.track('duplicate');
+      if (responseData.restored) {
+        uploadAssetsStore.track('restored');
+      }
     } else {
       uploadAssetsStore.track('success');
     }
@@ -226,6 +221,7 @@ async function fileUploader({
       state: responseData.status === AssetMediaStatus.Duplicate ? UploadState.DUPLICATED : UploadState.DONE,
       assetId: responseData.id,
       isTrashed: responseData.isTrashed,
+      restored: responseData.restored,
     });
 
     if (responseData.status !== AssetMediaStatus.Duplicate) {
