@@ -47,7 +47,7 @@
         toastManager.warning($t('upload_skipped_duplicates', { values: { count: $stats.duplicates } }));
       }
       if ($stats.restored > 0) {
-        toastManager.primary($t('upload_restored_from_trash', { values: { count: $stats.restored } }));
+        toastManager.primary($t('upload_restored', { values: { count: $stats.restored } }));
       }
       uploadAssetsStore.reset();
     }}

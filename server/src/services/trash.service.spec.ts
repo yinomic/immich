@@ -39,12 +39,20 @@ describe(TrashService.name, () => {
 
     it('should restore a batch of assets', async () => {
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset1', 'asset2']));
-      mocks.trash.restoreAll.mockResolvedValue(0);
+      mocks.trash.restoreAll.mockResolvedValue(2);
 
-      await sut.restoreAssets(authStub.user1, { ids: ['asset1', 'asset2'] });
+      await expect(sut.restoreAssets(authStub.user1, { ids: ['asset1', 'asset2'] })).resolves.toEqual({ count: 2 });
 
       expect(mocks.trash.restoreAll).toHaveBeenCalledWith(['asset1', 'asset2']);
       expect(mocks.job.queue.mock.calls).toEqual([]);
+    });
+
+    it('should report the assets it actually restored', async () => {
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset1', 'asset2']));
+      // e.g. an asset that was already active again, or one that is gone for good
+      mocks.trash.restoreAll.mockResolvedValue(0);
+
+      await expect(sut.restoreAssets(authStub.user1, { ids: ['asset1', 'asset2'] })).resolves.toEqual({ count: 0 });
     });
   });
 

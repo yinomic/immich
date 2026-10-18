@@ -52,7 +52,7 @@
         <Icon icon={mdiAlertCircle} size="24" class="text-danger" title={$t('error')} />
       {:else if uploadAsset.state === UploadState.DUPLICATED}
         {#if uploadAsset.restored}
-          <Icon icon={mdiRestore} size="24" class="text-success" title={$t('asset_restored_from_trash')} />
+          <Icon icon={mdiRestore} size="24" class="text-success" title={$t('asset_restored')} />
         {:else if uploadAsset.isTrashed}
           <Icon icon={mdiTrashCan} size="24" class="text-gray-500" title={$t('asset_skipped_in_trash')} />
         {:else}

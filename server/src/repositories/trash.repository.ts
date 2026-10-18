@@ -41,9 +41,13 @@ export class TrashRepository {
       return 0;
     }
 
+    // NOTE (family fork): restoring covers "trashed" *and* "deleted". With soft-delete-only
+    // storage nothing is ever removed from the library, so an asset whose trash was emptied
+    // is merely hidden: uploading the same file again (or an explicit restore) must be able
+    // to bring it back.
     const { numUpdatedRows } = await this.db
       .updateTable('asset')
-      .where('status', '=', AssetStatus.Trashed)
+      .where('status', '!=', AssetStatus.Active)
       .where('id', 'in', ids)
       .set({ status: AssetStatus.Active, deletedAt: null })
       .executeTakeFirst();

@@ -23,5 +23,5 @@ set
   "status" = $1,
   "deletedAt" = $2
 where
-  "status" = $3
+  "status" != $3
   and "id" in ($4)

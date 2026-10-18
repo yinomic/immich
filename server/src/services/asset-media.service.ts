@@ -62,9 +62,10 @@ export class AssetMediaService extends BaseService {
 
   /**
    * NOTE (family fork): uploading a file that is already on the server means "I want
-   * this asset in my library". When the only copy sits in the trash, put it back
-   * instead of leaving the user with a hidden asset. `restoreAll` only touches
-   * assets that are actually trashed, so this is a no-op for regular duplicates.
+   * this asset in my library". When the only copy is hidden — in the trash, or with the
+   * trash already emptied — put it back instead of leaving the user with an invisible
+   * asset. `restoreAll` only touches assets that are not active, so this is a no-op for
+   * regular duplicates.
    */
   private async restoreTrashedDuplicate(userId: string, assetId: string) {
     const restored = await this.trashRepository.restoreAll([assetId]);
@@ -74,7 +75,7 @@ export class AssetMediaService extends BaseService {
 
     await this.eventRepository.emit('AssetRestoreAll', { assetIds: [assetId], userId });
 
-    this.logger.log(`Restored asset ${assetId} from the trash, the same file was uploaded again`);
+    this.logger.log(`Restored asset ${assetId} (trashed or deleted), the same file was uploaded again`);
   }
 
   canUploadFile({ auth, fieldName, file, body }: UploadRequest): true {

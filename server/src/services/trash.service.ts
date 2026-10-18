@@ -16,12 +16,14 @@ export class TrashService extends BaseService {
     }
 
     await this.requireAccess({ auth, permission: Permission.AssetDelete, ids });
-    await this.trashRepository.restoreAll(ids);
+    const count = await this.trashRepository.restoreAll(ids);
     await this.eventRepository.emit('AssetRestoreAll', { assetIds: ids, userId: auth.user.id });
 
-    this.logger.log(`Restored ${ids.length} asset(s) from trash`);
+    this.logger.log(`Restored ${count} asset(s) from trash`);
 
-    return { count: ids.length };
+    // NOTE (family fork): report what was actually brought back, not what was asked for, so
+    // clients can tell "restored" from "there was nothing to restore".
+    return { count };
   }
 
   async restore(auth: AuthDto): Promise<TrashResponseDto> {
