@@ -1138,3 +1138,66 @@ toasts: ["警告 已跳过1个重复项",
 | 镜像重建 | ✅ `docker build -f server/Dockerfile -t ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest .` → 成功，镜像 id `4d98a0b6523d` |
 | 镜像内产物自检 | ✅ `/build/www/_app/immutable/**` 命中 `upload_restored_from_trash`；`server/dist/services/asset-media.service.js` 命中 `restoreTrashedDuplicate` ×3 |
 | 推送镜像 | ❌ 本机没有 `ccr.ccs.tencentyun.com` 的登录凭证（`docker push` 返回 `denied: requested access to the resource is denied`），需要你这边执行：`docker login ccr.ccs.tencentyun.com` 后 `docker push ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest`；或者在生产机上 `git pull` 后直接 `docker build -f server/Dockerfile -t ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest .` 再 `docker compose -f docker/docker-compose.yml up -d --force-recreate` |
+
+---
+
+## Round 41 — 回收站也清空了，再上传同一张照片还会恢复吗？
+
+用户追问：「你验证的是从回收站恢复，如果删除了，回收站也清空了，再上传还会不会恢复？」
+
+答案：**改动前不会**（照片会被静默吞掉），本轮修好，现在会。
+
+### 1. 复现（改动前，真实服务端）
+
+脚本 `/tmp/verify/emptied_trash_check.py`（本机 `node dist/main.js`，端口 2330，postgres `immich_wk`）：
+
+| 步骤 | 结果 |
+|---|---|
+| 上传 photo1 | `201 created` |
+| 删除（进回收站） | `status=trashed`，`deletedAt` 有值 |
+| **清空回收站** | `status=deleted`，`deletedAt` 仍有值；**磁盘/桶里的对象还在**（软删除模式下 `AssetEmptyTrash` 直接 `JobStatus.Skipped`，什么都不会真删） |
+| **再上传同一文件** | `200 duplicate`，那一行**仍然是 `deleted`** → 照片不会回来；而且 web 端还会弹「已跳过重复上传…已从回收站恢复」，因为客户端拿到的 `count` 始终是「请求了几个 id」，恢复其实一行都没动 |
+
+根因两条：
+1. `TrashRepository.restoreAll()` 只匹配 `status = trashed`，`deleted` 的行永远回不来；
+2. `POST /trash/restore/assets` 返回的 `count` 是 `ids.length` 而不是真实更新行数 → 客户端以为成功。
+
+顺带确认：`AssetStatus` 只有 `active / trashed / deleted`；本 fork 在软删除模式下 `DELETE /assets` 带 `force: true` 也会被**降级成 trash**（`asset.service.ts#deleteAll`），所以 `deleted` 这个状态在默认配置下**只有「清空回收站」一条路**能到达——正好就是用户问的场景。
+
+### 2. 修复
+
+1. `trash.repository.ts#restoreAll`：条件由 `status = 'trashed'` 改为 `status != 'active'`，恢复时一并把 `deletedAt` 置空。于是「重复上传」和「显式恢复」两条路都能把已清空的照片找回来（对正常重复依旧是 no-op）。
+   - `restore(userId)`（恢复整个回收站）**故意不动**：回收站界面里只有 `trashed` 的资源，「恢复全部」不该把已经清空（=用户明确不要了）的行也翻出来。
+2. `trash.service.ts#restoreAssets`：返回**真实**恢复行数，客户端能区分「恢复了」和「没什么可恢复的」。
+3. 文案改成状态中立：i18n key `asset_restored_from_trash` / `upload_restored_from_trash` → **`asset_restored`（已恢复）/ `upload_restored`（已跳过重复上传：{count} 个项目原本就在服务器上，已恢复）**，因为恢复的来源可能是回收站，也可能是已清空的回收站。
+4. `server/src/queries/trash.repository.sql` 快照里的 `restoreAll` 条目手工同步（`mise run sql` 的生成器在本机跑不起来：`InvalidClassScopeException: LoggingRepository is marked as a scoped provider`，与 §Round 4 记录的「快照已过期」同一个原因；快照本身早于本轮就已过期）。
+
+### 3. 验证
+
+**e2e（真实服务端，改动前 → 改动后）**
+
+| 步骤 | 改动前 | 改动后 |
+|---|---|---|
+| 清空回收站后的行 | `deleted` + `deletedAt` 有值，对象仍在磁盘 | 同 |
+| 再上传同一文件 | `200 duplicate`，行**仍 `deleted`** ❌ | `200 duplicate`，行变 **`active`** ✅ |
+| `bulk-upload-check`（web 预检） | `isTrashed: true` | `isTrashed: true`（一样，客户端据此去恢复） |
+| `POST /trash/restore/assets` | `{"count":1}`，但行**没变**（假成功） | `{"count":1}`，行变 `active` ✅ |
+
+**真实 web UI 走一遍**（Playwright：登录 → 删照片 → 清空回收站 → 点「上传」选同一张）：
+
+```
+empty trash -> {'count': 1}
+state after emptying the trash: {..., 'isTrashed': True}     # status = deleted
+toasts: ["警告 已跳过1个重复项",
+         "成功 已跳过重复上传：1个项目原本就在服务器上，已恢复"]
+state after the UI upload: {..., 'isTrashed': False}         # 已回到时间线
+```
+
+截图：`emptied-trash-toast.png`（两条提示 + 时间线里照片回来了）、`emptied-trash-upload-panel.png`（上传面板「重复项 1」+ 恢复图标）。
+
+**单测/静态检查**：server **86 文件 / 1528 用例**（新增 1 例：`restoreAssets` 返回真实恢复数量）、`tsc` 绿；web **490 用例**绿、`tsc` 与 `svelte-check` 0 错 0 警告。
+
+### 4. 升级注意（补充 Round 40）
+
+- 现在的完整语义是：**只要同一份文件的内容已经在这个库里（不论它在时间线、回收站，还是回收站已被清空），再上传一次都会把它恢复成可见状态**，并且给用户明确提示；库里不会多出重复行，也不会重复占用存储（软删除模式下文件从头到尾只存一份）。
+- 「清空回收站」在本 fork 里 = 隐藏 + 标记 `deleted`（文件仍在桶里，因为 `IMMICH_SOFT_DELETE_ONLY` 默认开启）。如果哪天关掉软删除开关，清空回收站才是真删：那种情况下重复上传会正常创建一条**全新**资源，本轮的恢复逻辑不受影响（`restoreAll` 找不到行就是 no-op）。
