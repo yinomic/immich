@@ -1117,3 +1117,12 @@ flutter build apk --release                    # 三合一
 
 - 无数据库迁移、无 API/SDK 字段变化（`duplicate` 响应结构不变），直接替换镜像即可。
 - 行为变化只有一条：**重复上传一张在回收站里的照片，会把它从回收站恢复**（时间线上重新出现）。误删后想保持删除状态的话，别再传一次同一张即可。
+
+### 6. 交付
+
+| 项 | 状态 |
+|---|---|
+| 提交 | `76ffeda15`（web 布局）、`47172ccf5`（server + web 重复/恢复）、`4c1adb3ba`（本文档），已同时推到 `origin/family-album` |
+| 镜像重建 | ✅ `docker build -f server/Dockerfile -t ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest .` → 成功，镜像 id `4d98a0b6523d` |
+| 镜像内产物自检 | ✅ `/build/www/_app/immutable/**` 命中 `upload_restored_from_trash`；`server/dist/services/asset-media.service.js` 命中 `restoreTrashedDuplicate` ×3 |
+| 推送镜像 | ❌ 本机没有 `ccr.ccs.tencentyun.com` 的登录凭证（`docker push` 返回 `denied: requested access to the resource is denied`），需要你这边执行：`docker login ccr.ccs.tencentyun.com` 后 `docker push ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest`；或者在生产机上 `git pull` 后直接 `docker build -f server/Dockerfile -t ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest .` 再 `docker compose -f docker/docker-compose.yml up -d --force-recreate` |
