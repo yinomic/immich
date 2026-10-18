@@ -849,6 +849,10 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 - 代码生成（`mise` 不可用时手动跑）：`dart run drift_dev make-migrations`、`dart run build_runner build --delete-conflicting-outputs`、`dart run pigeon`、`dart run easy_localization:generate -S ../i18n`、`dart run bin/generate_keys.dart`；Dart SDK 用 `open-api/bin/generate-dart-sdk.sh`（需要 `openapi-generator-cli` 与 JDK）。
 - **坑**：`sqlite3` 的原生资源钩子会从 GitHub Releases 下载 `.so`（本环境 GitHub 网页/下载被封）。已在 `mobile/pubspec.yaml` 里加 `hooks.user_defines.sqlite3.url_pattern` 指向可达的 GitHub 代理；**能直连 github.com 时可以把这段删掉**。
 - 产物签名：仓库的 `app/build.gradle` 在 `key.jks` 不存在时会退回 debug 签名，所以 `flutter build apk --release` 直接就能出可安装包；要长期自己发布再用 `keytool` 生成 `key.jks` + `key.properties`（都已被 gitignore）。
+- **重要坑（本机构建前必须处理）**：你机器上有一个全局 Gradle init 脚本 `~/.gradle/init.d/repo.gradle`，它的 `allprojects { repositories repoConfig }` 会往**每个** project 塞 `maven { url ... }` 仓库，而 Flutter 的插件加载器把根 settings 设成了「只认 settings 里的仓库」，于是报
+  `Error resolving plugin [id: 'dev.flutter.flutter-plugin-loader', version: '1.0.0'] > Build was configured to prefer settings repositories over project repositories but repository 'maven' was added by settings file 'settings.gradle'`。
+  临时做法：构建 Android 时把这个脚本先移开（`mv ~/.gradle/init.d/repo.gradle /tmp/`），构建完再放回去；长期建议把该脚本里的 `allprojects { ... }` 段注释掉——本仓库的 `mobile/android/settings.gradle` / `build.gradle` 已经显式声明了同款阿里云 + 腾讯云镜像，那段现在是多余的。
+- 另：`gradlew` 不在仓库里（被 gitignore），由 `flutter build apk` 首次运行时生成；Gradle 8.14 不支持本机默认的 JDK 25，务必用 JDK 21。
 
 ### 6. 有意保留
 - 各语言 `i18n/*.json` 里已不再引用的 key（如 `birthday_memory_*`、`review_duplicates`、`include_shared_partner_assets`）：只影响体积，上游 i18n 工具参与校验，未动。
