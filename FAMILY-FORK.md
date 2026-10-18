@@ -858,3 +858,64 @@ ok presigned GET (1099ms) fetched without auth headers / ok DELETE object (58ms)
 - 各语言 `i18n/*.json` 里已不再引用的 key（如 `birthday_memory_*`、`review_duplicates`、`include_shared_partner_assets`）：只影响体积，上游 i18n 工具参与校验，未动。
 - `album_user_role_enum` 里的 `editor`/`viewer` 历史值（见上文 bug #2）。
 - 用户管理（还能创建多个账号）仍然保留——单账号是我们自己约定，不是死代码；要删说一声。
+
+
+---
+
+## Round 38 — 构建 Android app（已产出可安装 APK）
+
+目标：`开始构建android app，如果因为网速下载依赖或资源比较慢，优先考虑使用中国境内的镜像地址`。
+
+### 产物
+| 文件 | 体积 | 说明 |
+|---|---|---|
+| `apk-out/immich-family-arm64-v8a.apk` | 68.8 MB | **推荐**，绝大多数现代手机 |
+| `apk-out/immich-family-armeabi-v7a.apk` | 63.4 MB | 老的 32 位手机 |
+| `apk-out/immich-family-x86_64.apk` | 71.5 MB | 模拟器 / x86 平板 |
+| `apk-out/immich-family-universal.apk` | 178.3 MB | 三种 ABI 合一，随便哪台都能装 |
+
+- 包名 `app.alextran.immich`，版本 `3.3.0-rc.0`（versionCode 3030000 / 分 ABI 是 3032000 等），`targetSdk 36`
+- 签名：**APK Signature Scheme v2 校验通过**，证书是 Android Debug（仓库的 `app/build.gradle` 在 `key.jks` 不存在时回退 debug 签名）。想换成自己的正式签名就 `keytool` 生成 `key.jks` + `key.properties`（两者都已 gitignore），之后重新构建即可
+- 包内含 `libflutter.so`、**`libnative_core_ffi.so`（Rust 原生核）**、`libsqlite3.so`、`libsqlite3_connection_pool.so`（native assets 钩子下载的）
+- 校验和见 `apk-out/SHA256SUMS.txt`（注意：`apk-out/` 只在本机 `.git/info/exclude` 里排除，未提交）
+
+安装：手机连上后 `adb install -r apk-out/immich-family-arm64-v8a.apk`，或把 APK 传到手机点击安装（需要允许「安装未知来源应用」）。首次打开在登录页填服务器地址即可。
+
+### 构建命令
+```bash
+source ~/flutter-env.sh                 # JAVA_HOME=JDK21 / ANDROID_HOME / NDK / FLUTTER_STORAGE_BASE_URL
+cd mobile
+flutter build apk --release --split-per-abi    # 分 ABI（推荐，热缓存下约 90 秒）
+flutter build apk --release                    # 三合一
+```
+产物在 `mobile/build/app/outputs/flutter-apk/`。
+
+### 为「国内镜像优先」做的事
+- **Maven 依赖全部走国内镜像**：`mobile/android/settings.gradle` 与 `build.gradle` 里只声明腾讯云 `nexus/repository/maven-public`（它同时代理 Google Maven、Maven Central、KSP）+ 华为云 + 阿里云 public/gradle-plugin，**删掉了 `google()`/`mavenCentral()`/`gradlePluginPortal()`**——它们在这里不可达，每次查询都要卡到 TCP 超时。
+- **settings 级仓库**（`dependencyResolutionManagement` + `PREFER_SETTINGS`）：pub 缓存里 26 个插件工程（`background_downloader`、`bonsoir_android`…）自己的 `build.gradle` 都声明了 `google()`，工程级仓库会被 settings 级覆盖，从而全部走镜像。
+- **Flutter 引擎产物**（`io.flutter:flutter_embedding_release`，约 1.5 MB）：只在 `download.flutter.io` 上，所以必须在 settings 级额外声明。实测本机 `storage.flutter-io.cn` 只有 **~7 KB/s**（1.5MB 要 4 分钟且经常读超时），`storage.googleapis.com` 有 **~618 KB/s**，因此配置里 **Google 在前、中国镜像在后**当兜底；如果你的网络下 flutter-io.cn 更快，把 `settings.gradle` 里这两行对调即可（注释里写了）。
+- 环境变量 `FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn` 也写进了 `~/flutter-env.sh`。
+- **注意**：`mobile/android/gradle.properties` 里加了
+  `systemProp.org.gradle.internal.http.connectionTimeout=8000` / `socketTimeout=300000`，让不可达仓库快速失败、慢镜像不要被 30 秒读超时打断。
+
+### 补齐的 SDK 组件（都在 `~/android-sdk`，从腾讯云 AndroidSDK 镜像下载）
+- `build-tools/35.0.0`（AGP 8.11.2 的 desugar 任务要）与 `36.0.0`
+- `platforms/android-33 / 34 / 35`（插件工程的 compileSdk 各不相同：33×2、34×9、35×4、36×6）；原 `platforms/android-36` 之前解压层级错了（多套了一层目录），已修正
+- `cmake/3.22.1`（含 ninja 1.10.2，maplibre 的 `jni` 插件要 CMake）
+- NDK `28.2.13676358`、`platform-tools` 之前已就绪
+
+### 踩到的坑（每个都花了 15–40 分钟才定位）
+1. **`~/.gradle/init.d/repo.gradle`（你原有的全局 init 脚本）会让 Flutter 的 Android 构建直接失败**：它的 `allprojects { repositories ... }` 往每个工程塞仓库，Flutter 的插件加载器把仓库模式设成「只认 settings 里的仓库」，于是报 `Error resolving plugin [id: 'dev.flutter.flutter-plugin-loader', ...]`。**构建 Android 时必须把它移开**（现已改名为 `repo.gradle.disabled`，Gradle 不会自动加载）。
+2. **改用「只重写 URL、不增删仓库」的 init 脚本**：`~/.gradle/init.d/zz-mirror-rewrite.gradle` 把各工程里 `dl.google.com` / `maven.google.com` / `repo.maven.apache.org` / `plugins.gradle.org` 的仓库地址**原地改写**成腾讯镜像。因为是改写而不是新增，不会触发上面的仓库模式冲突，而且能盖住 pub 缓存里那些插件工程自己声明的 `google()`（否则每个插件配置时都要等 Google 超时）。
+3. **Gradle daemon 会记住启动时的环境变量**：`FLUTTER_STORAGE_BASE_URL` 是后加的，旧 daemon 里读不到，仍旧去连 `storage.googleapis.com`。改完环境变量要 `./gradlew --stop` 再构建。
+4. `sqlite3` 的原生资源钩子从 GitHub Releases 下载 `.so`，本环境 GitHub 不通，已在 `mobile/pubspec.yaml` 的 `hooks.user_defines.sqlite3.url_pattern` 指向可达的 GitHub 代理。
+
+### 验证
+| 检查 | 结果 |
+|---|---|
+| `flutter build apk --release` | ✅ `Built build/app/outputs/flutter-apk/app-release.apk (178.3MB)` |
+| `flutter build apk --release --split-per-abi` | ✅ 63.4 / 68.8 / 71.5 MB 三个包，热缓存下 91.5s 重跑成功 |
+| `aapt2 dump badging` | 包名/版本/targetSdk 如上；`native-code` 与所选 ABI 一致 |
+| `apksigner verify` | `Verifies`，v2 方案为 true |
+| `unzip -t` | zip 完整性 OK |
+| 包内原生库 | `libflutter.so`、`libnative_core_ffi.so`、`libsqlite3.so`、`libsqlite3_connection_pool.so`（三种 ABI 各一份） |

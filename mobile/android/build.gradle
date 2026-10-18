@@ -1,14 +1,11 @@
 allprojects {
     repositories {
-    // Mirrors first: dl.google.com / repo1.maven.org / plugins.gradle.org are
-        // unreachable on some networks (e.g. mainland China). The original
-        // repositories stay as a fallback for everywhere else.
+        // Mainland-China mirrors only, see settings.gradle: dl.google.com and
+        // repo1.maven.org stall until the TCP timeout from here.
         maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public' }
-        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://mirrors.huaweicloud.com/repository/maven' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        google()
-        mavenCentral()
     }
 }
 

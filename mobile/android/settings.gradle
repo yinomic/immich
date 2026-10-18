@@ -10,16 +10,14 @@ pluginManagement {
   includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
   repositories {
-    // Mirrors first: dl.google.com / repo1.maven.org / plugins.gradle.org are
-    // unreachable on some networks (e.g. mainland China). The original
-    // repositories stay as a fallback for everywhere else.
+    // Mainland-China mirrors only: dl.google.com, repo1.maven.org and
+    // plugins.gradle.org are unreachable here and every lookup against them
+    // stalls until the TCP timeout. The Tencent mirror proxies Google Maven,
+    // Maven Central and the plugin portal; the others are fallbacks.
     maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public' }
-    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://mirrors.huaweicloud.com/repository/maven' }
     maven { url 'https://maven.aliyun.com/repository/public' }
     maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    google()
-    mavenCentral()
-    gradlePluginPortal()
   }
 }
 
@@ -30,6 +28,27 @@ plugins {
   // TODO: update to match kotlin version when background_downloader is removed
   id "org.jetbrains.kotlin.plugin.serialization" version "2.1.0" apply false
   id "com.google.devtools.ksp" version "2.2.20-2.0.3" apply false
+}
+
+dependencyResolutionManagement {
+  // PREFER_SETTINGS keeps plugin subprojects from adding their own google()
+  // repositories, which would be unreachable from here.
+  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
+  repositories {
+    // Flutter engine artifacts (io.flutter:flutter_embedding_*, ~1.5 MB) are
+    // published only on download.flutter.io, and PREFER_SETTINGS makes Gradle
+    // ignore the project-level repository the Flutter plugin injects, so the
+    // host has to be declared here. The Google host is listed first because the
+    // official China mirror measured ~7 KB/s from this machine (~90x slower);
+    // swap these two lines if the mirror is faster on your network. Everything
+    // else resolves from the China mirrors below.
+    maven { url 'https://storage.googleapis.com/download.flutter.io' }
+    maven { url 'https://storage.flutter-io.cn/download.flutter.io' }
+    maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public' }
+    maven { url 'https://mirrors.huaweicloud.com/repository/maven' }
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+  }
 }
 
 include ":app"
