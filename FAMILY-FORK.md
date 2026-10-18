@@ -1007,3 +1007,113 @@ flutter build apk --release                    # 三合一
 | 官方 demo 同路径 | `{"api":{"endpoint":"/api"}}`（一直是好的） | — |
 
 **给用户的两种解法**：① 只换新 APK 也行（app 端兜底）；② 重新部署服务端镜像（`docker compose up -d --force-recreate`）后，旧 app 填域名也能发现 `/api`。③ 不改任何东西的临时办法：在登录页把地址填成 `https://yue-coming.cn/api`。
+
+---
+
+## Round 40 — 备案信息移到底部 + 相同文件不重复上传 + 回收站里的重复上传自动恢复
+
+本轮三条需求（用户原话）：① 登录页的备案信息现在在登录框右侧，应该在页面底部；② 检查相同照片是否允许上传——要求 sha256 相同的照片/视频不要重复上传，可以提示；③ 软删除的照片/视频重复上传的时候恢复（未）删除状态。
+
+### 1. 备案信息 → 页面底部（web）
+
+改之前：`AuthPageLayout` 是一个横排 flex 容器（`flex items-center justify-center`），`<Card>` 与 `<FilingInfo />` 是**同级兄弟**，所以备案号被摆到了登录框右边、垂直居中。
+
+改之后：容器改成 `flex flex-col`，登录卡片放进 `grow` 的居中容器里，备案信息放进页面末尾的 `<footer>`：
+
+```svelte
+<section class="... flex-col items-center">
+  <div class="relative ...">           <!-- 背景图，-z-10 -->
+  <div class="flex w-full grow items-center justify-center">  <!-- 卡片在剩余空间里居中 -->
+    <Card ...>…</Card>
+  </div>
+  <footer class="flex w-full shrink-0 justify-center">
+    <FilingInfo />
+  </footer>
+</section>
+```
+
+要点：
+- 用**正常文档流**而不是 `absolute bottom-0`：页面变高（注册页/小屏）时不会和卡片重叠，也不需要给卡片留 padding。
+- `FilingInfo` 自己带 `py-4`，没配 `IMMICH_FILING_INFO` 时组件渲染为空 → footer 高度为 0，布局与上游一致。
+- 6 个用 `AuthPageLayout` 的页面（登录、注册、改密码、PIN、维护页、首页）一起生效。
+
+回归测试：新增 `web/src/lib/components/layouts/AuthPageLayout.spec.ts`（2 例）——备案信息必须在 `section` 的**最后一个**子元素 `footer` 里、卡片是它的前一个兄弟、`section` 是 `flex-col`；没配备案时 footer 里没有链接。
+
+### 2. 相同照片/视频不会重复上传（核查结论：本来就会拦，且是按文件内容哈希）
+
+**机制**（上游 Immich 自带，本 fork 未改坏）：
+
+| 环节 | 位置 | 行为 |
+|---|---|---|
+| 客户端预检 | `web/src/lib/utils/file-uploader.ts` → `POST /assets/bulk-upload-check` | web 在 worker 里算整个文件的哈希（`web/src/lib/workers/hash-file.ts`），先问服务端“这个哈希有没有” |
+| 服务端判定 | `asset-media.service.ts#bulkUploadCheck` | 命中就回 `action: reject / reason: duplicate` + `assetId` + `isTrashed`，客户端**不传文件**，并弹提示「已跳过 N 个重复项」 |
+| 兜底（不看预检的客户端，如手机 App） | `asset` 表唯一索引 `UQ_assets_owner_checksum (ownerId, checksum) WHERE libraryId IS NULL` | 插入冲突 → 服务端捕获约束错误 → 返回 `200 {"status":"duplicate"}`，磁盘上的新临时文件被删掉 |
+| 另一条捷径 | `AssetUploadInterceptor`（`x-immich-checksum` 请求头） | 直接返回 `duplicate`，不落盘 |
+
+所以「sha256 相同的相片/视频不要重复上传」**已经成立**：哈希相同 ⇒ 文件字节完全相同 ⇒ 上面的内容哈希必然也相同 ⇒ 第二次上传（无论 web 还是 App、无论带不带请求头）都只会得到 `duplicate`，数据库里也只有一条。
+
+**为什么没把哈希算法换成 sha256**：`asset.checksum` 这一列、以及已经存在的整个相册库、`AssetResponseDto.checksum`、手机 App 的比对逻辑，全都建立在同一个内容哈希上。换算法等于让**已有照片**的重复检测全部失效（老数据是旧哈希，新上传算新哈希 → 同一张照片会被重新收进来），与需求正好相反。要做成 sha256 得给全库重算哈希（含云桶里上万个对象），收益为 0（sha256 相同 ⊆ sha1 相同）。
+
+实测（本机真实 server + postgres，见下方 e2e 输出）：
+
+| 步骤 | 结果 |
+|---|---|
+| 同一文件上传两次 | 第 1 次 `201 created`；第 2 次 `200 {"status":"duplicate","id":<同一条>}`，表里仍是 1 行 |
+| 第三次带 `x-immich-checksum` | 同样 `200 duplicate`，表里仍是 1 行 |
+| 另一个不同文件 | `201 created`（正常收下） |
+| `bulk-upload-check`（重复项/新文件） | 重复 → `reject + duplicate + assetId`；新文件 → `accept` |
+
+### 3. 回收站里的重复上传 → 自动恢复（新行为）
+
+改之前：照片进了回收站（软删除，`status=trashed`、`deletedAt` 非空，本 fork 默认软删除、桶里文件永不删），再上传同一张 → 服务端只回 `duplicate`，**资源仍留在回收站**；web 端只显示「在回收站中」和一个跳转链接，要用户自己去回收站点恢复。
+
+改之后（两条互不依赖的路径，覆盖所有客户端）：
+
+1. **服务端**（管手机 App、CLI、任何直接 POST 的客户端）
+   `asset-media.service.ts` 新增私有方法 `restoreTrashedDuplicate()`：拿到重复资源的 id 后调用 `trashRepository.restoreAll([id])`——该方法只更新 `status = trashed` 的行，所以对**正常**重复是 no-op；真的恢复了才发 `AssetRestoreAll` 事件并记日志。接入点两处：`uploadAsset()` 的约束冲突分支、`getUploadAssetIdByChecksum()`（`x-immich-checksum` 头那条捷径）。
+2. **web 端**（预检命中时，连文件都不用传）
+   `file-uploader.ts`：`checkBulkUpload` 回 `isTrashed: true` 时调用 `POST /trash/restore/assets`，成功后把该项标成 `restored`。
+   提示：列表里该文件显示「恢复」图标（title「已从回收站恢复」），上传面板结束时额外弹一条 `已跳过重复上传：N 个项目原本就在服务器上，已从回收站恢复`；恢复失败（如权限不足）则保持原来的「在回收站中」提示，不会静默吞掉。
+   新增 i18n：`asset_restored_from_trash`、`upload_restored_from_trash`（`i18n/en.json` + `i18n/zh_Hans.json`；其余语言缺 key 时按 svelte-i18n 的 `fallbackLocale` 回落到英文）。
+
+顺手的一处小重构：把 `hashFile()` 从 `file-uploader.ts` 抽到 `web/src/lib/utils/hash-file.ts`，这样上传流程的单测可以 stub 掉 worker（此前测试里 worker 起不来，哈希分支从未被覆盖）。
+
+### 4. 验证
+
+**单测**
+- server：`pnpm test` → **86 文件 / 1527 passed**（新增 3 例：`x-immich-checksum` 命中回收站资源会恢复并发事件、正常重复不动、上传路径约束冲突时恢复）。
+- web：`pnpm vitest run` → 全绿（新增 3 例重复处理 + 2 例布局）。
+- `web`：`pnpm run check:typescript`、`pnpm run check:svelte` 均 0 error / 0 warning；`server`：`pnpm run check`、`pnpm run lint` 绿。
+- 说明：本机 `web` 的 eslint 跑不起来（`@koddsson/eslint-plugin-tscompat` 抛 `Cannot read properties of undefined (reading 'Class')`），**未改动的文件同样崩**，属于环境/依赖问题，与本轮改动无关。
+
+**真实服务端 e2e**（本机 `node dist/main.js`，端口 2330，postgres `immich_wk` + redis 6380，本地盘存储、软删除默认开启；脚本 `/tmp/verify/dedup_check.py`）：
+
+```
+== 1. upload photo1 ==                              (201, {'id': 'cfed…', 'status': 'created'})
+== 2. upload photo1 again (same bytes) ==           (200, {'status': 'duplicate', 'id': 'cfed…'})
+== 3. … with x-immich-checksum header ==            (200, {'status': 'duplicate', 'id': 'cfed…'})
+== 4. upload a different photo ==                   (201, {'id': 'cafaf…', 'status': 'created'})
+== rows (id | live | sha1) ==                       2 行（没有多出来的重复行）
+== 5. bulk-upload-check ==                          reject/duplicate + accept（新文件）
+== 6. trash 2 assets ==                             rows: live=f
+== 7. re-upload photo1 while in trash ==            (200 duplicate) → rows: photo1 live=t   ← 本轮新行为
+== 7b. trash again + re-upload with checksum header == (200 duplicate) → rows: photo1 live=t  ← 本轮新行为
+== 8. bulk-upload-check for trashed photo1 ==       isTrashed: False（上一步已恢复）
+== 回收站中 → bulk-upload-check → POST /trash/restore/assets → rows: live=t   （web 端走的正是这条）
+```
+
+**登录页布局（Playwright 实测，非推测）**：两个实例并排跑同一份服务端代码、只有 web 产物不同——2331 = 改动前（旧镜像里的 `www`）、2330 = 改动后（本机新构建），都注入 `IMMICH_FILING_INFO=粤ICP备2026000000号-1`，用 Chromium 量备案号链接的位置：
+
+| 视口 | 改动前 | 改动后 |
+|---|---|---|
+| 桌面 1280×800 | `top 391`、`left 862`（在卡片右侧、垂直居中），`section` = `items-center justify-center`，`锚点在 footer 内 = false` | `top 767 / bottom 785`（视口高 800 → **贴底**）、`left 566`（水平居中），`section` = `flex-col items-center`，`锚点在 footer 内 = true`、`footer 是 section 最后一个子元素 = true` |
+| 手机 390×844 | `top 397`、`left 298` → 卡片右边只剩 ~90px，备案号被挤成 3 行还溢出视口 | `top 811`、`left 121` → **底部居中一行** |
+
+截图：`before-desktop.png` / `before-phone.png` / `after-desktop.png` / `after-phone.png`（改动前后的桌面与手机视口，见本轮聊天里发出的附件；本机也留了一份在 `/tmp/verify/shots/`）。
+
+> 踩坑记录（与需求无关，但会误导排查）：本地验证时先起的旧实例在内存里缓存了旧 `index.html`，而 `www` 目录已经被换成新构建，浏览器按旧资源名去新目录取 `.br` 预压缩文件 → `sirv` 那个 `brotli: true` 的读流 ENOENT 未处理 → **API worker 直接退出**（容器内 `www` 与 `index.html` 永远配套，所以线上不会遇到）。两个实例抢同一端口时也会打 `EADDRINUSE`。以后本地换 web 产物，务必先停干净（进程名是 `immich-api`，不是 `node dist/main.js`）。
+
+### 5. 升级注意
+
+- 无数据库迁移、无 API/SDK 字段变化（`duplicate` 响应结构不变），直接替换镜像即可。
+- 行为变化只有一条：**重复上传一张在回收站里的照片，会把它从回收站恢复**（时间线上重新出现）。误删后想保持删除状态的话，别再传一次同一张即可。
