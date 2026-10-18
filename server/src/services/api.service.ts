@@ -18,7 +18,7 @@ export class ApiService {
     this.logger.setContext(ApiService.name);
   }
 
-  ssr() {
+  ssr(excludePaths: string[]) {
     const { resourcePaths, storage } = this.configRepository.getEnv();
 
     let index = '';
@@ -33,7 +33,10 @@ export class ApiService {
       if (
         request.url.startsWith('/api') ||
         (method !== 'get' && method !== 'head') ||
-        request.url.startsWith('/share')
+        // NOTE (family fork): this list must be honoured, otherwise the HTML
+        // fallback answers /.well-known/immich and the mobile app cannot
+        // discover the "/api" prefix (every request then 404s).
+        excludePaths.some((item) => request.url.startsWith(item))
       ) {
         return next();
       }

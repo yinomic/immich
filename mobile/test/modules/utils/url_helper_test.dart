@@ -167,4 +167,18 @@ void main() {
       expect(punycodeDecodeUrl(url), expected);
     });
   });
+
+  group('toApiBaseUrl', () {
+    test('appends /api to a bare domain', () {
+      expect(toApiBaseUrl('https://example.com'), equals('https://example.com/api'));
+    });
+
+    test('keeps an existing /api suffix', () {
+      expect(toApiBaseUrl('https://example.com/api'), equals('https://example.com/api'));
+    });
+
+    test('appends /api to a domain served under a sub path', () {
+      expect(toApiBaseUrl('https://example.com/immich'), equals('https://example.com/immich/api'));
+    });
+  });
 }

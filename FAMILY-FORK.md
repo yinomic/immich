@@ -981,3 +981,29 @@ flutter build apk --release                    # 三合一
 **修复**（`mobile/lib/services/api.service.dart`）：新增 `_headerSafe()`，把 `deviceModel` / `deviceType` 里所有非可打印 ASCII 字符去掉（清空则回落 `Unknown`），并记一条 `Reported device: Android <净化后型号> (raw "<原始型号>")` 到 app 日志（截图里的 **Logs** 能看到，方便以后排查）。
 
 **顺带**（`mobile/lib/widgets/forms/login/login_form.dart`）：登录失败时区分两种原因——`ApiException`（服务端明确拒绝，提示「登录失败，请检查服务器地址、邮箱和密码」）vs 其他异常（socket/TLS/超时/非法请求头，提示「无法连接到服务器」并把真实异常写进 app 日志）。之前网络问题也会显示"检查邮箱和密码"，很容易被带偏。
+
+
+### Round 39 最终定位：`/.well-known/immich` 被前端兜底吞掉，导致 app 拿不到 `/api` 前缀
+
+用户日志最终给出了决定性线索：`Login rejected by https://yue-coming.cn: HTTP 404 Cannot POST /auth/login` —— **请求少了 `/api` 前缀**（所以服务端日志里没有"登录失败"记录，请求根本没到鉴权逻辑）。
+
+链路是这样的：
+1. app 让用户填服务器地址（提示文案是 `http://您的服务器地址:端口`，**不带 `/api`**）。
+2. `resolveEndpoint()` 先查 `GET <地址>/.well-known/immich`：服务端**有意**提供这个发现端点（`@Get('.well-known/immich')`，返回 `{"api":{"endpoint":"/api"}}`，且在 `setGlobalPrefix('api', { exclude: excludePaths })` 的排除列表里），app 用它补上 `/api`。
+3. **但改造「去掉分享链接」时（commit `775acd4f5`）把 `ApiService.ssr()` 重写并删掉了 `excludePaths` 参数**（改成硬编码判断 `/share`），于是 `/.well-known/immich` 不再被放行、被 HTML 兜底当成前端路由返回（`406 ... only returns text/html` / 200 HTML）。
+4. app 解析失败 → 退回用不带 `/api` 的地址当 API 基址 → 之后所有请求 404。
+
+**修复（服务端）**：
+- `src/services/api.service.ts`：`ssr(excludePaths: string[])` 恢复参数，守卫改回 `excludePaths.some(...)`；
+- `src/app.common.ts`：`app.use(app.get(ssr).ssr(excludePaths))`（之前被误改成无参调用）。
+- 新增回归测试 `src/services/api.service.spec.ts`（4 个用例）：`/.well-known/immich` 必须 `next()`、其它排除路径同理、`/api/...` 与正常路由行为不变。**已验证：把守卫改回旧写法时该测试会失败（2 failed），修复后全绿**，服务端全量 **1524 passed**。
+
+**修复（app 端兜底）**：`resolveEndpoint()` 之前直接 `return url`（不带 `/api`），与它内部探测用的 `<url>/api` 不一致。现在把规则抽成 `url_helper.dart` 的 `toApiBaseUrl()` 并在 `resolveEndpoint` / `_isEndpointAvailable` 共用，**即使发现端点被反代吞掉，用户只填域名也能正确访问 `<域名>/api`**；新增 3 个单测。
+
+**实测对比**：
+| 地址 | 修复前 | 修复后 |
+|---|---|---|
+| `http://<host>/.well-known/immich` | 200 HTML（或 406 提示只返回 text/html） | **`{"api":{"endpoint":"/api"}}`** ✅ |
+| 官方 demo 同路径 | `{"api":{"endpoint":"/api"}}`（一直是好的） | — |
+
+**给用户的两种解法**：① 只换新 APK 也行（app 端兜底）；② 重新部署服务端镜像（`docker compose up -d --force-recreate`）后，旧 app 填域名也能发现 `/api`。③ 不改任何东西的临时办法：在登录页把地址填成 `https://yue-coming.cn/api`。

@@ -96,16 +96,20 @@ class ApiService {
       url = normalizeServerUrl(wellKnownEndpoint);
     }
 
+    // The availability probe talks to <url>/api, so the endpoint that gets used
+    // afterwards has to be the same one; returning the bare domain sent every
+    // later request to <domain>/auth/login instead of <domain>/api/auth/login.
+    final apiUrl = toApiBaseUrl(url);
+
     if (!await _isEndpointAvailable(url)) {
       throw ApiException(503, "Server is not reachable");
     }
 
-    // Otherwise, assume the URL provided is the api endpoint
-    return url;
+    return apiUrl;
   }
 
   Future<bool> _isEndpointAvailable(String serverUrl) async {
-    final endpoint = serverUrl.endsWith('/api') ? serverUrl : '$serverUrl/api';
+    final endpoint = toApiBaseUrl(serverUrl);
 
     try {
       setEndpoint(endpoint);

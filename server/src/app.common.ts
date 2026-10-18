@@ -85,7 +85,11 @@ export async function configureExpress(
     );
   }
 
-  app.use(app.get(ssr).ssr());
+  // NOTE (family fork): the exclude list has to be passed through. Without it
+  // the SSR/HTML fallback answers /.well-known/immich with the web app, so the
+  // mobile app cannot discover the "/api" prefix and sends every request to the
+  // wrong path (404).
+  app.use(app.get(ssr).ssr(excludePaths));
   app.use(compression());
 
   const server = await (host ? app.listen(port, host) : app.listen(port));

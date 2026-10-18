@@ -13,6 +13,15 @@ String normalizeServerUrl(String url) {
   return urlWithSchema.replaceFirst(RegExp(r"/+$"), "");
 }
 
+/// Returns the API base URL for a normalized server URL.
+///
+/// The app talks to `<server>/api/...`. Users usually type just the domain, and
+/// the `/.well-known/immich` lookup that is supposed to reveal the prefix can be
+/// swallowed by a reverse proxy that serves the web app for every path, so fall
+/// back to the standard "/api" suffix instead of using the bare domain (which
+/// made every request 404).
+String toApiBaseUrl(String normalizedUrl) => normalizedUrl.endsWith('/api') ? normalizedUrl : '$normalizedUrl/api';
+
 /// Validates a user-entered server URL
 bool _validateServerUrl(String url) {
   final parsedUrl = Uri.tryParse(url);
