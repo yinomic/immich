@@ -284,14 +284,24 @@ class LoginForm extends HookConsumerWidget {
           unawaited(context.router.replaceAll([const TabShellRoute()]));
           return;
         }
-      } catch (error) {
+      } catch (error, stackTrace) {
         if (!context.mounted) {
           return;
         }
 
+        // NOTE (family fork): an ApiException means the server answered and
+        // rejected the credentials; anything else (socket, TLS, timeout,
+        // malformed header) means we never got an answer. Saying "check your
+        // email and password" for a network problem sends people down the
+        // wrong path, so keep the two apart and log the real error.
+        final isServerAnswer = error is ApiException;
+        if (!isServerAnswer) {
+          log.severe('Login request failed', error, stackTrace);
+        }
+
         ImmichToast.show(
           context: context,
-          msg: context.t.login_form_failed_login,
+          msg: isServerAnswer ? context.t.login_form_failed_login : context.t.login_form_server_error,
           toastType: ToastType.error,
           gravity: ToastGravity.TOP,
         );

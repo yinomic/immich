@@ -144,17 +144,30 @@ class ApiService {
     return "";
   }
 
+  /// HTTP header values have to be printable ASCII. Some Android builds report
+  /// a device model with non-ASCII characters (for example "小米 14"), and a
+  /// value like that makes *every* later request fail locally with
+  /// "FormatException: Invalid HTTP header field value" before it is even sent.
+  static String _headerSafe(String value) {
+    final cleaned = value.replaceAll(RegExp(r'[^\x20-\x7E]'), '').trim();
+    return cleaned.isEmpty ? 'Unknown' : cleaned;
+  }
+
   Future<void> setDeviceInfoHeader() async {
     final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
 
     if (Platform.isIOS) {
       final iosInfo = await deviceInfoPlugin.iosInfo;
-      authenticationApi.apiClient.addDefaultHeader('deviceModel', iosInfo.utsname.machine);
+      final model = _headerSafe(iosInfo.utsname.machine);
+      authenticationApi.apiClient.addDefaultHeader('deviceModel', model);
       authenticationApi.apiClient.addDefaultHeader('deviceType', 'iOS');
+      _log.info('Reported device: iOS $model');
     } else if (Platform.isAndroid) {
       final androidInfo = await deviceInfoPlugin.androidInfo;
-      authenticationApi.apiClient.addDefaultHeader('deviceModel', androidInfo.model);
+      final model = _headerSafe(androidInfo.model);
+      authenticationApi.apiClient.addDefaultHeader('deviceModel', model);
       authenticationApi.apiClient.addDefaultHeader('deviceType', 'Android');
+      _log.info('Reported device: Android $model (raw "${androidInfo.model}")');
     } else {
       authenticationApi.apiClient.addDefaultHeader('deviceModel', 'Unknown');
       authenticationApi.apiClient.addDefaultHeader('deviceType', 'Unknown');

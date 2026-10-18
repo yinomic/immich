@@ -961,3 +961,23 @@ flutter build apk --release                    # 三合一
 2. 用手机浏览器打开 `http://<你的服务器>:2283/api/server/version`，看返回的 `major` 是多少：
    - `major:3` → 服务端是最新的，问题在 app 侧（未读到版本 / 装的是旧包），换用本轮的 APK 即可；
    - `major:1` 或 `2` → 你**正在运行的容器还是旧镜像**，需要 `docker compose pull`（或重新 `docker build`）后 `docker compose up -d --force-recreate`。
+
+
+### Round 39 追加：真正的原因 = `deviceModel` 请求头里有非 ASCII 字符
+
+用户截图显示同时出现「登录失败」「无法检查应用程序或服务器版本」，且 app 版本是 `v3.3.0-rc.0`（新包）。排查过程：
+
+1. 服务端从公网一切正常：`https://yue-coming.cn/api/server/version` 用 curl **和**严格 TLS 校验（不依赖 AIA，等同 dart:io 的校验方式）都返回 `{"major":3,...}`；`/.well-known/immich` 被 Caddy 重写成前端页面（返回 200 HTML，但 app 里 `jsonDecode` 失败后会被 catch 掉，返回空串，不影响）；无 UA、`Dart/3.13` UA、无 token 请求都是 200；`POST /api/auth/login` 对错误口令返回正常的 401。
+2. app 侧的关键顺序：`resolveEndpoint()` 会先 `GET /server/ping`（5 秒超时）确认可达 → 只有成功才会显示登录框；随后 `setDeviceInfoHeader()` 把**手机型号**作为 `deviceModel` 请求头加到同一个 ApiClient 上，**之后所有请求**（`/server/version`、`/auth/login`…）都带上它。
+3. 用 app 自己的 SDK 实测这个机制：
+
+| deviceModel 取值 | 结果 |
+|---|---|
+| `Pixel 7` / `Redmi Note 11`（ASCII、含空格） | ✅ 请求成功（`major=3`） |
+| `小米 14 Pro`、含 emoji、纯中文 | ❌ `FormatException: Invalid HTTP header field value`，请求**在发出前就失败** |
+
+所以「ping 通过 → 版本读不到 → 登录失败」是同一个原因：手机型号含非 ASCII 字符，导致 `setDeviceInfoHeader()` 之后每个请求都在本地报错。
+
+**修复**（`mobile/lib/services/api.service.dart`）：新增 `_headerSafe()`，把 `deviceModel` / `deviceType` 里所有非可打印 ASCII 字符去掉（清空则回落 `Unknown`），并记一条 `Reported device: Android <净化后型号> (raw "<原始型号>")` 到 app 日志（截图里的 **Logs** 能看到，方便以后排查）。
+
+**顺带**（`mobile/lib/widgets/forms/login/login_form.dart`）：登录失败时区分两种原因——`ApiException`（服务端明确拒绝，提示「登录失败，请检查服务器地址、邮箱和密码」）vs 其他异常（socket/TLS/超时/非法请求头，提示「无法连接到服务器」并把真实异常写进 app 日志）。之前网络问题也会显示"检查邮箱和密码"，很容易被带偏。
