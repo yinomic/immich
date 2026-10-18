@@ -174,7 +174,6 @@ export class SearchService extends BaseService {
       {
         filter,
         withExif: dto.withExif,
-        withPeople: dto.withPeople,
         withStacked: dto.withStacked,
         order: dto.orderBy,
       },
@@ -196,7 +195,6 @@ export class SearchService extends BaseService {
       {
         filter,
         withExif: dto.withExif,
-        withPeople: dto.withPeople,
         withStacked: dto.withStacked,
       },
       scope,

@@ -1,6 +1,5 @@
 import type {
   AlbumResponseDto,
-  AlbumUserRole,
   ApiKeyResponseDto,
   AssetResponseDto,
   IntegrityReport,
@@ -46,9 +45,6 @@ export type Events = {
   AlbumCreate: [AlbumResponseDto];
   AlbumUpdate: [AlbumResponseDto];
   AlbumDelete: [AlbumResponseDto];
-  AlbumShare: [];
-  AlbumUserUpdate: [{ albumId: string; userId: string; role: AlbumUserRole }];
-  AlbumUserDelete: [{ albumId: string; userId: string }];
 
   BackupDeleteStatus: [{ filename: string; isDeleting: boolean }];
   BackupDeleted: [{ filename: string }];

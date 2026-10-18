@@ -40,7 +40,6 @@ import {
   signUpAdmin,
   tagAssets,
   updateAdminOnboarding,
-  updateAlbumUser,
   updateAssets,
   updateConfig,
   updateLibrary,
@@ -178,7 +177,6 @@ export const utils = {
       'library',
       'album',
       'asset',
-      'activity',
       'api_key',
       'session',
       'user',
@@ -323,9 +321,6 @@ export const utils = {
   createAlbum: (accessToken: string, dto: CreateAlbumDto) =>
     createAlbum({ createAlbumDto: dto }, { headers: asBearerAuth(accessToken) }),
 
-  updateAlbumUser: (accessToken: string, args: Parameters<typeof updateAlbumUser>[0]) =>
-    updateAlbumUser(args, { headers: asBearerAuth(accessToken) }),
-
   createAsset: async (
     accessToken: string,
     dto?: Partial<Omit<AssetMediaCreateDto, 'assetData' | 'sidecarData'>> & {
@@ -432,9 +427,6 @@ export const utils = {
 
   createStack: (accessToken: string, assetIds: string[]) =>
     createStack({ stackCreateDto: { assetIds } }, { headers: asBearerAuth(accessToken) }),
-
-  setAssetDuplicateId: (accessToken: string, assetId: string, duplicateId: string | null) =>
-    updateAssets({ assetBulkUpdateDto: { ids: [assetId], duplicateId } }, { headers: asBearerAuth(accessToken) }),
 
   upsertTags: (accessToken: string, tags: string[]) =>
     upsertTags({ tagUpsertDto: { tags } }, { headers: asBearerAuth(accessToken) }),

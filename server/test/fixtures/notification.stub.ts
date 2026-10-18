@@ -1,11 +1,11 @@
 import { NotificationLevel, NotificationType } from 'src/enum.js';
 
 export const notificationStub = {
-  albumEvent: {
-    id: 'notification-album-event',
-    type: NotificationType.AlbumInvite,
-    description: 'You have been invited to a shared album',
-    title: 'Album Invitation',
+  customEvent: {
+    id: 'notification-custom-event',
+    type: NotificationType.Custom,
+    description: 'A custom notification',
+    title: 'Custom Notification',
     createdAt: new Date('2024-01-01'),
     data: { albumId: 'album-id' },
     level: NotificationLevel.Success,

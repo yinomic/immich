@@ -44,8 +44,6 @@
 
   let albumStats: AlbumStatisticsResponseDto = $state({
     owned: 0,
-    shared: 0,
-    notShared: 0,
   });
 
   const getUsage = async () => {
@@ -92,13 +90,11 @@
   <Heading size="tiny" class="mt-8">{$t('albums')}</Heading>
   <Table striped spacing="small" class="mt-4" size="small">
     <TableHeader>
-      <TableHeading class="w-1/2">{$t('owned')}</TableHeading>
-      <TableHeading class="w-1/2">{$t('shared')}</TableHeading>
+      <TableHeading>{$t('owned')}</TableHeading>
     </TableHeader>
     <TableBody>
       <TableRow>
-        <TableCell class="w-1/2">{albumStats.owned.toLocaleString($locale)}</TableCell>
-        <TableCell class="w-1/2">{albumStats.shared.toLocaleString($locale)}</TableCell>
+        <TableCell>{albumStats.owned.toLocaleString($locale)}</TableCell>
       </TableRow>
     </TableBody>
   </Table>

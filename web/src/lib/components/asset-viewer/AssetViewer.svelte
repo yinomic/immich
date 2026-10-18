@@ -543,7 +543,7 @@
       translate="yes"
     >
       {#if showDetailPanel}
-        <DetailPanel {asset} currentAlbum={album} />
+        <DetailPanel {asset} />
       {:else if assetViewerManager.isShowEditor}
         <EditorPanel {asset} onClose={closeEditor} />
       {/if}

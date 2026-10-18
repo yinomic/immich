@@ -134,14 +134,10 @@ describe(ServerService.name, () => {
   describe('getFeatures', () => {
     it('should respond the server features', async () => {
       await expect(sut.getFeatures()).resolves.toEqual({
-        duplicateDetection: false,
-        facialRecognition: false,
-        importFaces: false,
         map: true,
         reverseGeocoding: true,
         oauth: false,
         oauthAutoLaunch: false,
-        ocr: false,
         passwordLogin: true,
         search: true,
         sidecar: true,

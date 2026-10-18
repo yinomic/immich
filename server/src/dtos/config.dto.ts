@@ -184,7 +184,6 @@ const AdminConfigSchemaWithVisibility = z
         sidecar: AdminConfigJobSettingsSchema,
         library: AdminConfigJobSettingsSchema,
         notifications: AdminConfigJobSettingsSchema,
-        ocr: AdminConfigJobSettingsSchema,
         workflow: AdminConfigJobSettingsSchema,
         editor: AdminConfigJobSettingsSchema,
         integrityCheck: AdminConfigJobSettingsSchema,
@@ -206,11 +205,6 @@ const AdminConfigSchemaWithVisibility = z
     reverseGeocoding: z
       .object({ enabled: configBool.describe('Enabled').meta({ visibility: User }) })
       .meta({ id: 'AdminConfigReverseGeocodingDto' }),
-    metadata: z
-      .object({
-        faces: z.object({ import: configBool.describe('Import') }).meta({ id: 'AdminConfigFacesDto' }),
-      })
-      .meta({ id: 'AdminConfigMetadataDto' }),
     oauth: z
       .object({
         autoLaunch: configBool.describe('Auto launch').meta({ visibility: Public }),
@@ -297,7 +291,6 @@ const AdminConfigSchemaWithVisibility = z
           .describe('Start time (HH:MM)'),
         databaseCleanup: configBool.describe('Database cleanup'),
         missingThumbnails: configBool.describe('Missing thumbnails'),
-        clusterNewFaces: configBool.describe('Cluster new faces'),
         generateMemories: configBool.describe('Generate memories'),
         syncQuotaUsage: configBool.describe('Sync quota usage'),
       })
@@ -328,8 +321,6 @@ const AdminConfigSchemaWithVisibility = z
         email: z
           .object({
             welcomeTemplate: z.string().describe('Welcome template'),
-            albumInviteTemplate: z.string().describe('Album invite template'),
-            albumUpdateTemplate: z.string().describe('Album update template'),
           })
           .meta({ id: 'AdminConfigTemplateEmailsDto' }),
       })
@@ -542,7 +533,6 @@ export const defaults = Object.freeze<SystemConfig>({
     sidecar: { concurrency: 5 },
     library: { concurrency: 5 },
     notifications: { concurrency: 5 },
-    ocr: { concurrency: 1 },
     workflow: { concurrency: 5 },
     editor: { concurrency: 2 },
     integrityCheck: { concurrency: 1 },
@@ -558,11 +548,6 @@ export const defaults = Object.freeze<SystemConfig>({
   },
   reverseGeocoding: {
     enabled: true,
-  },
-  metadata: {
-    faces: {
-      import: false,
-    },
   },
   oauth: {
     autoLaunch: false,
@@ -628,7 +613,6 @@ export const defaults = Object.freeze<SystemConfig>({
     generateMemories: true,
     syncQuotaUsage: true,
     missingThumbnails: true,
-    clusterNewFaces: true,
   },
   trash: {
     enabled: true,
@@ -669,8 +653,6 @@ export const defaults = Object.freeze<SystemConfig>({
   templates: {
     email: {
       welcomeTemplate: '',
-      albumInviteTemplate: '',
-      albumUpdateTemplate: '',
     },
   },
   user: {

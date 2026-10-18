@@ -14,34 +14,13 @@ describe('AlbumCard component', () => {
     await waitLocale('en-US');
   });
 
-  it.each([
-    {
-      album: albumFactory.build({ albumThumbnailAssetId: null, shared: false, assetCount: 0 }),
-      count: 0,
-      shared: false,
-    },
-    {
-      album: albumFactory.build({ albumThumbnailAssetId: null, shared: true, assetCount: 0 }),
-      count: 0,
-      shared: true,
-    },
-    {
-      album: albumFactory.build({ albumThumbnailAssetId: null, shared: false, assetCount: 5 }),
-      count: 5,
-      shared: false,
-    },
-    {
-      album: albumFactory.build({ albumThumbnailAssetId: null, shared: true, assetCount: 2 }),
-      count: 2,
-      shared: true,
-    },
-  ])('shows album data without thumbnail with count $count - shared: $shared', async ({ album, count, shared }) => {
+  it.each([0, 5])('shows album data without thumbnail with count %s', async (count) => {
+    const album = albumFactory.build({ albumThumbnailAssetId: null, assetCount: count });
     sut = render(AlbumCard, { album, showItemCount: true });
 
     const albumImgElement = sut.getByTestId('album-image');
     const albumNameElement = sut.getByTestId('album-name');
     const albumDetailsElement = sut.getByTestId('album-details');
-    const detailsText = `${count} items` + (shared ? ' . Shared' : '');
 
     expect(albumImgElement).toHaveAttribute('src');
     expect(albumImgElement).toHaveAttribute('alt', album.albumName);
@@ -52,12 +31,11 @@ describe('AlbumCard component', () => {
     expect(sdkMock.viewAsset).not.toHaveBeenCalled();
 
     expect(albumNameElement).toHaveTextContent(album.albumName);
-    expect(albumDetailsElement).toHaveTextContent(new RegExp(detailsText));
+    expect(albumDetailsElement).toHaveTextContent(new RegExp(`${count} items`));
   });
 
   it('shows album data', () => {
     const album = albumFactory.build({
-      shared: false,
       albumName: 'some album name',
     });
     sut = render(AlbumCard, { album, showItemCount: true });

@@ -1,15 +1,8 @@
 <script lang="ts">
-  import HeaderActionButton from '$lib/components/HeaderActionButton.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
-  import UserAvatar from '$lib/components/shared-components/UserAvatar.svelte';
-  import {
-    getAlbumActions,
-    handleRemoveUserFromAlbum,
-    handleUpdateAlbum,
-    handleUpdateUserAlbumRole,
-  } from '$lib/services/album.service';
-  import { AlbumUserRole, AssetOrder, getAlbumInfo, type AlbumResponseDto, type UserResponseDto } from '@immich/sdk';
-  import { Field, HStack, Modal, ModalBody, Select, Stack, Text, type SelectOption } from '@immich/ui';
+  import { handleUpdateAlbum } from '$lib/services/album.service';
+  import { AssetOrder, type AlbumResponseDto } from '@immich/sdk';
+  import { Field, Modal, ModalBody, Select, Stack, Text } from '@immich/ui';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -19,29 +12,9 @@
   };
 
   let { album, readOnly = false, onClose }: Props = $props();
-
-  const handleRoleSelect = async (user: UserResponseDto, role: AlbumUserRole | 'none') => {
-    if (role === 'none') {
-      await handleRemoveUserFromAlbum(album, user);
-      return;
-    }
-
-    await handleUpdateUserAlbumRole({ albumId: album.id, userId: user.id, role });
-  };
-
-  const refreshAlbum = async () => {
-    album = await getAlbumInfo({ id: album.id });
-  };
-
-  const onAlbumUserDelete = async ({ userId }: { userId: string }) => {
-    album.albumUsers = album.albumUsers.filter(({ user: { id } }) => id !== userId);
-    await refreshAlbum();
-  };
-
-  const { AddUsers } = $derived(getAlbumActions($t, album));
 </script>
 
-<OnEvents {onAlbumUserDelete} onAlbumShare={refreshAlbum} onAlbumUpdate={(newAlbum) => (album = newAlbum)} />
+<OnEvents onAlbumUpdate={(newAlbum) => (album = newAlbum)} />
 
 <Modal title={readOnly ? $t('album') : $t('options')} {onClose} size="small">
   <ModalBody>
@@ -61,39 +34,6 @@
               />
             </Field>
           {/if}
-        </div>
-      </div>
-
-      <div>
-        <HStack fullWidth class="mb-2 justify-between">
-          <Text size="medium" fontWeight="semi-bold">{$t('users')}</Text>
-          {#if !readOnly}
-            <HeaderActionButton action={AddUsers} />
-          {/if}
-        </HStack>
-        <div class="ps-2">
-          {#each album.albumUsers as { user, role } (user.id)}
-            <div class="flex items-center justify-between gap-4 py-2">
-              <div class="flex flex-row items-center gap-2">
-                <div>
-                  <UserAvatar {user} size="md" />
-                </div>
-                <Text size="small">{user.name}</Text>
-              </div>
-              <Field class="w-32" disabled={readOnly || role === AlbumUserRole.Owner}>
-                <Select
-                  value={role}
-                  options={[
-                    { label: $t('role_editor'), value: AlbumUserRole.Editor },
-                    { label: $t('role_viewer'), value: AlbumUserRole.Viewer },
-                    { label: $t('owner'), value: AlbumUserRole.Owner, disabled: true },
-                    { label: $t('remove_user'), value: 'none' },
-                  ] as SelectOption<AlbumUserRole | 'none'>[]}
-                  onChange={(value) => handleRoleSelect(user, value)}
-                />
-              </Field>
-            </div>
-          {/each}
         </div>
       </div>
     </Stack>

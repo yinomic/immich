@@ -16,21 +16,19 @@
   import { getByteUnitString } from '$lib/utils/byte-units';
   import { handleError } from '$lib/utils/handle-error';
   import { getParentPath } from '$lib/utils/tree-utils';
-  import { AssetMediaSize, getAllAlbums, type AlbumResponseDto, type AssetResponseDto } from '@immich/sdk';
+  import { AssetMediaSize, getAllAlbums, type AssetResponseDto } from '@immich/sdk';
   import { Icon, IconButton, Link, LoadingSpinner, Text } from '@immich/ui';
   import { mdiCamera, mdiCameraIris, mdiClose, mdiImageOutline, mdiInformationOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import { slide } from 'svelte/transition';
   import OnEvents from '../OnEvents.svelte';
-  import UserAvatar from '../shared-components/UserAvatar.svelte';
   import AlbumListItemDetails from './AlbumListItemDetails.svelte';
 
   interface Props {
     asset: AssetResponseDto;
-    currentAlbum?: AlbumResponseDto | null;
   }
 
-  let { asset, currentAlbum = null }: Props = $props();
+  let { asset }: Props = $props();
 
   let isOwner = $derived(authManager.authenticated && authManager.user.id === asset.ownerId);
   let latlng = $derived(
@@ -293,23 +291,6 @@
       </Map>
     {/await}
   </div>
-{/if}
-
-{#if currentAlbum && currentAlbum.albumUsers.length > 1 && asset.owner}
-  <section class="mt-4 px-6 dark:text-immich-dark-fg">
-    <Text size="small" color="muted">{$t('shared_by')}</Text>
-    <div class="flex gap-4 pt-4">
-      <div>
-        <UserAvatar user={asset.owner} size="md" />
-      </div>
-
-      <div class="my-auto">
-        <p>
-          {asset.owner.name}
-        </p>
-      </div>
-    </div>
-  </section>
 {/if}
 
 {#await albums then albums}

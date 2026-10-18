@@ -16,7 +16,6 @@ import {
   retrieveRange as retrieveRangeUtil,
 } from '$lib/managers/timeline-manager/internal/search-support.svelte';
 import { WebsocketSupport } from '$lib/managers/timeline-manager/internal/websocket-support.svelte';
-import { userPreferencesManager } from '$lib/managers/user-preferences-manager.svelte';
 import { updateStackedAssetInTimeline } from '$lib/utils/actions';
 import { CancellableTask } from '$lib/utils/cancellable-task';
 import {
@@ -95,18 +94,6 @@ export class TimelineManager extends VirtualScrollManager {
   #updatingViewportProximities = false;
   #scrollableElement: HTMLElement | undefined = $state();
   #unsubscribes: Array<() => void> = [];
-
-  get showAssetOwners() {
-    return userPreferencesManager.showAssetOwners;
-  }
-
-  setShowAssetOwners(value: boolean) {
-    userPreferencesManager.showAssetOwners = value;
-  }
-
-  toggleShowAssetOwners() {
-    userPreferencesManager.showAssetOwners = !userPreferencesManager.showAssetOwners;
-  }
 
   constructor() {
     super();

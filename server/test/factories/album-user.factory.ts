@@ -23,7 +23,7 @@ export class AlbumUserFactory {
     return new AlbumUserFactory({
       albumId: newUuid(),
       userId: newUuid(),
-      role: AlbumUserRole.Editor,
+      role: AlbumUserRole.Owner,
       createId: newUuidV7(),
       createdAt: newDate(),
       updateId: newUuidV7(),

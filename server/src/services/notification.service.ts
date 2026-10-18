@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { ArgOf } from 'src/repositories/event.repository.js';
-import type { EmailImageAttachment, JobOf } from 'src/types.js';
+import type { JobOf } from 'src/types.js';
 import { OnEvent, OnJob } from 'src/decorators.js';
-import { MapAlbumDto } from 'src/dtos/album.dto.js';
 import { mapAsset } from 'src/dtos/asset-response.dto.js';
 import { AuthDto } from 'src/dtos/auth.dto.js';
 import { SystemConfigSmtpDto } from 'src/dtos/config.dto.js';
@@ -14,26 +13,14 @@ import {
   NotificationUpdateDto,
   mapNotification,
 } from 'src/dtos/notification.dto.js';
-import {
-  AssetFileType,
-  JobName,
-  JobStatus,
-  NotificationLevel,
-  NotificationType,
-  Permission,
-  QueueName,
-} from 'src/enum.js';
+import { JobName, JobStatus, NotificationLevel, NotificationType, Permission, QueueName } from 'src/enum.js';
 import { EmailTemplate } from 'src/repositories/email.repository.js';
 import { BaseService } from 'src/services/base.service.js';
-import { getFilenameExtension } from 'src/utils/file.js';
 import { getExternalDomain } from 'src/utils/misc.js';
 import { isEqualObject } from 'src/utils/object.js';
-import { getPreferences } from 'src/utils/preferences.js';
 
 @Injectable()
 export class NotificationService extends BaseService {
-  private static albumUpdateEmailDelayMs = 300_000;
-
   async search(auth: AuthDto, dto: NotificationSearchDto): Promise<NotificationDto[]> {
     const items = await this.notificationRepository.search(auth.user.id, dto);
     return items.map((item) => mapNotification(item));
@@ -217,23 +204,11 @@ export class NotificationService extends BaseService {
   }
 
   @OnEvent({ name: 'AlbumUpdate' })
-  async onAlbumUpdate({ id, userIds, recipientIds }: ArgOf<'AlbumUpdate'>) {
+  onAlbumUpdate({ id, userIds }: ArgOf<'AlbumUpdate'>) {
+    // single account: this only refreshes the family's other devices
     for (const userId of userIds) {
       this.websocketRepository.clientSend('on_album_update', userId, id);
     }
-
-    for (const recipientId of recipientIds) {
-      await this.jobRepository.removeJob(JobName.NotifyAlbumUpdate, `${id}/${recipientId}`);
-      await this.jobRepository.queue({
-        name: JobName.NotifyAlbumUpdate,
-        data: { id, recipientId, delay: NotificationService.albumUpdateEmailDelayMs },
-      });
-    }
-  }
-
-  @OnEvent({ name: 'AlbumInvite' })
-  async onAlbumInvite({ id, userId, senderName }: ArgOf<'AlbumInvite'>) {
-    await this.jobRepository.queue({ name: JobName.NotifyAlbumInvite, data: { id, recipientId: userId, senderName } });
   }
 
   @OnEvent({ name: 'SessionDelete' })
@@ -308,112 +283,6 @@ export class NotificationService extends BaseService {
     return JobStatus.Success;
   }
 
-  @OnJob({ name: JobName.NotifyAlbumInvite, queue: QueueName.Notification })
-  async handleAlbumInvite({ id, recipientId, senderName }: JobOf<JobName.NotifyAlbumInvite>) {
-    const album = await this.albumRepository.getById(id);
-    if (!album) {
-      return JobStatus.Skipped;
-    }
-
-    const recipient = await this.userRepository.get(recipientId, { withDeleted: false });
-    if (!recipient) {
-      return JobStatus.Skipped;
-    }
-
-    await this.sendAlbumLocalNotification(album, recipientId, NotificationType.AlbumInvite, senderName);
-
-    const { emailNotifications } = getPreferences(recipient.metadata);
-
-    if (!emailNotifications.enabled || !emailNotifications.albumInvite) {
-      return JobStatus.Skipped;
-    }
-
-    const attachment = await this.getAlbumThumbnailAttachment(album);
-
-    const { server, templates } = await this.getConfig({ withCache: false });
-    const { html, text } = await this.emailRepository.renderEmail({
-      template: EmailTemplate.ALBUM_INVITE,
-      data: {
-        baseUrl: getExternalDomain(server),
-        albumId: album.id,
-        albumName: album.albumName,
-        senderName,
-        recipientName: recipient.name,
-        cid: attachment ? attachment.cid : undefined,
-      },
-      customTemplate: templates.email.albumInviteTemplate,
-    });
-
-    await this.jobRepository.queue({
-      name: JobName.SendMail,
-      data: {
-        to: recipient.email,
-        subject: `You have been added to a shared album - ${album.albumName}`,
-        html,
-        text,
-        imageAttachments: attachment ? [attachment] : undefined,
-      },
-    });
-
-    return JobStatus.Success;
-  }
-
-  @OnJob({ name: JobName.NotifyAlbumUpdate, queue: QueueName.Notification })
-  async handleAlbumUpdate({ id, recipientId }: JobOf<JobName.NotifyAlbumUpdate>) {
-    const album = await this.albumRepository.getById(id);
-
-    if (!album) {
-      return JobStatus.Skipped;
-    }
-
-    const recipient = await this.userRepository.get(recipientId, { withDeleted: false });
-    if (!recipient) {
-      return JobStatus.Skipped;
-    }
-
-    await this.sendAlbumLocalNotification(album, recipientId, NotificationType.AlbumUpdate);
-
-    const attachment = await this.getAlbumThumbnailAttachment(album);
-
-    const { server, templates } = await this.getConfig({ withCache: false });
-
-    const user = await this.userRepository.get(recipientId, { withDeleted: false });
-    if (!user) {
-      return JobStatus.Skipped;
-    }
-
-    const { emailNotifications } = getPreferences(user.metadata);
-
-    if (!emailNotifications.enabled || !emailNotifications.albumUpdate) {
-      return JobStatus.Skipped;
-    }
-
-    const { html, text } = await this.emailRepository.renderEmail({
-      template: EmailTemplate.ALBUM_UPDATE,
-      data: {
-        baseUrl: getExternalDomain(server),
-        albumId: album.id,
-        albumName: album.albumName,
-        recipientName: user.name,
-        cid: attachment ? attachment.cid : undefined,
-      },
-      customTemplate: templates.email.albumUpdateTemplate,
-    });
-
-    await this.jobRepository.queue({
-      name: JobName.SendMail,
-      data: {
-        to: user.email,
-        subject: `New media has been added to an album - ${album.albumName}`,
-        html,
-        text,
-        imageAttachments: attachment ? [attachment] : undefined,
-      },
-    });
-
-    return JobStatus.Success;
-  }
-
   @OnJob({ name: JobName.SendMail, queue: QueueName.Notification })
   async handleSendEmail(data: JobOf<JobName.SendMail>): Promise<JobStatus> {
     const { notifications } = await this.getConfig({ withCache: false });
@@ -436,49 +305,5 @@ export class NotificationService extends BaseService {
     this.logger.log(`Sent mail with id: ${response.messageId} status: ${response.response}`);
 
     return JobStatus.Success;
-  }
-
-  private async getAlbumThumbnailAttachment(album: {
-    albumThumbnailAssetId: string | null;
-  }): Promise<EmailImageAttachment | undefined> {
-    if (!album.albumThumbnailAssetId) {
-      return;
-    }
-
-    const albumThumbnailFiles = await this.assetJobRepository.getAlbumThumbnailFiles(
-      album.albumThumbnailAssetId,
-      AssetFileType.Thumbnail,
-    );
-
-    if (albumThumbnailFiles.length !== 1) {
-      return;
-    }
-
-    return {
-      filename: `album-thumbnail${getFilenameExtension(albumThumbnailFiles[0].path)}`,
-      path: albumThumbnailFiles[0].path,
-      cid: 'album-thumbnail',
-    };
-  }
-
-  private async sendAlbumLocalNotification(
-    album: MapAlbumDto,
-    userId: string,
-    type: NotificationType.AlbumInvite | NotificationType.AlbumUpdate,
-    senderName?: string,
-  ) {
-    const isInvite = type === NotificationType.AlbumInvite;
-    const item = await this.notificationRepository.create({
-      userId,
-      type,
-      level: isInvite ? NotificationLevel.Success : NotificationLevel.Info,
-      title: isInvite ? 'Shared Album Invitation' : 'Shared Album Update',
-      description: isInvite
-        ? `${senderName} shared an album (${album.albumName}) with you`
-        : `New media has been added to the album (${album.albumName})`,
-      data: JSON.stringify({ albumId: album.id }),
-    });
-
-    this.websocketRepository.clientSend('on_notification', userId, mapNotification(item));
   }
 }

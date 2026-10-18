@@ -3,8 +3,6 @@ import { createTransport } from 'nodemailer';
 import React, { createElement } from 'react';
 import { render } from 'react-email';
 import type { EmailImageAttachment } from 'src/types.js';
-import { AlbumInviteEmail } from 'src/emails/album-invite.email.js';
-import { AlbumUpdateEmail } from 'src/emails/album-update.email.js';
 import { TestEmail } from 'src/emails/test.email.js';
 import { WelcomeEmail } from 'src/emails/welcome.email.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
@@ -35,10 +33,6 @@ export enum EmailTemplate {
   // AUTH
   WELCOME = 'welcome',
   RESET_PASSWORD = 'reset-password',
-
-  // ALBUM
-  ALBUM_INVITE = 'album-invite',
-  ALBUM_UPDATE = 'album-update',
 }
 
 interface BaseEmailProps {
@@ -56,21 +50,6 @@ export interface WelcomeEmailProps extends BaseEmailProps {
   password?: string;
 }
 
-export interface AlbumInviteEmailProps extends BaseEmailProps {
-  albumName: string;
-  albumId: string;
-  senderName: string;
-  recipientName: string;
-  cid?: string;
-}
-
-export interface AlbumUpdateEmailProps extends BaseEmailProps {
-  albumName: string;
-  albumId: string;
-  recipientName: string;
-  cid?: string;
-}
-
 export type EmailRenderRequest =
   | {
       template: EmailTemplate.TEST_EMAIL;
@@ -80,16 +59,6 @@ export type EmailRenderRequest =
   | {
       template: EmailTemplate.WELCOME;
       data: WelcomeEmailProps;
-      customTemplate: string;
-    }
-  | {
-      template: EmailTemplate.ALBUM_INVITE;
-      data: AlbumInviteEmailProps;
-      customTemplate: string;
-    }
-  | {
-      template: EmailTemplate.ALBUM_UPDATE;
-      data: AlbumUpdateEmailProps;
       customTemplate: string;
     };
 
@@ -145,14 +114,6 @@ export class EmailRepository {
 
       case EmailTemplate.WELCOME: {
         return createElement(WelcomeEmail, { ...data, customTemplate });
-      }
-
-      case EmailTemplate.ALBUM_INVITE: {
-        return createElement(AlbumInviteEmail, { ...data, customTemplate });
-      }
-
-      case EmailTemplate.ALBUM_UPDATE: {
-        return createElement(AlbumUpdateEmail, { ...data, customTemplate });
       }
     }
   }

@@ -45,7 +45,6 @@ const BaseSearchSchema = z.object({
   model: z.string().nullable().optional().describe('Filter by camera model').meta(DEPRECATED_FLAT_FIELD),
   lensModel: z.string().nullable().optional().describe('Filter by lens model').meta(DEPRECATED_FLAT_FIELD),
   isNotInAlbum: z.boolean().optional().describe('Filter assets not in any album').meta(DEPRECATED_FLAT_FIELD),
-  personIds: z.array(z.uuidv4()).optional().describe('Filter by person IDs').meta(DEPRECATED_FLAT_FIELD),
   tagIds: z.array(z.uuidv4()).nullish().describe('Filter by tag IDs').meta(DEPRECATED_FLAT_FIELD),
   albumIds: z.array(z.uuidv4()).optional().describe('Filter by album IDs').meta(DEPRECATED_FLAT_FIELD),
   rating: z
@@ -64,7 +63,6 @@ const BaseSearchSchema = z.object({
         .getExtensions(),
       deprecated: true,
     }),
-  ocr: z.string().optional().describe('Filter by OCR text content').meta(DEPRECATED_FLAT_FIELD),
 });
 
 const BaseSearchWithResultsSchema = BaseSearchSchema.extend({
@@ -226,12 +224,6 @@ const enumFilterSchema = <T extends z.core.util.EnumLike>(values: z.ZodEnum<T>, 
 const EnumFilterAssetTypeSchema = enumFilterSchema(AssetTypeSchema, 'EnumFilterAssetType');
 const EnumFilterAssetVisibilitySchema = enumFilterSchema(AssetVisibilitySchema, 'EnumFilterAssetVisibility');
 
-const StringSimilarityFilterSchema = z
-  .object({
-    matches: z.string().min(1),
-  })
-  .meta({ id: 'StringSimilarityFilter' });
-
 export const DEFAULT_SEARCH_ORDER = {
   field: SearchOrderField.FileCreatedAt,
   direction: AssetOrder.Desc,
@@ -265,14 +257,12 @@ const searchFilterBranchShape = {
   description: StringPatternFilterSchema,
   originalFileName: StringPatternFilterSchema,
   originalPath: StringPatternFilterSchema,
-  ocr: StringSimilarityFilterSchema,
   rating: NumberFilterNullableSchema,
   fileSizeInBytes: NumberFilterSchema,
   takenAt: DateFilterSchema,
   createdAt: DateFilterSchema,
   updatedAt: DateFilterSchema,
   trashedAt: DateFilterNullableSchema,
-  personIds: IdsFilterSchema,
   tagIds: IdsFilterSchema,
   albumIds: IdsFilterSchema,
   checksum: StringFilterSchema,
@@ -357,7 +347,6 @@ const cursorField = z.string().min(1).optional().describe('Cursor for the next p
 
 const RandomSearchBaseSchema = BaseSearchWithResultsSchema.extend({
   withStacked: z.boolean().optional().describe('Include stacked assets'),
-  withPeople: z.boolean().optional().describe('Include people data in response'),
   filter: filterField,
 });
 

@@ -7,8 +7,6 @@
   import { fade } from 'svelte/transition';
 
   let emailNotificationsEnabled = $state(authManager.preferences.emailNotifications?.enabled ?? true);
-  let albumInviteNotificationEnabled = $state(authManager.preferences.emailNotifications?.albumInvite ?? true);
-  let albumUpdateNotificationEnabled = $state(authManager.preferences.emailNotifications?.albumUpdate ?? true);
 
   const handleSave = async () => {
     try {
@@ -16,8 +14,6 @@
         userPreferencesUpdateDto: {
           emailNotifications: {
             enabled: emailNotificationsEnabled,
-            albumInvite: emailNotificationsEnabled && albumInviteNotificationEnabled,
-            albumUpdate: emailNotificationsEnabled && albumUpdateNotificationEnabled,
           },
         },
       });
@@ -42,14 +38,6 @@
       <div class="flex flex-col gap-6 sm:ms-8">
         <Field label={$t('enable')} description={$t('notification_toggle_setting_description')}>
           <Switch bind:checked={emailNotificationsEnabled} />
-        </Field>
-
-        <Field label={$t('album_added')} description={$t('album_added_notification_setting_description')} {disabled}>
-          <Switch bind:checked={albumInviteNotificationEnabled} />
-        </Field>
-
-        <Field label={$t('album_updated')} description={$t('album_updated_setting_description')} {disabled}>
-          <Switch bind:checked={albumUpdateNotificationEnabled} />
         </Field>
       </div>
 

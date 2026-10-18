@@ -13,8 +13,6 @@ export const preferencesFactory = Sync.makeFactory<UserPreferencesResponseDto>({
     includeEmbeddedVideos: false,
   },
   emailNotifications: {
-    albumInvite: false,
-    albumUpdate: false,
     enabled: false,
   },
   folders: {

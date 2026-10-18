@@ -77,38 +77,6 @@ export class NotificationAdminService extends BaseService {
         templateResponse = _welcomeHtml;
         break;
       }
-      case EmailTemplate.ALBUM_UPDATE: {
-        const { html: _updateAlbumHtml } = await this.emailRepository.renderEmail({
-          template: EmailTemplate.ALBUM_UPDATE,
-          data: {
-            baseUrl: getExternalDomain(server),
-            albumId: '1',
-            albumName: 'Favorite Photos',
-            recipientName: 'Jane Doe',
-            cid: undefined,
-          },
-          customTemplate: customTemplate || templates.email.albumInviteTemplate,
-        });
-        templateResponse = _updateAlbumHtml;
-        break;
-      }
-
-      case EmailTemplate.ALBUM_INVITE: {
-        const { html } = await this.emailRepository.renderEmail({
-          template: EmailTemplate.ALBUM_INVITE,
-          data: {
-            baseUrl: getExternalDomain(server),
-            albumId: '1',
-            albumName: "John Doe's Favorites",
-            senderName: 'John Doe',
-            recipientName: 'Jane Doe',
-            cid: undefined,
-          },
-          customTemplate: customTemplate || templates.email.albumInviteTemplate,
-        });
-        templateResponse = html;
-        break;
-      }
       default: {
         templateResponse = '';
         break;

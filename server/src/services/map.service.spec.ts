@@ -35,7 +35,7 @@ describe(MapService.name, () => {
       expect(markers[0]).toEqual(marker);
     });
 
-    it('should include assets from shared albums', async () => {
+    it('should include assets from albums', async () => {
       const auth = AuthFactory.create(userStub.user1);
       const asset = AssetFactory.from()
         .exif({ latitude: 42, longitude: 69, city: 'city', state: 'state', country: 'country' })
@@ -50,7 +50,7 @@ describe(MapService.name, () => {
       };
       mocks.map.getMapMarkers.mockResolvedValue([marker]);
       const album1 = AlbumFactory.create();
-      const album2 = AlbumFactory.from().albumUser({ userId: userStub.user1.id }).build();
+      const album2 = AlbumFactory.create();
       mocks.album.getAllIds.mockResolvedValue([album1.id, album2.id]);
 
       const markers = await sut.getMapMarkers(auth, { withSharedAlbums: true });

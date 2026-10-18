@@ -68,7 +68,6 @@ export const createMockStackAsset = (ownerId: string): AssetResponseDto => {
     stack: undefined,
     isOffline: false,
     hasMetadata: true,
-    duplicateId: null,
     resized: true,
     checksum: faker.string.alphanumeric({ length: 28 }),
     width: 3000,

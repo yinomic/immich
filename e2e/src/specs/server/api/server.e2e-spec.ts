@@ -94,16 +94,11 @@ describe('/server', () => {
       const { status, body } = await request(app).get('/server/features');
       expect(status).toBe(200);
       expect(body).toEqual({
-        smartSearch: false,
         configFile: false,
-        duplicateDetection: false,
-        facialRecognition: false,
         map: true,
         reverseGeocoding: true,
-        importFaces: false,
         oauth: false,
         oauthAutoLaunch: false,
-        ocr: false,
         passwordLogin: true,
         realtimeTranscoding: false,
         search: true,

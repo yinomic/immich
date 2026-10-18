@@ -132,7 +132,6 @@ export type AdminConfigJobDto = {
     metadataExtraction: AdminConfigJobSettingsDto;
     migration: AdminConfigJobSettingsDto;
     notifications: AdminConfigJobSettingsDto;
-    ocr: AdminConfigJobSettingsDto;
     search: AdminConfigJobSettingsDto;
     sidecar: AdminConfigJobSettingsDto;
     smartSearch: AdminConfigJobSettingsDto;
@@ -167,21 +166,12 @@ export type AdminConfigMapDto = {
     /** Light map style URL */
     lightStyle: string;
 };
-export type AdminConfigFacesDto = {
-    /** Import */
-    "import": boolean;
-};
-export type AdminConfigMetadataDto = {
-    faces: AdminConfigFacesDto;
-};
 export type AdminConfigNewVersionCheckDto = {
     channel: ReleaseChannel;
     /** Enabled */
     enabled: boolean;
 };
 export type AdminConfigNightlyTasksDto = {
-    /** Cluster new faces */
-    clusterNewFaces: boolean;
     /** Database cleanup */
     databaseCleanup: boolean;
     /** Generate memories */
@@ -289,10 +279,6 @@ export type AdminConfigStorageTemplateDto = {
     template: string;
 };
 export type AdminConfigTemplateEmailsDto = {
-    /** Album invite template */
-    albumInviteTemplate: string;
-    /** Album update template */
-    albumUpdateTemplate: string;
     /** Welcome template */
     welcomeTemplate: string;
 };
@@ -322,7 +308,6 @@ export type AdminConfigDto = {
     library: AdminConfigLibraryDto;
     logging: AdminConfigLoggingDto;
     map: AdminConfigMapDto;
-    metadata: AdminConfigMetadataDto;
     newVersionCheck: AdminConfigNewVersionCheckDto;
     nightlyTasks: AdminConfigNightlyTasksDto;
     notifications: AdminConfigNotificationsDto;
@@ -564,10 +549,6 @@ export type DownloadResponse = {
     includeEmbeddedVideos: boolean;
 };
 export type EmailNotificationsResponse = {
-    /** Whether to receive email notifications for album invites */
-    albumInvite: boolean;
-    /** Whether to receive email notifications for album updates */
-    albumUpdate: boolean;
     /** Whether email notifications are enabled */
     enabled: boolean;
 };
@@ -644,10 +625,6 @@ export type DownloadUpdate = {
     includeEmbeddedVideos?: boolean;
 };
 export type EmailNotificationsUpdate = {
-    /** Whether to receive email notifications for album invites */
-    albumInvite?: boolean;
-    /** Whether to receive email notifications for album updates */
-    albumUpdate?: boolean;
     /** Whether email notifications are enabled */
     enabled?: boolean;
 };
@@ -773,23 +750,14 @@ export type AlbumResponseDto = {
     /** Last modified asset timestamp */
     lastModifiedAssetTimestamp?: string;
     order?: AssetOrder;
-    /** Is shared album */
-    shared: boolean;
     /** UTC representation of (local) start date (earliest asset) */
     startDate?: string;
     /** Last update date */
     updatedAt: string;
 };
-export type AlbumUserCreateDto = {
-    role: AlbumUserRole;
-    /** User ID */
-    userId: string;
-};
 export type CreateAlbumDto = {
     /** Album name */
     albumName: string;
-    /** Album users */
-    albumUsers?: AlbumUserCreateDto[];
     /** Initial asset IDs */
     assetIds?: string[];
     /** Album description */
@@ -807,12 +775,8 @@ export type AlbumsAddAssetsResponseDto = {
     success: boolean;
 };
 export type AlbumStatisticsResponseDto = {
-    /** Number of non-shared albums */
-    notShared: number;
     /** Number of owned albums */
     owned: number;
-    /** Number of shared albums */
-    shared: number;
 };
 export type UpdateAlbumDto = {
     /** Album name */
@@ -848,19 +812,6 @@ export type MapMarkerResponseDto = {
     lon: number;
     /** State/Province name */
     state: string | null;
-};
-export type UpdateAlbumUserDto = {
-    role: AlbumUserRole;
-};
-export type AlbumUserAddDto = {
-    /** Album user role */
-    role?: AlbumUserRole;
-    /** User ID */
-    userId: string;
-};
-export type AddUsersDto = {
-    /** Album users to add */
-    albumUsers: AlbumUserAddDto[];
 };
 export type ApiKeyResponseDto = {
     /** Creation date */
@@ -965,8 +916,6 @@ export type AssetBulkUpdateDto = {
     dateTimeRelative?: number;
     /** Asset description */
     description?: string;
-    /** Duplicate ID */
-    duplicateId?: string | null;
     /** Asset IDs to update */
     ids: string[];
     /** Mark as favorite */
@@ -1135,8 +1084,6 @@ export type AssetResponseDto = {
     checksum: string;
     /** The UTC timestamp when the asset was originally uploaded to Immich. */
     createdAt: string;
-    /** Duplicate group ID */
-    duplicateId?: string | null;
     /** Video/gif duration in milliseconds (null for static images) */
     duration: number | null;
     exifInfo?: ExifResponseDto;
@@ -1844,9 +1791,6 @@ export type IdFilterNullable = {
     eq?: string | null;
     ne?: string | null;
 };
-export type StringSimilarityFilter = {
-    matches: string;
-};
 export type NumberFilterNullable = {
     eq?: number | null;
     gt?: number;
@@ -1898,10 +1842,8 @@ export type SearchFilterBranch = {
     libraryId?: IdFilterNullable;
     make?: StringFilterNullable;
     model?: StringFilterNullable;
-    ocr?: StringSimilarityFilter;
     originalFileName?: StringPatternFilter;
     originalPath?: StringPatternFilter;
-    personIds?: IdsFilter;
     rating?: NumberFilterNullable;
     state?: StringFilterNullable;
     tagIds?: IdsFilter;
@@ -1932,11 +1874,9 @@ export type SearchFilter = {
     libraryId?: IdFilterNullable;
     make?: StringFilterNullable;
     model?: StringFilterNullable;
-    ocr?: StringSimilarityFilter;
     or?: SearchFilterBranch[];
     originalFileName?: StringPatternFilter;
     originalPath?: StringPatternFilter;
-    personIds?: IdsFilter;
     rating?: NumberFilterNullable;
     state?: StringFilterNullable;
     tagIds?: IdsFilter;
@@ -1990,8 +1930,6 @@ export type MetadataSearchDto = {
     make?: string | null;
     /** Filter by camera model */
     model?: string | null;
-    /** Filter by OCR text content */
-    ocr?: string;
     /** Sort order */
     order?: AssetOrder;
     orderBy?: SearchOrder;
@@ -2001,8 +1939,6 @@ export type MetadataSearchDto = {
     originalPath?: string;
     /** Page number */
     page?: number;
-    /** Filter by person IDs */
-    personIds?: string[];
     /** Filter by preview file path */
     previewPath?: string;
     /** Filter by rating [1-5], or null for unrated */
@@ -2033,8 +1969,6 @@ export type MetadataSearchDto = {
     withDeleted?: boolean;
     /** Include EXIF data in response */
     withExif?: boolean;
-    /** Include people data in response */
-    withPeople?: boolean;
     /** Include stacked assets */
     withStacked?: boolean;
 };
@@ -2115,10 +2049,6 @@ export type RandomSearchDto = {
     make?: string | null;
     /** Filter by camera model */
     model?: string | null;
-    /** Filter by OCR text content */
-    ocr?: string;
-    /** Filter by person IDs */
-    personIds?: string[];
     /** Filter by rating [1-5], or null for unrated */
     rating?: number | null;
     /** Number of results to return */
@@ -2145,8 +2075,6 @@ export type RandomSearchDto = {
     withDeleted?: boolean;
     /** Include EXIF data in response */
     withExif?: boolean;
-    /** Include people data in response */
-    withPeople?: boolean;
     /** Include stacked assets */
     withStacked?: boolean;
 };
@@ -2182,10 +2110,6 @@ export type StatisticsSearchDto = {
     make?: string | null;
     /** Filter by camera model */
     model?: string | null;
-    /** Filter by OCR text content */
-    ocr?: string;
-    /** Filter by person IDs */
-    personIds?: string[];
     /** Filter by rating [1-5], or null for unrated */
     rating?: number | null;
     /** Filter by state/province name */
@@ -2294,22 +2218,14 @@ export type ServerConfigDto = {
 export type ServerFeaturesDto = {
     /** Whether config file is available */
     configFile: boolean;
-    /** Whether duplicate detection is enabled */
-    duplicateDetection: boolean;
     /** Whether email notifications are enabled */
     email: boolean;
-    /** Whether facial recognition is enabled */
-    facialRecognition: boolean;
-    /** Whether face import is enabled */
-    importFaces: boolean;
     /** Whether map feature is enabled */
     map: boolean;
     /** Whether OAuth is enabled */
     oauth: boolean;
     /** Whether OAuth auto-launch is enabled */
     oauthAutoLaunch: boolean;
-    /** Whether OCR is enabled */
-    ocr: boolean;
     /** Whether password login is enabled */
     passwordLogin: boolean;
     /** Whether real-time transcoding is enabled */
@@ -3836,48 +3752,6 @@ export function getAlbumMapMarkers({ id }: {
     }));
 }
 /**
- * Remove user from album
- */
-export function removeUserFromAlbum({ id, userId }: {
-    id: string;
-    userId: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/albums/${encodeURIComponent(id)}/user/${encodeURIComponent(userId)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-/**
- * Update user role
- */
-export function updateAlbumUser({ id, userId, updateAlbumUserDto }: {
-    id: string;
-    userId: string;
-    updateAlbumUserDto: UpdateAlbumUserDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/albums/${encodeURIComponent(id)}/user/${encodeURIComponent(userId)}`, oazapfts.json({
-        ...opts,
-        method: "PUT",
-        body: updateAlbumUserDto
-    })));
-}
-/**
- * Share album with users
- */
-export function addUsersToAlbum({ id, addUsersDto }: {
-    id: string;
-    addUsersDto: AddUsersDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: AlbumResponseDto;
-    }>(`/albums/${encodeURIComponent(id)}/users`, oazapfts.json({
-        ...opts,
-        method: "PUT",
-        body: addUsersDto
-    })));
-}
-/**
  * List all API keys
  */
 export function getApiKeys(opts?: Oazapfts.RequestOpts) {
@@ -5264,7 +5138,7 @@ export function getAssetsByCity(opts?: Oazapfts.RequestOpts) {
 /**
  * Search large assets
  */
-export function searchLargeAssets({ albumIds, city, country, createdAfter, createdBefore, isEncoded, isFavorite, isMotion, isNotInAlbum, isOffline, lensModel, libraryId, make, minFileSize, model, ocr, personIds, rating, size, state, tagIds, takenAfter, takenBefore, trashedAfter, trashedBefore, $type, updatedAfter, updatedBefore, visibility, withDeleted, withExif }: {
+export function searchLargeAssets({ albumIds, city, country, createdAfter, createdBefore, isEncoded, isFavorite, isMotion, isNotInAlbum, isOffline, lensModel, libraryId, make, minFileSize, model, rating, size, state, tagIds, takenAfter, takenBefore, trashedAfter, trashedBefore, $type, updatedAfter, updatedBefore, visibility, withDeleted, withExif }: {
     albumIds?: string[];
     city?: string | null;
     country?: string | null;
@@ -5280,8 +5154,6 @@ export function searchLargeAssets({ albumIds, city, country, createdAfter, creat
     make?: string | null;
     minFileSize?: number;
     model?: string | null;
-    ocr?: string;
-    personIds?: string[];
     rating?: number | null;
     size?: number;
     state?: string | null;
@@ -5316,8 +5188,6 @@ export function searchLargeAssets({ albumIds, city, country, createdAfter, creat
         make,
         minFileSize,
         model,
-        ocr,
-        personIds,
         rating,
         size,
         state,
@@ -6595,8 +6465,6 @@ export enum NotificationType {
     JobFailed = "JobFailed",
     BackupFailed = "BackupFailed",
     SystemMessage = "SystemMessage",
-    AlbumInvite = "AlbumInvite",
-    AlbumUpdate = "AlbumUpdate",
     ClusterGroupRequest = "ClusterGroupRequest",
     Custom = "Custom"
 }
@@ -6636,9 +6504,7 @@ export enum AssetVisibility {
     Locked = "locked"
 }
 export enum AlbumUserRole {
-    Editor = "editor",
-    Owner = "owner",
-    Viewer = "viewer"
+    Owner = "owner"
 }
 export enum BulkIdErrorReason {
     Duplicate = "duplicate",
@@ -6675,13 +6541,9 @@ export enum Permission {
     AlbumUpdate = "album.update",
     AlbumDelete = "album.delete",
     AlbumStatistics = "album.statistics",
-    AlbumShare = "album.share",
     AlbumDownload = "album.download",
     AlbumAssetCreate = "albumAsset.create",
     AlbumAssetDelete = "albumAsset.delete",
-    AlbumUserCreate = "albumUser.create",
-    AlbumUserUpdate = "albumUser.update",
-    AlbumUserDelete = "albumUser.delete",
     AuthChangePassword = "auth.changePassword",
     AuthDeviceDelete = "authDevice.delete",
     ArchiveRead = "archive.read",
@@ -6924,8 +6786,6 @@ export enum JobName {
     MemoryGenerate = "MemoryGenerate",
     NotificationsCleanup = "NotificationsCleanup",
     NotifyUserSignup = "NotifyUserSignup",
-    NotifyAlbumInvite = "NotifyAlbumInvite",
-    NotifyAlbumUpdate = "NotifyAlbumUpdate",
     UserDelete = "UserDelete",
     UserDeleteCheck = "UserDeleteCheck",
     UserSyncUsage = "UserSyncUsage",

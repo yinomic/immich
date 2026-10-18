@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import { InjectKysely } from 'nestjs-kysely';
 import { columns } from 'src/database.js';
 import { Chunked, ChunkedArray, ChunkedSet, DummyValue, GenerateSql } from 'src/decorators.js';
-import { AlbumUserCreateDto, MapAlbumDto } from 'src/dtos/album.dto.js';
+import { MapAlbumDto } from 'src/dtos/album.dto.js';
 import { AlbumUserRole } from 'src/enum.js';
 import { DB } from 'src/schema/index.js';
 import { AlbumTable } from 'src/schema/tables/album.table.js';
@@ -266,7 +266,7 @@ export class AlbumRepository {
   async create(
     album: Insertable<AlbumTable>,
     assetIds: string[],
-    albumUsers: AlbumUserCreateDto[],
+    albumUsers: { userId: string; role: AlbumUserRole }[],
     authUserId: string,
   ) {
     if (albumUsers.every((u) => u.role !== AlbumUserRole.Owner)) {

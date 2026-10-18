@@ -93,8 +93,6 @@ export const unsetDeep = (object: unknown, key: string) => {
   return isEmpty(object) ? undefined : object;
 };
 
-export const isFaceImportEnabled = (metadata: SystemConfig['metadata']) => metadata.faces.import;
-
 export const handlePromiseError = <T>(promise: Promise<T>, logger: LoggingRepository): void => {
   promise.catch((error: Error | any) => logger.error(`Promise error: ${error}`, error?.stack));
 };

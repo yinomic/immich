@@ -56,7 +56,7 @@ export class AlbumUserTable {
   })
   userId!: string;
 
-  @Column({ enum: album_user_role_enum, default: AlbumUserRole.Editor })
+  @Column({ enum: album_user_role_enum, default: AlbumUserRole.Owner })
   role!: Generated<AlbumUserRole>;
 
   @CreateIdColumn({ index: true })

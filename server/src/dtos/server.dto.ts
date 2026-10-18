@@ -136,20 +136,16 @@ const ServerConfigSchema = z
 
 const ServerFeaturesSchema = z
   .object({
-    duplicateDetection: z.boolean().describe('Whether duplicate detection is enabled'),
     configFile: z.boolean().describe('Whether config file is available'),
-    facialRecognition: z.boolean().describe('Whether facial recognition is enabled'),
     map: z.boolean().describe('Whether map feature is enabled'),
     trash: z.boolean().describe('Whether trash feature is enabled'),
     reverseGeocoding: z.boolean().describe('Whether reverse geocoding is enabled'),
-    importFaces: z.boolean().describe('Whether face import is enabled'),
     oauth: z.boolean().describe('Whether OAuth is enabled'),
     oauthAutoLaunch: z.boolean().describe('Whether OAuth auto-launch is enabled'),
     passwordLogin: z.boolean().describe('Whether password login is enabled'),
     sidecar: z.boolean().describe('Whether sidecar files are supported'),
     search: z.boolean().describe('Whether search is enabled'),
     email: z.boolean().describe('Whether email notifications are enabled'),
-    ocr: z.boolean().describe('Whether OCR is enabled'),
     realtimeTranscoding: z.boolean().describe('Whether real-time transcoding is enabled'),
   })
   .meta({ id: 'ServerFeaturesDto' });

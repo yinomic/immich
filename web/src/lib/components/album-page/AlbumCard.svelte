@@ -1,6 +1,5 @@
 <script lang="ts">
   import AlbumCover from '$lib/components/album-page/AlbumCover.svelte';
-  import { authManager } from '$lib/managers/auth-manager.svelte';
   import { getShortDateRange } from '$lib/utils/date-time';
   import { type AlbumResponseDto } from '@immich/sdk';
   import { ContextMenuButton, type MenuItems } from '@immich/ui';
@@ -8,21 +7,13 @@
 
   type Props = {
     album: AlbumResponseDto;
-    showOwner?: boolean;
     showDateRange?: boolean;
     showItemCount?: boolean;
     preload?: boolean;
     contextMenuItems?: MenuItems;
   };
 
-  const {
-    album,
-    showOwner = false,
-    showDateRange = false,
-    showItemCount = false,
-    preload = false,
-    contextMenuItems,
-  }: Props = $props();
+  const { album, showDateRange = false, showItemCount = false, preload = false, contextMenuItems }: Props = $props();
 </script>
 
 <div
@@ -67,23 +58,6 @@
         <p>
           {$t('items_count', { values: { count: album.assetCount } })}
         </p>
-      {/if}
-
-      {#if (showOwner || album.shared) && showItemCount}
-        <p>•</p>
-      {/if}
-
-      {#if showOwner}
-        {@const owner = album.albumUsers[0].user}
-        {#if owner.id === authManager.user.id}
-          <p>{$t('owned')}</p>
-        {:else}
-          <p>
-            {$t('shared_by_user', { values: { user: owner.name } })}
-          </p>
-        {/if}
-      {:else if album.shared}
-        <p>{$t('shared')}</p>
       {/if}
     </span>
   </div>

@@ -51,9 +51,7 @@ export interface SearchOneToOneRelationOptions {
 }
 
 export interface SearchRelationOptions extends SearchOneToOneRelationOptions {
-  withFaces?: boolean;
-  withPeople?: boolean;
-  /** whose version of the people to select, required when selecting faces or people */
+  /** whose version of the assets to select */
   viewingUserId?: string;
 }
 
@@ -92,14 +90,6 @@ export interface SearchEmbeddingOptions {
   userIds: string[];
 }
 
-export interface SearchOcrOptions {
-  ocr?: string;
-}
-
-export interface SearchPeopleOptions {
-  personIds?: string[];
-}
-
 export interface SearchTagOptions {
   tagIds?: string[] | null;
 }
@@ -124,10 +114,8 @@ type BaseAssetSearchOptions = SearchDateOptions &
   SearchPathOptions &
   SearchStatusOptions &
   SearchUserIdOptions &
-  SearchPeopleOptions &
   SearchTagOptions &
-  SearchAlbumOptions &
-  SearchOcrOptions;
+  SearchAlbumOptions;
 
 export type AssetSearchOptions = Omit<BaseAssetSearchOptions, 'visibility'> &
   SearchRelationOptions & { visibility?: AssetVisibility | 'not-locked' };
@@ -144,8 +132,6 @@ export interface AssetSearchScope {
 export interface AssetSearchBuilderV3Options {
   filter?: SearchFilter;
   withExif?: boolean;
-  withFaces?: boolean;
-  withPeople?: boolean;
   withStacked?: boolean;
   order?: SearchOrder;
 }

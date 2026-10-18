@@ -1,14 +1,7 @@
 <script lang="ts">
   import { NotificationLevel, NotificationType, type NotificationDto } from '@immich/sdk';
   import { IconButton, Stack, Text } from '@immich/ui';
-  import {
-    mdiBackupRestore,
-    mdiImageAlbum,
-    mdiImagePlus,
-    mdiInformationOutline,
-    mdiMessageBadgeOutline,
-    mdiSync,
-  } from '@mdi/js';
+  import { mdiBackupRestore, mdiInformationOutline, mdiMessageBadgeOutline, mdiSync } from '@mdi/js';
   import { DateTime } from 'luxon';
 
   interface Props {
@@ -68,14 +61,6 @@
       }
       case NotificationType.Custom: {
         return mdiInformationOutline;
-      }
-
-      case NotificationType.AlbumInvite: {
-        return mdiImageAlbum;
-      }
-
-      case NotificationType.AlbumUpdate: {
-        return mdiImagePlus;
       }
 
       default: {

@@ -8,7 +8,7 @@
   import { moveFocus } from '$lib/utils/focus-util';
   import { currentUrlReplaceAssetId } from '$lib/utils/navigation';
   import { getAltText } from '$lib/utils/thumbnail-util';
-  import { AssetMediaSize, AssetVisibility, type UserResponseDto } from '@immich/sdk';
+  import { AssetMediaSize, AssetVisibility } from '@immich/sdk';
   import { Icon } from '@immich/ui';
   import {
     mdiArchiveArrowDownOutline,
@@ -42,7 +42,6 @@
     showStackedIcon?: boolean;
     imageClass?: ClassValue;
     brokenAssetClass?: ClassValue;
-    albumUsers?: UserResponseDto[];
     onClick?: (asset: TimelineAsset) => void;
     onPreview?: (asset: TimelineAsset) => void;
     onSelect?: (asset: TimelineAsset) => void;
@@ -62,7 +61,6 @@
     readonly = false,
     showArchiveIcon = false,
     showStackedIcon = true,
-    albumUsers = [],
     onClick = undefined,
     onPreview = undefined,
     onSelect = undefined,
@@ -80,8 +78,6 @@
 
   let width = $derived(thumbnailSize || thumbnailWidth || 235);
   let height = $derived(thumbnailSize || thumbnailHeight || 235);
-
-  let assetOwner = $derived(albumUsers?.find((user) => user.id === asset.ownerId) ?? null);
 
   const onIconClickedHandler = (e?: MouseEvent) => {
     e?.stopPropagation();
@@ -321,14 +317,6 @@
         {#if asset.isFavorite}
           <div class="absolute inset-s-2 bottom-2 z-2">
             <Icon data-icon-favorite icon={mdiHeart} size="24" class="text-white" />
-          </div>
-        {/if}
-
-        {#if !!assetOwner}
-          <div class="absolute inset-e-2 bottom-1 z-2 max-w-[50%]">
-            <p class="text-white-shadow max-w-full truncate p-1 text-xs font-medium text-white">
-              {assetOwner.name}
-            </p>
           </div>
         {/if}
 

@@ -29,29 +29,6 @@ class AlbumAccess {
       .execute()
       .then((albums) => new Set(albums.map((album) => album.id)));
   }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkSharedAlbumAccess(userId: string, albumIds: Set<string>, access: AlbumUserRole) {
-    if (albumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    const accessRole =
-      access === AlbumUserRole.Editor ? [AlbumUserRole.Editor] : [AlbumUserRole.Editor, AlbumUserRole.Viewer];
-
-    return this.db
-      .selectFrom('album')
-      .select('album.id')
-      .innerJoin('album_user', 'album_user.albumId', 'album.id')
-      .innerJoin('user', (join) => join.onRef('user.id', '=', 'album_user.userId').on('user.deletedAt', 'is', null))
-      .where('album.id', 'in', [...albumIds])
-      .where('album.deletedAt', 'is', null)
-      .where('user.id', '=', userId)
-      .where('album_user.role', 'in', [...accessRole])
-      .execute()
-      .then((albums) => new Set(albums.map((album) => album.id)));
-  }
 }
 
 class AssetAccess {

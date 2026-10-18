@@ -23,7 +23,7 @@
   import { mediaQueryManager } from '$lib/stores/media-query-manager.svelte';
   import { isAssetViewerRoute, navigate } from '$lib/utils/navigation';
   import { getTimes, type ScrubberListener } from '$lib/utils/timeline-util';
-  import { type AlbumResponseDto, type UserResponseDto } from '@immich/sdk';
+  import { type AlbumResponseDto } from '@immich/sdk';
   import { DateTime } from 'luxon';
   import { onDestroy, onMount, tick, type Snippet } from 'svelte';
   import type { UpdatePayload } from 'vite';
@@ -42,7 +42,6 @@
     withStacked?: boolean;
     showArchiveIcon?: boolean;
     album?: AlbumResponseDto;
-    albumUsers?: UserResponseDto[];
     onSelect?: (asset: TimelineAsset) => void;
     onEscape?: () => void;
     children?: Snippet;
@@ -72,7 +71,6 @@
     withStacked = false,
     showArchiveIcon = false,
     album,
-    albumUsers = [],
     onSelect = () => {},
     onEscape = () => {},
     children,
@@ -661,7 +659,6 @@
                 showStackedIcon={withStacked}
                 {showArchiveIcon}
                 {asset}
-                {albumUsers}
                 {groupIndex}
                 onClick={(asset) => {
                   if (typeof onThumbnailClick === 'function') {

@@ -3,16 +3,13 @@ import { ApiTags } from '@nestjs/swagger';
 import type { AuthDto } from 'src/dtos/auth.dto.js';
 import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import {
-  AddUsersDto,
   AlbumResponseDto,
   AlbumStatisticsResponseDto,
-  AlbumUserParamDto,
   AlbumsAddAssetsDto,
   AlbumsAddAssetsResponseDto,
   CreateAlbumDto,
   GetAlbumsDto,
   UpdateAlbumDto,
-  UpdateAlbumUserDto,
 } from 'src/dtos/album.dto.js';
 import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto.js';
 import { MapMarkerResponseDto } from 'src/dtos/map.dto.js';
@@ -149,48 +146,5 @@ export class AlbumController {
     @Param() { id }: UUIDParamDto,
   ): Promise<BulkIdResponseDto[]> {
     return this.service.removeAssets(auth, id, dto);
-  }
-
-  @Put(':id/users')
-  @Authenticated({ permission: Permission.AlbumUserCreate })
-  @Endpoint({
-    summary: 'Share album with users',
-    description: 'Share an album with multiple users. Each user can be given a specific role in the album.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  addUsersToAlbum(
-    @Auth() auth: AuthDto,
-    @Param() { id }: UUIDParamDto,
-    @Body() dto: AddUsersDto,
-  ): Promise<AlbumResponseDto> {
-    return this.service.addUsers(auth, id, dto);
-  }
-
-  @Put(':id/user/:userId')
-  @Authenticated({ permission: Permission.AlbumUserUpdate })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Endpoint({
-    summary: 'Update user role',
-    description: 'Change the role for a specific user in a specific album.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  updateAlbumUser(
-    @Auth() auth: AuthDto,
-    @Param() { id, userId }: AlbumUserParamDto,
-    @Body() dto: UpdateAlbumUserDto,
-  ): Promise<void> {
-    return this.service.updateUser(auth, id, userId, dto);
-  }
-
-  @Delete(':id/user/:userId')
-  @Authenticated({ permission: Permission.AlbumUserDelete })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Endpoint({
-    summary: 'Remove user from album',
-    description: 'Remove a user from an album. Use an ID of "me" to leave a shared album.',
-    history: new HistoryBuilder().added('v1').beta('v1').stable('v2'),
-  })
-  removeUserFromAlbum(@Auth() auth: AuthDto, @Param() { id, userId }: AlbumUserParamDto): Promise<void> {
-    return this.service.removeUser(auth, id, userId);
   }
 }

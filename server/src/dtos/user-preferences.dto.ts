@@ -63,8 +63,6 @@ const TagsUpdateSchema = z
 const EmailNotificationsUpdateSchema = z
   .object({
     enabled: z.boolean().optional().describe('Whether email notifications are enabled'),
-    albumInvite: z.boolean().optional().describe('Whether to receive email notifications for album invites'),
-    albumUpdate: z.boolean().optional().describe('Whether to receive email notifications for album updates'),
   })
   .optional()
   .meta({ id: 'EmailNotificationsUpdate' });
@@ -162,8 +160,6 @@ const TagsResponseSchema = z
 const EmailNotificationsResponseSchema = z
   .object({
     enabled: z.boolean().describe('Whether email notifications are enabled'),
-    albumInvite: z.boolean().describe('Whether to receive email notifications for album invites'),
-    albumUpdate: z.boolean().describe('Whether to receive email notifications for album updates'),
   })
   .meta({ id: 'EmailNotificationsResponse' });
 

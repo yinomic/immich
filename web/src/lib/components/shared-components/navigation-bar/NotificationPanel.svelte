@@ -32,24 +32,6 @@
 
   const handleNotificationAction = async (notification: NotificationDto) => {
     switch (notification.type) {
-      case NotificationType.AlbumInvite:
-      case NotificationType.AlbumUpdate: {
-        if (!notification.data) {
-          return;
-        }
-
-        if (typeof notification.data !== 'string') {
-          return;
-        }
-
-        const data = JSON.parse(notification.data);
-        if (data?.albumId) {
-          await goto(`/albums/${data.albumId}`);
-        }
-
-        break;
-      }
-
       default: {
         break;
       }

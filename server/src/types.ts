@@ -277,15 +277,6 @@ export interface INotifySignupJob extends IEntityJob {
   password?: string;
 }
 
-export interface INotifyAlbumInviteJob extends IEntityJob {
-  recipientId: string;
-  senderName: string;
-}
-
-export interface INotifyAlbumUpdateJob extends IEntityJob, IDelayedJob {
-  recipientId: string;
-}
-
 export interface IIntegrityJob {
   refreshOnly?: boolean;
 }
@@ -404,8 +395,6 @@ export type JobItem =
 
   // Notification
   | { name: JobName.SendMail; data: IEmailJob }
-  | { name: JobName.NotifyAlbumInvite; data: INotifyAlbumInviteJob }
-  | { name: JobName.NotifyAlbumUpdate; data: INotifyAlbumUpdateJob }
   | { name: JobName.NotifyUserSignup; data: INotifySignupJob }
 
   // Version check
@@ -555,8 +544,6 @@ export type UserPreferences = {
   };
   emailNotifications: {
     enabled: boolean;
-    albumInvite: boolean;
-    albumUpdate: boolean;
   };
   download: {
     archiveSize: number;

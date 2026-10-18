@@ -93,7 +93,7 @@ describe(AssetService.name, () => {
       );
     });
 
-    it('should allow shared album access', async () => {
+    it('should allow album access', async () => {
       const asset = AssetFactory.create();
       mocks.access.asset.checkAlbumAccess.mockResolvedValue(new Set([asset.id]));
       mocks.asset.getById.mockResolvedValue(getForAsset(asset));
@@ -367,7 +367,6 @@ describe(AssetService.name, () => {
         latitude: 0,
         longitude: 0,
         isFavorite: undefined,
-        duplicateId: undefined,
         rating: undefined,
       });
       expect(mocks.asset.updateAll).not.toHaveBeenCalled();
@@ -382,7 +381,6 @@ describe(AssetService.name, () => {
         longitude: 0,
         visibility: AssetVisibility.Archive,
         isFavorite: false,
-        duplicateId: undefined,
         rating: undefined,
       });
       expect(mocks.asset.updateAll).toHaveBeenCalled();
@@ -399,7 +397,6 @@ describe(AssetService.name, () => {
         longitude: 50,
         dateTimeOriginal,
         isFavorite: false,
-        duplicateId: undefined,
         rating: undefined,
       });
       expect(mocks.asset.updateAll).toHaveBeenCalled();
@@ -409,20 +406,6 @@ describe(AssetService.name, () => {
         longitude: 50,
       });
       expect(mocks.job.queueAll).toHaveBeenCalledWith([{ name: JobName.SidecarWrite, data: { id: 'asset-1' } }]);
-    });
-
-    it('should update Assets table if duplicateId is provided as null', async () => {
-      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set(['asset-1']));
-
-      await sut.updateAll(authStub.admin, {
-        ids: ['asset-1'],
-        latitude: 0,
-        longitude: 0,
-        isFavorite: undefined,
-        duplicateId: null,
-        rating: undefined,
-      });
-      expect(mocks.asset.updateAll).toHaveBeenCalled();
     });
 
     it('should update exif table if dateTimeRelative and timeZone field is provided', async () => {

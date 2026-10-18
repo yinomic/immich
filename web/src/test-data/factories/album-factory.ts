@@ -1,6 +1,24 @@
 import { faker } from '@faker-js/faker';
-import { AssetOrder, type AlbumResponseDto } from '@immich/sdk';
+import {
+  AlbumUserRole,
+  AssetOrder,
+  UserAvatarColor,
+  type AlbumResponseDto,
+  type AlbumUserResponseDto,
+} from '@immich/sdk';
 import { Sync } from 'factory.ts';
+
+const owner = (): AlbumUserResponseDto => ({
+  role: AlbumUserRole.Owner,
+  user: {
+    id: faker.string.uuid(),
+    email: faker.internet.email(),
+    name: faker.person.fullName(),
+    profileImagePath: '',
+    avatarColor: UserAvatarColor.Primary,
+    profileChangedAt: faker.date.past().toISOString(),
+  },
+});
 
 export const albumFactory = Sync.makeFactory<AlbumResponseDto>({
   albumName: Sync.each(() => faker.commerce.product()),
@@ -10,7 +28,6 @@ export const albumFactory = Sync.makeFactory<AlbumResponseDto>({
   createdAt: Sync.each(() => faker.date.past().toISOString()),
   updatedAt: Sync.each(() => faker.date.past().toISOString()),
   id: Sync.each(() => faker.string.uuid()),
-  shared: false,
-  albumUsers: [],
+  albumUsers: Sync.each(() => [owner()]),
   order: AssetOrder.Desc,
 });

@@ -126,8 +126,6 @@ export class AssetTable {
   stackId!: string | null;
 
   @Column({ type: 'uuid', nullable: true, index: true })
-  duplicateId!: string | null;
-
   @Column({ enum: assets_status_enum, default: AssetStatus.Active })
   status!: Generated<AssetStatus>;
 

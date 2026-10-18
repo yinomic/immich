@@ -131,13 +131,12 @@ export class AssetService extends BaseService {
       longitude,
       rating,
       description,
-      duplicateId,
       dateTimeRelative,
       timeZone,
     } = dto;
     await this.requireAccess({ auth, permission: Permission.AssetUpdate, ids });
 
-    const assetDto = omitBy({ isFavorite, visibility, duplicateId }, isUndefined);
+    const assetDto = omitBy({ isFavorite, visibility }, isUndefined);
     const exifDto = omitBy(
       {
         latitude,

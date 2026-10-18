@@ -337,7 +337,6 @@ export function toAssetResponseDto(asset: MockTimelineAsset, owner?: UserRespons
     stack: asset.stack,
     isOffline: false,
     hasMetadata: true,
-    duplicateId: null,
     resized: true,
     checksum: asset.checksum,
     width: exifInfo.exifImageWidth ?? 1,
@@ -407,8 +406,7 @@ export function getAlbum(
 
   albumAssets.sort((a, b) => DateTime.fromISO(b.localDateTime).diff(DateTime.fromISO(a.localDateTime)).milliseconds);
 
-  // For a basic mock album, we don't include any albumUsers (shared users)
-  // The owner is represented by the owner field, not in albumUsers
+  // The album's only member is its owner
   const response: AlbumResponseDto = {
     id: album.id,
     albumName: album.albumName,
@@ -417,7 +415,6 @@ export function getAlbum(
     createdAt: album.createdAt,
     updatedAt: album.updatedAt,
     albumUsers: [{ user: albumOwner, role: AlbumUserRole.Owner }],
-    shared: false,
     assetCount: albumAssets.length,
     startDate: albumAssets.length > 0 ? albumAssets.at(-1)?.fileCreatedAt : undefined,
     endDate: albumAssets.length > 0 ? albumAssets[0].fileCreatedAt : undefined,

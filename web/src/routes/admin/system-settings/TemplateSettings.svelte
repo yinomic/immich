@@ -41,18 +41,6 @@
       descriptionTags: '{username}, {password}, {displayName}, {baseUrl}',
       templateName: 'welcome',
     },
-    {
-      label: $t('admin.template_email_invite_album'),
-      templateKey: 'albumInviteTemplate' as const,
-      descriptionTags: '{senderName}, {recipientName}, {albumId}, {albumName}, {baseUrl}',
-      templateName: 'album-invite',
-    },
-    {
-      label: $t('admin.template_email_update_album'),
-      templateKey: 'albumUpdateTemplate' as const,
-      descriptionTags: '{recipientName}, {albumId}, {albumName}, {baseUrl}',
-      templateName: 'album-update',
-    },
   ];
 
   const isEdited = (templateKey: keyof AdminConfigTemplateEmailsDto) =>

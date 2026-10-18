@@ -256,12 +256,6 @@ export class JobRepository {
 
   private getJobOptions(item: JobItem): JobsOptions | null {
     switch (item.name) {
-      case JobName.NotifyAlbumUpdate: {
-        return {
-          jobId: `${item.data.id}/${item.data.recipientId}`,
-          delay: item.data?.delay,
-        };
-      }
       case JobName.StorageTemplateMigrationSingle: {
         return { jobId: item.data.id };
       }

@@ -15,18 +15,11 @@
   type Props = {
     albums: AlbumResponseDto[];
     group?: AlbumGroup | undefined;
-    showOwner?: boolean;
     showDateRange?: boolean;
     showItemCount?: boolean;
   };
 
-  const {
-    albums,
-    group = undefined,
-    showOwner = false,
-    showDateRange = false,
-    showItemCount = false,
-  }: Props = $props();
+  const { albums, group = undefined, showDateRange = false, showItemCount = false }: Props = $props();
 
   let isCollapsed = $derived(!!group && isAlbumGroupCollapsed($albumViewSettings, group.id));
   let iconRotation = $derived(isCollapsed ? 'rotate-0' : 'rotate-90');
@@ -66,22 +59,15 @@
   {#if !isCollapsed}
     <div class="grid grid-auto-fill-56 gap-y-4" transition:slide={{ duration: 300 }}>
       {#each albums as album, index (album.id)}
-        {@const { Edit, Download, Leave, Delete } = getAlbumActions($t, album)}
-        {@const items = [Edit, Download, Leave, Delete]}
+        {@const { Edit, Download, Delete } = getAlbumActions($t, album)}
+        {@const items = [Edit, Download, Delete]}
         <a
           href={Route.viewAlbum(album)}
           class="h-fit"
           animate:flip={{ duration: 400 }}
           oncontextmenu={(event) => oncontextmenu(event, items)}
         >
-          <AlbumCard
-            {album}
-            {showOwner}
-            {showDateRange}
-            {showItemCount}
-            preload={index < 20}
-            contextMenuItems={items}
-          />
+          <AlbumCard {album} {showDateRange} {showItemCount} preload={index < 20} contextMenuItems={items} />
         </a>
       {/each}
     </div>

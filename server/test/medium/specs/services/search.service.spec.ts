@@ -1,6 +1,6 @@
 import { Kysely } from 'kysely';
 import { SearchSuggestionType } from 'src/dtos/search.dto.js';
-import { AlbumUserRole, AssetOrder, AssetVisibility, SearchOrderField } from 'src/enum.js';
+import { AssetOrder, AssetVisibility, SearchOrderField } from 'src/enum.js';
 import { AccessRepository } from 'src/repositories/access.repository.js';
 import { AssetRepository } from 'src/repositories/asset.repository.js';
 import { DatabaseRepository } from 'src/repositories/database.repository.js';
@@ -121,15 +121,13 @@ describe(SearchService.name, () => {
   });
 
   describe('albumIds option', () => {
-    it('should return assets from shared album', async () => {
+    it('should return assets from an album', async () => {
       const { sut, ctx } = setup();
       const { user } = await ctx.newUser();
-      const { user: otherUser } = await ctx.newUser();
 
-      const { asset } = await ctx.newAsset({ ownerId: otherUser.id });
-      const { album } = await ctx.newAlbum({ ownerId: otherUser.id });
+      const { asset } = await ctx.newAsset({ ownerId: user.id });
+      const { album } = await ctx.newAlbum({ ownerId: user.id });
       await ctx.newAlbumAsset({ albumId: album.id, assetId: asset.id });
-      await ctx.newAlbumUser({ albumId: album.id, userId: user.id, role: AlbumUserRole.Editor });
 
       const auth = factory.auth({ user: { id: user.id } });
 

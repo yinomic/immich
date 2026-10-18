@@ -7,29 +7,9 @@ import { HistoryBuilder } from 'src/decorators.js';
 import { BulkIdErrorReasonSchema } from 'src/dtos/asset-ids.response.dto.js';
 import { MapAsset } from 'src/dtos/asset-response.dto.js';
 import { UserResponseSchema, mapUser } from 'src/dtos/user.dto.js';
-import { AlbumUserRole, AlbumUserRoleSchema, AssetOrder, AssetOrderSchema } from 'src/enum.js';
+import { AlbumUserRoleSchema, AssetOrder, AssetOrderSchema } from 'src/enum.js';
 import { asDateTimeString } from 'src/utils/date.js';
 import { stringToBool } from 'src/validation.js';
-
-const AlbumUserAddSchema = z
-  .object({
-    userId: z.uuidv4().describe('User ID'),
-    role: AlbumUserRoleSchema.default(AlbumUserRole.Editor).optional().describe('Album user role'),
-  })
-  .meta({ id: 'AlbumUserAddDto' });
-
-const AddUsersSchema = z
-  .object({
-    albumUsers: z.array(AlbumUserAddSchema).min(1).describe('Album users to add'),
-  })
-  .meta({ id: 'AddUsersDto' });
-
-const AlbumUserCreateSchema = z
-  .object({
-    userId: z.uuidv4().describe('User ID'),
-    role: AlbumUserRoleSchema,
-  })
-  .meta({ id: 'AlbumUserCreateDto' });
 
 const CreateAlbumSchema = z
   .object({
@@ -50,7 +30,6 @@ const CreateAlbumSchema = z
           )
           .getExtensions(),
       }),
-    albumUsers: z.array(AlbumUserCreateSchema).optional().describe('Album users'),
     assetIds: z.array(z.uuidv4()).optional().describe('Initial asset IDs'),
   })
   .meta({ id: 'CreateAlbumDto' });
@@ -110,16 +89,8 @@ const GetAlbumsSchema = z
 const AlbumStatisticsResponseSchema = z
   .object({
     owned: z.int().min(0).describe('Number of owned albums'),
-    shared: z.int().min(0).describe('Number of shared albums'),
-    notShared: z.int().min(0).describe('Number of non-shared albums'),
   })
   .meta({ id: 'AlbumStatisticsResponseDto' });
-
-const UpdateAlbumUserSchema = z
-  .object({
-    role: AlbumUserRoleSchema,
-  })
-  .meta({ id: 'UpdateAlbumUserDto' });
 
 const AlbumUserResponseSchema = z
   .object({
@@ -149,7 +120,6 @@ export const AlbumResponseSchema = z
     // TODO: use `isoDatetimeToDate` when using `ZodSerializerDto` on the controllers.
     updatedAt: z.string().meta({ format: 'date-time' }).describe('Last update date'),
     albumThumbnailAssetId: z.uuidv4().nullable().describe('Thumbnail asset ID'),
-    shared: z.boolean().describe('Is shared album'),
     albumUsers: z
       .array(AlbumUserResponseSchema)
       .min(1)
@@ -179,28 +149,12 @@ export const AlbumResponseSchema = z
   })
   .meta({ id: 'AlbumResponseDto' });
 
-const AlbumUserParamSchema = z.object({
-  id: z.uuidv4().describe('Album ID'),
-  // TODO: disallow 'me' as a shortcut in v4 and type userId as uuidv4
-  userId: z
-    .string()
-    .refine((value) => value === 'me' || z.uuidv4().safeParse(value).success, {
-      error: 'Must be a UUID v4 or "me"',
-    })
-    .describe('Album user ID, or "me" to reference the current user.')
-    .meta(new HistoryBuilder().updated('v3', '"me" as a value is deprecated').getExtensions()),
-});
-
-export class AlbumUserParamDto extends createZodDto(AlbumUserParamSchema) {}
-export class AddUsersDto extends createZodDto(AddUsersSchema) {}
-export class AlbumUserCreateDto extends createZodDto(AlbumUserCreateSchema) {}
 export class CreateAlbumDto extends createZodDto(CreateAlbumSchema) {}
 export class AlbumsAddAssetsDto extends createZodDto(AlbumsAddAssetsSchema) {}
 export class AlbumsAddAssetsResponseDto extends createZodDto(AlbumsAddAssetsResponseSchema) {}
 export class UpdateAlbumDto extends createZodDto(UpdateAlbumSchema) {}
 export class GetAlbumsDto extends createZodDto(GetAlbumsSchema) {}
 export class AlbumStatisticsResponseDto extends createZodDto(AlbumStatisticsResponseSchema) {}
-export class UpdateAlbumUserDto extends createZodDto(UpdateAlbumUserSchema) {}
 export class AlbumResponseDto extends createZodDto(AlbumResponseSchema) {}
 class AlbumUserResponseDto extends createZodDto(AlbumUserResponseSchema) {}
 
@@ -231,8 +185,6 @@ export const mapAlbum = (entity: MaybeDehydrated<MapAlbumDto>): AlbumResponseDto
 
   const assets = entity.assets || [];
 
-  const hasSharedUser = albumUsers.length > 1;
-
   let startDate = assets.at(0)?.localDateTime;
   let endDate = assets.at(-1)?.localDateTime;
   // Swap dates if start date is greater than end date.
@@ -249,7 +201,6 @@ export const mapAlbum = (entity: MaybeDehydrated<MapAlbumDto>): AlbumResponseDto
     updatedAt: asDateTimeString(entity.updatedAt),
     id: entity.id,
     albumUsers,
-    shared: hasSharedUser,
     startDate: asDateTimeString(startDate),
     endDate: asDateTimeString(endDate),
     assetCount: entity.assets?.length || 0,

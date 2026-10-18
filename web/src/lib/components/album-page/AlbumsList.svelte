@@ -26,7 +26,6 @@
     searchQuery?: string;
     userSettings: AlbumViewSettings;
     allowEdit?: boolean;
-    showOwner?: boolean;
     albumGroupIds?: string[];
     empty?: Snippet;
   }
@@ -37,7 +36,6 @@
     searchQuery = '',
     userSettings,
     allowEdit = false,
-    showOwner = false,
     // eslint-disable-next-line no-useless-assignment, @typescript-eslint/no-unused-vars
     albumGroupIds = $bindable([]),
     empty,
@@ -193,10 +191,10 @@
   {#if userSettings.view === AlbumViewMode.Cover}
     <!-- Album Cards -->
     {#if albumGroupOption === AlbumGroupBy.None}
-      <AlbumCardGroup albums={groupedAlbums[0].albums} {showOwner} showDateRange showItemCount />
+      <AlbumCardGroup albums={groupedAlbums[0].albums} showDateRange showItemCount />
     {:else}
       {#each groupedAlbums as albumGroup (albumGroup.id)}
-        <AlbumCardGroup albums={albumGroup.albums} group={albumGroup} {showOwner} showDateRange showItemCount />
+        <AlbumCardGroup albums={albumGroup.albums} group={albumGroup} showDateRange showItemCount />
       {/each}
     {/if}
   {:else if userSettings.view === AlbumViewMode.List}

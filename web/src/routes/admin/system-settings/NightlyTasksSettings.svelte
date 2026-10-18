@@ -31,24 +31,6 @@
           isEdited={configToEdit.nightlyTasks.startTime !== config.nightlyTasks.startTime}
         />
         <SettingSwitch
-          title={$t('admin.nightly_tasks_database_cleanup_setting')}
-          subtitle={$t('admin.nightly_tasks_database_cleanup_setting_description')}
-          bind:checked={configToEdit.nightlyTasks.databaseCleanup}
-          {disabled}
-        />
-        <SettingSwitch
-          title={$t('admin.nightly_tasks_missing_thumbnails_setting')}
-          subtitle={$t('admin.nightly_tasks_missing_thumbnails_setting_description')}
-          bind:checked={configToEdit.nightlyTasks.missingThumbnails}
-          {disabled}
-        />
-        <SettingSwitch
-          title={$t('admin.nightly_tasks_cluster_new_faces_setting')}
-          subtitle={$t('admin.nightly_tasks_cluster_faces_setting_description')}
-          bind:checked={configToEdit.nightlyTasks.clusterNewFaces}
-          {disabled}
-        />
-        <SettingSwitch
           title={$t('admin.nightly_tasks_generate_memories_setting')}
           subtitle={$t('admin.nightly_tasks_generate_memories_setting_description')}
           bind:checked={configToEdit.nightlyTasks.generateMemories}

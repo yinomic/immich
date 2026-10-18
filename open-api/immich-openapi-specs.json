@@ -2519,227 +2519,6 @@
         "x-immich-permission": "album.read"
       }
     },
-    "/albums/{id}/user/{userId}": {
-      "delete": {
-        "description": "Remove a user from an album. Use an ID of \"me\" to leave a shared album.",
-        "operationId": "removeUserFromAlbum",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Album ID",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "description": "Album user ID, or \"me\" to reference the current user.",
-            "x-immich-history": [
-              {
-                "version": "v3",
-                "state": "Updated",
-                "description": "\"me\" as a value is deprecated"
-              }
-            ],
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Remove user from album",
-        "tags": [
-          "Albums"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v1",
-            "state": "Added"
-          },
-          {
-            "version": "v1",
-            "state": "Beta"
-          },
-          {
-            "version": "v2",
-            "state": "Stable"
-          }
-        ],
-        "x-immich-permission": "albumUser.delete",
-        "x-immich-state": "Stable"
-      },
-      "put": {
-        "description": "Change the role for a specific user in a specific album.",
-        "operationId": "updateAlbumUser",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Album ID",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "description": "Album user ID, or \"me\" to reference the current user.",
-            "x-immich-history": [
-              {
-                "version": "v3",
-                "state": "Updated",
-                "description": "\"me\" as a value is deprecated"
-              }
-            ],
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAlbumUserDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Update user role",
-        "tags": [
-          "Albums"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v1",
-            "state": "Added"
-          },
-          {
-            "version": "v1",
-            "state": "Beta"
-          },
-          {
-            "version": "v2",
-            "state": "Stable"
-          }
-        ],
-        "x-immich-permission": "albumUser.update",
-        "x-immich-state": "Stable"
-      }
-    },
-    "/albums/{id}/users": {
-      "put": {
-        "description": "Share an album with multiple users. Each user can be given a specific role in the album.",
-        "operationId": "addUsersToAlbum",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddUsersDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlbumResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Share album with users",
-        "tags": [
-          "Albums"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v1",
-            "state": "Added"
-          },
-          {
-            "version": "v1",
-            "state": "Beta"
-          },
-          {
-            "version": "v2",
-            "state": "Stable"
-          }
-        ],
-        "x-immich-permission": "albumUser.create",
-        "x-immich-state": "Stable"
-      }
-    },
     "/api-keys": {
       "get": {
         "description": "Retrieve all API keys of the current user.",
@@ -9095,61 +8874,6 @@
             }
           },
           {
-            "name": "ocr",
-            "required": false,
-            "in": "query",
-            "description": "Filter by OCR text content",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated",
-            "deprecated": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "personIds",
-            "required": false,
-            "in": "query",
-            "description": "Filter by person IDs",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated",
-            "deprecated": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
-              }
-            }
-          },
-          {
             "name": "rating",
             "required": false,
             "in": "query",
@@ -14777,22 +14501,6 @@
       }
     },
     "schemas": {
-      "AddUsersDto": {
-        "properties": {
-          "albumUsers": {
-            "description": "Album users to add",
-            "items": {
-              "$ref": "#/components/schemas/AlbumUserAddDto"
-            },
-            "minItems": 1,
-            "type": "array"
-          }
-        },
-        "required": [
-          "albumUsers"
-        ],
-        "type": "object"
-      },
       "AdminConfigBackupsDto": {
         "properties": {
           "database": {
@@ -14855,9 +14563,6 @@
           "map": {
             "$ref": "#/components/schemas/AdminConfigMapDto"
           },
-          "metadata": {
-            "$ref": "#/components/schemas/AdminConfigMetadataDto"
-          },
           "newVersionCheck": {
             "$ref": "#/components/schemas/AdminConfigNewVersionCheckDto"
           },
@@ -14904,7 +14609,6 @@
           "library",
           "logging",
           "map",
-          "metadata",
           "newVersionCheck",
           "nightlyTasks",
           "notifications",
@@ -15074,18 +14778,6 @@
           "enabled",
           "resolutions",
           "videoCodecs"
-        ],
-        "type": "object"
-      },
-      "AdminConfigFacesDto": {
-        "properties": {
-          "import": {
-            "description": "Import",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "import"
         ],
         "type": "object"
       },
@@ -15270,9 +14962,6 @@
           "notifications": {
             "$ref": "#/components/schemas/AdminConfigJobSettingsDto"
           },
-          "ocr": {
-            "$ref": "#/components/schemas/AdminConfigJobSettingsDto"
-          },
           "search": {
             "$ref": "#/components/schemas/AdminConfigJobSettingsDto"
           },
@@ -15301,7 +14990,6 @@
           "metadataExtraction",
           "migration",
           "notifications",
-          "ocr",
           "search",
           "sidecar",
           "smartSearch",
@@ -15409,17 +15097,6 @@
         ],
         "type": "object"
       },
-      "AdminConfigMetadataDto": {
-        "properties": {
-          "faces": {
-            "$ref": "#/components/schemas/AdminConfigFacesDto"
-          }
-        },
-        "required": [
-          "faces"
-        ],
-        "type": "object"
-      },
       "AdminConfigNewVersionCheckDto": {
         "properties": {
           "channel": {
@@ -15438,10 +15115,6 @@
       },
       "AdminConfigNightlyTasksDto": {
         "properties": {
-          "clusterNewFaces": {
-            "description": "Cluster new faces",
-            "type": "boolean"
-          },
           "databaseCleanup": {
             "description": "Database cleanup",
             "type": "boolean"
@@ -15465,7 +15138,6 @@
           }
         },
         "required": [
-          "clusterNewFaces",
           "databaseCleanup",
           "generateMemories",
           "missingThumbnails",
@@ -15741,22 +15413,12 @@
       },
       "AdminConfigTemplateEmailsDto": {
         "properties": {
-          "albumInviteTemplate": {
-            "description": "Album invite template",
-            "type": "string"
-          },
-          "albumUpdateTemplate": {
-            "description": "Album update template",
-            "type": "string"
-          },
           "welcomeTemplate": {
             "description": "Welcome template",
             "type": "string"
           }
         },
         "required": [
-          "albumInviteTemplate",
-          "albumUpdateTemplate",
           "welcomeTemplate"
         ],
         "type": "object"
@@ -15895,10 +15557,6 @@
           "order": {
             "$ref": "#/components/schemas/AssetOrder"
           },
-          "shared": {
-            "description": "Is shared album",
-            "type": "boolean"
-          },
           "startDate": {
             "description": "UTC representation of (local) start date (earliest asset)",
             "format": "date-time",
@@ -15918,73 +15576,21 @@
           "createdAt",
           "description",
           "id",
-          "shared",
           "updatedAt"
         ],
         "type": "object"
       },
       "AlbumStatisticsResponseDto": {
         "properties": {
-          "notShared": {
-            "description": "Number of non-shared albums",
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
-          },
           "owned": {
             "description": "Number of owned albums",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer"
-          },
-          "shared": {
-            "description": "Number of shared albums",
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
           }
         },
         "required": [
-          "notShared",
-          "owned",
-          "shared"
-        ],
-        "type": "object"
-      },
-      "AlbumUserAddDto": {
-        "properties": {
-          "role": {
-            "$ref": "#/components/schemas/AlbumUserRole",
-            "default": "editor",
-            "description": "Album user role"
-          },
-          "userId": {
-            "description": "User ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "userId"
-        ],
-        "type": "object"
-      },
-      "AlbumUserCreateDto": {
-        "properties": {
-          "role": {
-            "$ref": "#/components/schemas/AlbumUserRole"
-          },
-          "userId": {
-            "description": "User ID",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "userId"
+          "owned"
         ],
         "type": "object"
       },
@@ -16006,9 +15612,7 @@
       "AlbumUserRole": {
         "description": "Album user role",
         "enum": [
-          "editor",
-          "owner",
-          "viewer"
+          "owner"
         ],
         "type": "string"
       },
@@ -16252,11 +15856,6 @@
           },
           "description": {
             "description": "Asset description",
-            "type": "string"
-          },
-          "duplicateId": {
-            "description": "Duplicate ID",
-            "nullable": true,
             "type": "string"
           },
           "ids": {
@@ -16941,13 +16540,6 @@
             "format": "date-time",
             "type": "string"
           },
-          "duplicateId": {
-            "description": "Duplicate group ID",
-            "format": "uuid",
-            "nullable": true,
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
           "duration": {
             "description": "Video/gif duration in milliseconds (null for static images)",
             "maximum": 2147483647,
@@ -17467,13 +17059,6 @@
             "description": "Album name",
             "type": "string"
           },
-          "albumUsers": {
-            "description": "Album users",
-            "items": {
-              "$ref": "#/components/schemas/AlbumUserCreateDto"
-            },
-            "type": "array"
-          },
           "assetIds": {
             "description": "Initial asset IDs",
             "items": {
@@ -17902,36 +17487,18 @@
       },
       "EmailNotificationsResponse": {
         "properties": {
-          "albumInvite": {
-            "description": "Whether to receive email notifications for album invites",
-            "type": "boolean"
-          },
-          "albumUpdate": {
-            "description": "Whether to receive email notifications for album updates",
-            "type": "boolean"
-          },
           "enabled": {
             "description": "Whether email notifications are enabled",
             "type": "boolean"
           }
         },
         "required": [
-          "albumInvite",
-          "albumUpdate",
           "enabled"
         ],
         "type": "object"
       },
       "EmailNotificationsUpdate": {
         "properties": {
-          "albumInvite": {
-            "description": "Whether to receive email notifications for album invites",
-            "type": "boolean"
-          },
-          "albumUpdate": {
-            "description": "Whether to receive email notifications for album updates",
-            "type": "boolean"
-          },
           "enabled": {
             "description": "Whether email notifications are enabled",
             "type": "boolean"
@@ -18369,8 +17936,6 @@
           "MemoryGenerate",
           "NotificationsCleanup",
           "NotifyUserSignup",
-          "NotifyAlbumInvite",
-          "NotifyAlbumUpdate",
           "UserDelete",
           "UserDeleteCheck",
           "UserSyncUsage",
@@ -19518,26 +19083,6 @@
             ],
             "x-immich-state": "Deprecated"
           },
-          "ocr": {
-            "deprecated": true,
-            "description": "Filter by OCR text content",
-            "type": "string",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
           "order": {
             "$ref": "#/components/schemas/AssetOrder",
             "deprecated": true,
@@ -19613,31 +19158,6 @@
             "maximum": 9007199254740991,
             "minimum": 1,
             "type": "integer",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
-          "personIds": {
-            "deprecated": true,
-            "description": "Filter by person IDs",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array",
             "x-immich-history": [
               {
                 "version": "v1",
@@ -19981,10 +19501,6 @@
             "description": "Include EXIF data in response",
             "type": "boolean"
           },
-          "withPeople": {
-            "description": "Include people data in response",
-            "type": "boolean"
-          },
           "withStacked": {
             "description": "Include stacked assets",
             "type": "boolean"
@@ -20139,8 +19655,6 @@
           "JobFailed",
           "BackupFailed",
           "SystemMessage",
-          "AlbumInvite",
-          "AlbumUpdate",
           "ClusterGroupRequest",
           "Custom"
         ],
@@ -20453,13 +19967,9 @@
           "album.update",
           "album.delete",
           "album.statistics",
-          "album.share",
           "album.download",
           "albumAsset.create",
           "albumAsset.delete",
-          "albumUser.create",
-          "albumUser.update",
-          "albumUser.delete",
           "auth.changePassword",
           "authDevice.delete",
           "archive.read",
@@ -21535,51 +21045,6 @@
             ],
             "x-immich-state": "Deprecated"
           },
-          "ocr": {
-            "deprecated": true,
-            "description": "Filter by OCR text content",
-            "type": "string",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
-          "personIds": {
-            "deprecated": true,
-            "description": "Filter by person IDs",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
           "rating": {
             "deprecated": true,
             "description": "Filter by rating [1-5], or null for unrated",
@@ -21865,10 +21330,6 @@
           },
           "withExif": {
             "description": "Include EXIF data in response",
-            "type": "boolean"
-          },
-          "withPeople": {
-            "description": "Include people data in response",
             "type": "boolean"
           },
           "withStacked": {
@@ -22216,9 +21677,6 @@
           "model": {
             "$ref": "#/components/schemas/StringFilterNullable"
           },
-          "ocr": {
-            "$ref": "#/components/schemas/StringSimilarityFilter"
-          },
           "or": {
             "items": {
               "$ref": "#/components/schemas/SearchFilterBranch"
@@ -22231,9 +21689,6 @@
           },
           "originalPath": {
             "$ref": "#/components/schemas/StringPatternFilter"
-          },
-          "personIds": {
-            "$ref": "#/components/schemas/IdsFilter"
           },
           "rating": {
             "$ref": "#/components/schemas/NumberFilterNullable"
@@ -22325,17 +21780,11 @@
           "model": {
             "$ref": "#/components/schemas/StringFilterNullable"
           },
-          "ocr": {
-            "$ref": "#/components/schemas/StringSimilarityFilter"
-          },
           "originalFileName": {
             "$ref": "#/components/schemas/StringPatternFilter"
           },
           "originalPath": {
             "$ref": "#/components/schemas/StringPatternFilter"
-          },
-          "personIds": {
-            "$ref": "#/components/schemas/IdsFilter"
           },
           "rating": {
             "$ref": "#/components/schemas/NumberFilterNullable"
@@ -22635,20 +22084,8 @@
             "description": "Whether config file is available",
             "type": "boolean"
           },
-          "duplicateDetection": {
-            "description": "Whether duplicate detection is enabled",
-            "type": "boolean"
-          },
           "email": {
             "description": "Whether email notifications are enabled",
-            "type": "boolean"
-          },
-          "facialRecognition": {
-            "description": "Whether facial recognition is enabled",
-            "type": "boolean"
-          },
-          "importFaces": {
-            "description": "Whether face import is enabled",
             "type": "boolean"
           },
           "map": {
@@ -22661,10 +22098,6 @@
           },
           "oauthAutoLaunch": {
             "description": "Whether OAuth auto-launch is enabled",
-            "type": "boolean"
-          },
-          "ocr": {
-            "description": "Whether OCR is enabled",
             "type": "boolean"
           },
           "passwordLogin": {
@@ -22694,14 +22127,10 @@
         },
         "required": [
           "configFile",
-          "duplicateDetection",
           "email",
-          "facialRecognition",
-          "importFaces",
           "map",
           "oauth",
           "oauthAutoLaunch",
-          "ocr",
           "passwordLogin",
           "realtimeTranscoding",
           "reverseGeocoding",
@@ -23522,51 +22951,6 @@
             ],
             "x-immich-state": "Deprecated"
           },
-          "ocr": {
-            "deprecated": true,
-            "description": "Filter by OCR text content",
-            "type": "string",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
-          "personIds": {
-            "deprecated": true,
-            "description": "Filter by person IDs",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array",
-            "x-immich-history": [
-              {
-                "version": "v1",
-                "state": "Added"
-              },
-              {
-                "version": "v2",
-                "state": "Stable"
-              },
-              {
-                "version": "v3.2.0",
-                "state": "Deprecated"
-              }
-            ],
-            "x-immich-state": "Deprecated"
-          },
           "rating": {
             "deprecated": true,
             "description": "Filter by rating [1-5], or null for unrated",
@@ -23931,18 +23315,6 @@
             "type": "string"
           }
         },
-        "type": "object"
-      },
-      "StringSimilarityFilter": {
-        "properties": {
-          "matches": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "matches"
-        ],
         "type": "object"
       },
       "SyncAckDeleteDto": {
@@ -26429,17 +25801,6 @@
             "$ref": "#/components/schemas/AssetOrder"
           }
         },
-        "type": "object"
-      },
-      "UpdateAlbumUserDto": {
-        "properties": {
-          "role": {
-            "$ref": "#/components/schemas/AlbumUserRole"
-          }
-        },
-        "required": [
-          "role"
-        ],
         "type": "object"
       },
       "UpdateAssetDto": {

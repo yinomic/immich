@@ -7,7 +7,6 @@
   import LibrarySettings from './LibrarySettings.svelte';
   import LoggingSettings from './LoggingSettings.svelte';
   import MapSettings from './MapSettings.svelte';
-  import MetadataSettings from './MetadataSettings.svelte';
   import NewVersionCheckSettings from './NewVersionCheckSettings.svelte';
   import NightlyTasksSettings from './NightlyTasksSettings.svelte';
   import NotificationSettings from './NotificationSettings.svelte';
@@ -120,13 +119,6 @@
       subtitle: $t('admin.map_gps_settings_description'),
       key: 'location',
       icon: mdiMapMarkerOutline,
-    },
-    {
-      component: MetadataSettings,
-      title: $t('admin.metadata_settings'),
-      subtitle: $t('admin.metadata_settings_description'),
-      key: 'metadata',
-      icon: mdiDatabaseOutline,
     },
     {
       component: NightlyTasksSettings,

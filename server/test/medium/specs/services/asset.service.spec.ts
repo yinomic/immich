@@ -562,10 +562,6 @@ describe(AssetService.name, () => {
     });
   });
 
-  describe('getOcr', () => {});
-
-  describe('getOcr', () => {});
-
   describe('upsertBulkMetadata', () => {
     it('should work', async () => {
       const { sut, ctx } = setup();

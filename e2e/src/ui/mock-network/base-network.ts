@@ -55,10 +55,6 @@ export const setupBaseMockApiRoutes = async (context: BrowserContext, adminUserI
           enabled: true,
           sidebarWeb: false,
         },
-        sharedLinks: {
-          enabled: true,
-          sidebarWeb: false,
-        },
         ratings: {
           enabled: false,
         },
@@ -68,8 +64,6 @@ export const setupBaseMockApiRoutes = async (context: BrowserContext, adminUserI
         },
         emailNotifications: {
           enabled: true,
-          albumInvite: true,
-          albumUpdate: true,
         },
         download: {
           archiveSize: 4_294_967_296,
@@ -118,18 +112,13 @@ export const setupBaseMockApiRoutes = async (context: BrowserContext, adminUserI
       status: 200,
       contentType: 'application/json',
       json: {
-        smartSearch: false,
-        facialRecognition: false,
-        duplicateDetection: false,
         map: true,
         reverseGeocoding: true,
-        importFaces: false,
         sidecar: true,
         search: true,
         trash: true,
         oauth: false,
         oauthAutoLaunch: false,
-        ocr: false,
         passwordLogin: true,
         configFile: false,
         email: false,

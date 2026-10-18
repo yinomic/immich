@@ -101,7 +101,6 @@ export const AssetResponseSchema = SanitizedAssetResponseSchema.extend(
     tags: z.array(TagResponseSchema).optional(),
     checksum: z.string().describe('Base64 encoded SHA1 hash'),
     stack: AssetStackResponseSchema.nullish(),
-    duplicateId: z.uuidv4().nullish().describe('Duplicate group ID'),
     resized: z
       .boolean()
       .optional()
@@ -125,7 +124,6 @@ export type MapAsset = {
   status: AssetStatus;
   checksum: Buffer<ArrayBufferLike>;
   checksumAlgorithm: ChecksumAlgorithm;
-  duplicateId: string | null;
   duration: number | null;
   edits?: ShallowDehydrateObject<AssetEditActionItem>[];
   exifInfo?: ShallowDehydrateObject<Selectable<Exif>> | null;
@@ -217,7 +215,6 @@ export function mapAsset(entity: MaybeDehydrated<MapAsset>, options: AssetMapOpt
     stack: withStack ? mapStack(entity) : undefined,
     isOffline: entity.isOffline,
     hasMetadata: true,
-    duplicateId: entity.duplicateId,
     resized: true,
     width: entity.width,
     height: entity.height,

@@ -3,7 +3,7 @@ import { AlbumUserRole, AssetStatus, AssetVisibility, ChecksumAlgorithm, VideoCo
 
 export const album_user_role_enum = registerEnum({
   name: 'album_user_role_enum',
-  values: [AlbumUserRole.Owner, AlbumUserRole.Editor, AlbumUserRole.Viewer],
+  values: [AlbumUserRole.Owner],
 });
 
 export const assets_status_enum = registerEnum({

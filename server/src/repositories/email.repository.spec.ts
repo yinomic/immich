@@ -36,37 +36,5 @@ describe(EmailRepository.name, () => {
       expect(result.html).toContain('<!DOCTYPE html PUBLIC');
       expect(result.text).toContain('A new account has been created for you');
     });
-
-    it('should render the email correctly for ALBUM_INVITE template', async () => {
-      const request: EmailRenderRequest = {
-        template: EmailTemplate.ALBUM_INVITE,
-        data: {
-          albumName: 'Vacation',
-          albumId: '123',
-          senderName: 'John',
-          recipientName: 'Jane',
-          baseUrl: 'http://localhost',
-        },
-        customTemplate: '',
-      };
-
-      const result = await sut.renderEmail(request);
-
-      expect(result.html).toContain('<!DOCTYPE html PUBLIC');
-      expect(result.text).toContain('Vacation');
-    });
-
-    it('should render the email correctly for ALBUM_UPDATE template', async () => {
-      const request: EmailRenderRequest = {
-        template: EmailTemplate.ALBUM_UPDATE,
-        data: { albumName: 'Holiday', albumId: '123', recipientName: 'Jane', baseUrl: 'http://localhost' },
-        customTemplate: '',
-      };
-
-      const result = await sut.renderEmail(request);
-
-      expect(result.html).toContain('<!DOCTYPE html PUBLIC');
-      expect(result.text).toContain('Holiday');
-    });
   });
 });

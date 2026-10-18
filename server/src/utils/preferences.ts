@@ -34,8 +34,6 @@ const getDefaultPreferences = (): UserPreferences => {
     },
     emailNotifications: {
       enabled: true,
-      albumInvite: true,
-      albumUpdate: true,
     },
     download: {
       archiveSize: HumanReadableSize.GiB * 4,

@@ -10,6 +10,3 @@
 </script>
 
 <span>{$t('items_count', { values: { count: album.assetCount } })}</span>
-{#if album.shared}
-  <span>• {$t('shared')}</span>
-{/if}

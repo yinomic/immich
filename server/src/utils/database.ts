@@ -446,7 +446,6 @@ export function searchAssetBuilderLegacy(kysely: Kysely<DB>, options: AssetSearc
         .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
         .where(sql`f_unaccent(asset_exif.description)`, 'ilike', sql`'%' || f_unaccent(${options.description}) || '%'`),
     )
-    .$if(!!options.ocr, (qb) => qb)
     .$if(!!options.type, (qb) => qb.where('asset.type', '=', options.type!))
     .$if(options.isFavorite !== undefined, (qb) => qb.where('asset.isFavorite', '=', options.isFavorite!))
     .$if(options.isOffline !== undefined, (qb) => qb.where('asset.isOffline', '=', options.isOffline!))
@@ -807,22 +806,8 @@ export const searchMetadataV3Examples: GenerateSqlQueries[] = [
     ],
   },
   {
-    name: 'string-similarity-ocr',
-    params: [{ take: 100 }, { filter: { ocr: { matches: DummyValue.STRING } } }, scopeExample],
-  },
-  {
     name: 'ids-any',
     params: [{ take: 100 }, { filter: { albumIds: { any: [DummyValue.UUID] } } }, scopeExample],
-  },
-  {
-    name: 'ids-all',
-    params: [
-      { take: 100 },
-      {
-        filter: { personIds: { all: [DummyValue.UUID, DummyValue.UUID_1] } },
-      },
-      scopeExample,
-    ],
   },
   {
     name: 'ids-all-single',
@@ -902,7 +887,7 @@ export const searchMetadataV3Examples: GenerateSqlQueries[] = [
       { take: 100 },
       {
         filter: {
-          or: [{ isFavorite: { eq: true } }, { personIds: { any: [DummyValue.UUID] } }],
+          or: [{ isFavorite: { eq: true } }, { tagIds: { any: [DummyValue.UUID] } }],
         },
       },
       scopeExample,

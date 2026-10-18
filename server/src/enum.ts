@@ -61,9 +61,7 @@ export enum AssetFileType {
 export const AssetFileTypeSchema = z.enum(AssetFileType).describe('Type of file').meta({ id: 'AssetFileType' });
 
 export enum AlbumUserRole {
-  Editor = 'editor',
   Owner = 'owner',
-  Viewer = 'viewer',
 }
 
 export const AlbumUserRoleSchema = z.enum(AlbumUserRole).describe('Album user role').meta({ id: 'AlbumUserRole' });
@@ -149,15 +147,10 @@ export enum Permission {
   AlbumUpdate = 'album.update',
   AlbumDelete = 'album.delete',
   AlbumStatistics = 'album.statistics',
-  AlbumShare = 'album.share',
   AlbumDownload = 'album.download',
 
   AlbumAssetCreate = 'albumAsset.create',
   AlbumAssetDelete = 'albumAsset.delete',
-
-  AlbumUserCreate = 'albumUser.create',
-  AlbumUserUpdate = 'albumUser.update',
-  AlbumUserDelete = 'albumUser.delete',
 
   AuthChangePassword = 'auth.changePassword',
 
@@ -830,8 +823,6 @@ export enum JobName {
   NotificationsCleanup = 'NotificationsCleanup',
 
   NotifyUserSignup = 'NotifyUserSignup',
-  NotifyAlbumInvite = 'NotifyAlbumInvite',
-  NotifyAlbumUpdate = 'NotifyAlbumUpdate',
 
   UserDelete = 'UserDelete',
   UserDeleteCheck = 'UserDeleteCheck',
@@ -1078,8 +1069,6 @@ export enum NotificationType {
   JobFailed = 'JobFailed',
   BackupFailed = 'BackupFailed',
   SystemMessage = 'SystemMessage',
-  AlbumInvite = 'AlbumInvite',
-  AlbumUpdate = 'AlbumUpdate',
   ClusterGroupRequest = 'ClusterGroupRequest',
   Custom = 'Custom',
 }

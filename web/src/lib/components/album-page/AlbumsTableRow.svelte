@@ -2,13 +2,11 @@
   import { goto } from '$app/navigation';
   import { dateFormats } from '$lib/constants';
   import Portal from '$lib/elements/Portal.svelte';
-  import { authManager } from '$lib/managers/auth-manager.svelte';
   import { Route } from '$lib/route';
   import { getAlbumActions } from '$lib/services/album.service';
   import { locale } from '$lib/stores/preferences.store';
-  import { AlbumUserRole, type AlbumResponseDto } from '@immich/sdk';
-  import { Icon, menuManager } from '@immich/ui';
-  import { mdiShareVariantOutline } from '@mdi/js';
+  import { type AlbumResponseDto } from '@immich/sdk';
+  import { menuManager } from '@immich/ui';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -19,8 +17,8 @@
 
   let contextMenuAnchor: HTMLDivElement | undefined = $state();
   const items = $derived.by(() => {
-    const { Edit, Download, Leave, Delete } = getAlbumActions($t, album);
-    return [Edit, Download, Leave, Delete];
+    const { Edit, Download, Delete } = getAlbumActions($t, album);
+    return [Edit, Download, Delete];
   });
 
   const dateLocaleString = (dateString: string) => {
@@ -48,18 +46,6 @@
 >
   <td class="text-md w-8/12 items-center text-start text-ellipsis sm:w-4/12 md:w-4/12 xl:w-[30%] 2xl:w-[40%]">
     {album.albumName}
-    {#if album.shared}
-      <Icon
-        icon={mdiShareVariantOutline}
-        size="16"
-        class="ms-1 inline opacity-70"
-        title={album.albumUsers.find(({ user: { id } }) => id === authManager.user.id)?.role === AlbumUserRole.Owner
-          ? $t('shared_by_you')
-          : $t('shared_by_user', {
-              values: { user: album.albumUsers[0].user.name },
-            })}
-      />
-    {/if}
   </td>
   <td class="text-md text-center text-ellipsis sm:w-2/12 md:w-2/12 xl:w-[15%] 2xl:w-[12%]">
     {$t('items_count', { values: { count: album.assetCount } })}

@@ -224,20 +224,9 @@ export class MediumTestContext<S extends ClassConstructor<typeof BaseService> = 
   }
 
   async newAlbumUser(dto: { albumId: string; userId: string; role?: AlbumUserRole }) {
-    const { albumId, userId, role = AlbumUserRole.Editor } = dto;
+    const { albumId, userId, role = AlbumUserRole.Owner } = dto;
     const result = await this.get(AlbumUserRepository).create({ albumId, userId, role });
     return { albumUser: { albumId, userId, role }, result };
-  }
-
-  /** An album owned by one user, containing one asset, shared with a second user */
-  async newSharedAlbum(dto: { role?: AlbumUserRole } = {}) {
-    const { user: owner } = await this.newUser();
-    const { user: sharedWith } = await this.newUser();
-    const { asset } = await this.newAsset({ ownerId: owner.id });
-    const { album } = await this.newAlbum({ ownerId: owner.id }, [asset.id]);
-    await this.newAlbumUser({ albumId: album.id, userId: sharedWith.id, role: dto.role ?? AlbumUserRole.Editor });
-
-    return { album, asset, owner, sharedWith };
   }
 
   async softDeleteAsset(assetId: string) {

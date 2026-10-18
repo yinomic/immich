@@ -9,7 +9,6 @@ export type MemoriesPreferences = {
 class UserPreferencesManager {
   #showDetailPanel = new PersistedLocalStorage<boolean>('asset-viewer-state', false);
   #showAssetPath = new PersistedLocalStorage<boolean>('asset-viewer-show-path', false);
-  #showAssetOwners = new PersistedLocalStorage<boolean>('album-show-asset-owners', false);
   #defaultMemories: MemoriesPreferences = { showUpcoming: false, onlyFavorites: false };
   #memories = new PersistedLocalStorage<MemoriesPreferences>(
     'memories-settings',
@@ -33,14 +32,6 @@ class UserPreferencesManager {
 
   set showAssetPath(value: boolean) {
     this.#showAssetPath.current = value;
-  }
-
-  get showAssetOwners() {
-    return this.#showAssetOwners.current;
-  }
-
-  set showAssetOwners(value: boolean) {
-    this.#showAssetOwners.current = value;
   }
 
   get memories() {

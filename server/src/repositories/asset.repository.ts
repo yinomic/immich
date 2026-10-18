@@ -77,7 +77,6 @@ interface LivePhotoSearchOptions {
 interface AssetBuilderOptions {
   isFavorite?: boolean;
   isTrashed?: boolean;
-  isDuplicate?: boolean;
   albumId?: string;
   tagId?: string;
   personId?: string;
@@ -769,9 +768,6 @@ export class AssetRepository {
           )
           .$if(options.isFavorite !== undefined, (qb) => qb.where('asset.isFavorite', '=', options.isFavorite!))
           .$if(!!options.assetType, (qb) => qb.where('asset.type', '=', options.assetType!))
-          .$if(options.isDuplicate !== undefined, (qb) =>
-            qb.where('asset.duplicateId', options.isDuplicate ? 'is not' : 'is', null),
-          )
           .$if(!!options.tagId, (qb) => withTagId(qb, options.tagId!)),
       )
       .selectFrom('asset')
@@ -883,9 +879,6 @@ export class AssetRepository {
               .select('stack'),
           )
           .$if(!!options.assetType, (qb) => qb.where('asset.type', '=', options.assetType!))
-          .$if(options.isDuplicate !== undefined, (qb) =>
-            qb.where('asset.duplicateId', options.isDuplicate ? 'is not' : 'is', null),
-          )
           .$if(!!options.isTrashed, (qb) => qb.where('asset.status', '!=', AssetStatus.Deleted))
           .$if(!!options.tagId, (qb) => withTagId(qb, options.tagId!))
           .orderBy(
