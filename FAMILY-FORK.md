@@ -1197,7 +1197,15 @@ state after the UI upload: {..., 'isTrashed': False}         # 已回到时间�
 
 **单测/静态检查**：server **86 文件 / 1528 用例**（新增 1 例：`restoreAssets` 返回真实恢复数量）、`tsc` 绿；web **490 用例**绿、`tsc` 与 `svelte-check` 0 错 0 警告。
 
-### 4. 升级注意（补充 Round 40）
+### 4. 交付（Round 41）
+
+| 项 | 状态 |
+|---|---|
+| 提交 | `55c0f271f`（restoreAll 覆盖 deleted + 真实 count + 文案）、`c0736d7f2`（文档），已推到 `origin/family-album` |
+| 镜像重建 | ✅ `ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest` → 镜像 id `3d7d391f06e4`；镜像内自检：`server/dist/repositories/trash.repository.js` 命中 `.where('status', '!=', AssetStatus.Active)`，`/build/www/_app/immutable/chunks/*` 命中 `upload_restored` |
+| 推送镜像 | ❌ 依旧 `denied: requested access to the resource is denied`（本机没有 ccr 登录凭证），需要你执行 `docker login ccr.ccs.tencentyun.com && docker push ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest` |
+
+### 5. 升级注意（补充 Round 40）
 
 - 现在的完整语义是：**只要同一份文件的内容已经在这个库里（不论它在时间线、回收站，还是回收站已被清空），再上传一次都会把它恢复成可见状态**，并且给用户明确提示；库里不会多出重复行，也不会重复占用存储（软删除模式下文件从头到尾只存一份）。
 - 「清空回收站」在本 fork 里 = 隐藏 + 标记 `deleted`（文件仍在桶里，因为 `IMMICH_SOFT_DELETE_ONLY` 默认开启）。如果哪天关掉软删除开关，清空回收站才是真删：那种情况下重复上传会正常创建一条**全新**资源，本轮的恢复逻辑不受影响（`restoreAll` 找不到行就是 no-op）。
