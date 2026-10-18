@@ -35,15 +35,15 @@ dependencyResolutionManagement {
   // repositories, which would be unreachable from here.
   repositoriesMode = RepositoriesMode.PREFER_SETTINGS
   repositories {
-    // Flutter engine artifacts (io.flutter:flutter_embedding_*, ~1.5 MB) are
-    // published only on download.flutter.io, and PREFER_SETTINGS makes Gradle
-    // ignore the project-level repository the Flutter plugin injects, so the
-    // host has to be declared here. The Google host is listed first because the
-    // official China mirror measured ~7 KB/s from this machine (~90x slower);
-    // swap these two lines if the mirror is faster on your network. Everything
-    // else resolves from the China mirrors below.
-    maven { url 'https://storage.googleapis.com/download.flutter.io' }
+    // Flutter engine artifacts (io.flutter:flutter_embedding_*, ~1.5 MB) live
+    // only on download.flutter.io, and PREFER_SETTINGS makes Gradle ignore the
+    // project-level repository the Flutter plugin injects, so the host has to
+    // be declared here. Tencent's Flutter mirror measured ~78 KB/s here against
+    // ~7 KB/s for flutter-io.cn and ~618 KB/s for Google, so the China mirrors
+    // come first and Google is only the last resort.
+    maven { url 'https://mirrors.cloud.tencent.com/flutter/download.flutter.io' }
     maven { url 'https://storage.flutter-io.cn/download.flutter.io' }
+    maven { url 'https://storage.googleapis.com/download.flutter.io' }
     maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public' }
     maven { url 'https://mirrors.huaweicloud.com/repository/maven' }
     maven { url 'https://maven.aliyun.com/repository/public' }

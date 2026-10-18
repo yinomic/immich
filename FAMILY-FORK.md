@@ -893,7 +893,7 @@ flutter build apk --release                    # 三合一
 ### 为「国内镜像优先」做的事
 - **Maven 依赖全部走国内镜像**：`mobile/android/settings.gradle` 与 `build.gradle` 里只声明腾讯云 `nexus/repository/maven-public`（它同时代理 Google Maven、Maven Central、KSP）+ 华为云 + 阿里云 public/gradle-plugin，**删掉了 `google()`/`mavenCentral()`/`gradlePluginPortal()`**——它们在这里不可达，每次查询都要卡到 TCP 超时。
 - **settings 级仓库**（`dependencyResolutionManagement` + `PREFER_SETTINGS`）：pub 缓存里 26 个插件工程（`background_downloader`、`bonsoir_android`…）自己的 `build.gradle` 都声明了 `google()`，工程级仓库会被 settings 级覆盖，从而全部走镜像。
-- **Flutter 引擎产物**（`io.flutter:flutter_embedding_release`，约 1.5 MB）：只在 `download.flutter.io` 上，所以必须在 settings 级额外声明。实测本机 `storage.flutter-io.cn` 只有 **~7 KB/s**（1.5MB 要 4 分钟且经常读超时），`storage.googleapis.com` 有 **~618 KB/s**，因此配置里 **Google 在前、中国镜像在后**当兜底；如果你的网络下 flutter-io.cn 更快，把 `settings.gradle` 里这两行对调即可（注释里写了）。
+- **Flutter 引擎产物**（`io.flutter:flutter_embedding_release`，约 1.5 MB）：只在 `download.flutter.io` 上，所以必须在 settings 级额外声明。实测本机三个源的速度：腾讯云 Flutter 镜像 **~78 KB/s**、`storage.flutter-io.cn` **~7 KB/s**、`storage.googleapis.com` **~618 KB/s**。配置里按 **腾讯云镜像 → flutter-io.cn → Google** 排（国内优先，Google 只做最后兜底），用国内优先后完整构建复验通过（483 秒）。
 - 环境变量 `FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn` 也写进了 `~/flutter-env.sh`。
 - **注意**：`mobile/android/gradle.properties` 里加了
   `systemProp.org.gradle.internal.http.connectionTimeout=8000` / `socketTimeout=300000`，让不可达仓库快速失败、慢镜像不要被 30 秒读超时打断。
@@ -914,7 +914,7 @@ flutter build apk --release                    # 三合一
 | 检查 | 结果 |
 |---|---|
 | `flutter build apk --release` | ✅ `Built build/app/outputs/flutter-apk/app-release.apk (178.3MB)` |
-| `flutter build apk --release --split-per-abi` | ✅ 63.4 / 68.8 / 71.5 MB 三个包，热缓存下 91.5s 重跑成功 |
+| `flutter build apk --release --split-per-abi` | ✅ 63.4 / 68.8 / 71.5 MB 三个包；热缓存 91.5s，换成国内镜像优先后完整复验 483s，均 0 失败 |
 | `aapt2 dump badging` | 包名/版本/targetSdk 如上；`native-code` 与所选 ABI 一致 |
 | `apksigner verify` | `Verifies`，v2 方案为 true |
 | `unzip -t` | zip 完整性 OK |
