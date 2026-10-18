@@ -1102,6 +1102,18 @@ flutter build apk --release                    # 三合一
 == 回收站中 → bulk-upload-check → POST /trash/restore/assets → rows: live=t   （web 端走的正是这条）
 ```
 
+**真实 web UI 走一遍（Playwright 驱动登录 + 点「上传」选同一张已被软删除的照片）**：
+
+```
+trash -> 204                                       # 先把资源放进回收站
+isTrashed after trash: true
+isTrashed after the UI upload: false               # UI 上传同一张后，资源已被恢复
+toasts: ["警告 已跳过1个重复项",
+         "成功 已跳过重复上传：1个项目原本就在服务器上，已从回收站恢复"]
+```
+
+截图 `upload-restored-toast.png`（右下角两条提示 + 时间线里照片回来了）与 `upload-restored-from-trash.png`（上传面板里该项显示「恢复」图标、「重复项 1」计数）。也就是说：**文件没有再上传一次、服务端不多一行、资源从回收站回到时间线、并且明确提示了用户**。
+
 **登录页布局（Playwright 实测，非推测）**：两个实例并排跑同一份服务端代码、只有 web 产物不同——2331 = 改动前（旧镜像里的 `www`）、2330 = 改动后（本机新构建），都注入 `IMMICH_FILING_INFO=粤ICP备2026000000号-1`，用 Chromium 量备案号链接的位置：
 
 | 视口 | 改动前 | 改动后 |
@@ -1109,7 +1121,7 @@ flutter build apk --release                    # 三合一
 | 桌面 1280×800 | `top 391`、`left 862`（在卡片右侧、垂直居中），`section` = `items-center justify-center`，`锚点在 footer 内 = false` | `top 767 / bottom 785`（视口高 800 → **贴底**）、`left 566`（水平居中），`section` = `flex-col items-center`，`锚点在 footer 内 = true`、`footer 是 section 最后一个子元素 = true` |
 | 手机 390×844 | `top 397`、`left 298` → 卡片右边只剩 ~90px，备案号被挤成 3 行还溢出视口 | `top 811`、`left 121` → **底部居中一行** |
 
-截图：`before-desktop.png` / `before-phone.png` / `after-desktop.png` / `after-phone.png`（改动前后的桌面与手机视口，见本轮聊天里发出的附件；本机也留了一份在 `/tmp/verify/shots/`）。
+截图：`before-desktop.png` / `before-phone.png` / `after-desktop.png` / `after-phone.png`（改动前后的桌面与手机视口；本轮已作为附件发到群里，本机另存了一份在 `verify-out/`，该目录在 `.git/info/exclude` 里不入库）。
 
 > 踩坑记录（与需求无关，但会误导排查）：本地验证时先起的旧实例在内存里缓存了旧 `index.html`，而 `www` 目录已经被换成新构建，浏览器按旧资源名去新目录取 `.br` 预压缩文件 → `sirv` 那个 `brotli: true` 的读流 ENOENT 未处理 → **API worker 直接退出**（容器内 `www` 与 `index.html` 永远配套，所以线上不会遇到）。两个实例抢同一端口时也会打 `EADDRINUSE`。以后本地换 web 产物，务必先停干净（进程名是 `immich-api`，不是 `node dist/main.js`）。
 
