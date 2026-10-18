@@ -295,8 +295,18 @@ class LoginForm extends HookConsumerWidget {
         // email and password" for a network problem sends people down the
         // wrong path, so keep the two apart and log the real error.
         final isServerAnswer = error is ApiException;
-        if (!isServerAnswer) {
-          log.severe('Login request failed', error, stackTrace);
+        if (isServerAnswer) {
+          // The server answered and refused the request: 401 is a wrong
+          // email/password, anything else is a server-side problem.
+          log.severe(
+            'Login rejected by ${serverEndpointController.text}: HTTP ${error.code} ${error.message} (email "${emailController.text}", length ${emailController.text.length})',
+          );
+        } else {
+          log.severe(
+            'Login request to ${serverEndpointController.text} never got an answer (email "${emailController.text}")',
+            error,
+            stackTrace,
+          );
         }
 
         ImmichToast.show(
