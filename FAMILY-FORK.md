@@ -952,7 +952,9 @@ flutter build apk --release                    # 三合一
 - 本仓库对 version 相关代码的改动只有「关掉服务端主动外呼的版本检查」（`disableVersionCheck`），不影响 `/server/version`
 
 ### 本轮改动（消除误判）
-`mobile/lib/utils/version_compatibility.dart`：`serverVersion.major == 0`（= 版本没读到的占位值）时**不再提示**，真实的 major 差距仍然提示。`flutter test` 覆盖三种情况。
+`mobile/lib/utils/version_compatibility.dart`：`serverVersion.major == 0`（= 版本没读到的占位值）时，改为显示**本地化的「无法检查应用或服务器版本」**（`unable_to_check_version`，中文「无法检查应用或服务器版本」），不再误报「服务端太老」；真实的 major 差距仍然按原样提示；版本一致时不提示。三种情况都用 `flutter test` 实跑覆盖。
+
+另外附上自查位置：**登录页底部会显示 app 自身版本**（`v3.3.0-rc.0`），登录后在应用栏菜单 →「服务器信息」里能同时看到 App 版本和服务器版本（服务器版本读不到时显示 `--`）——如果那里是 `--`，说明 app 侧确实没读到 `/api/server/version`。
 
 ### 需要你确认的两件事（用于定位你那边到底是哪种情况）
 1. 提示的**原文**是哪一句？「Your **mobile app** version is not compatible…」= 装的是旧版 app（major < 3）；「Your **server** version is not compatible…」= app 没读到服务端版本。
