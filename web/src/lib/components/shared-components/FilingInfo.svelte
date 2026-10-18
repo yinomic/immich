@@ -17,7 +17,7 @@
 </script>
 
 {#if info}
-  <div class="text-center text-xs text-gray-500 dark:text-gray-400">
+  <div class="px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
     <a href={url} target="_blank" rel="noopener noreferrer" class="hover:underline">{info}</a>
   </div>
 {/if}

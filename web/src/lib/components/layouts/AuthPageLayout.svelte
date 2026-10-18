@@ -12,7 +12,7 @@
   let { title, children, withHeader = true, withBackdrop = true }: Props = $props();
 </script>
 
-<section class="relative isolate flex min-h-dvh min-w-dvw items-center justify-center">
+<section class="relative isolate flex min-h-dvh min-w-dvw flex-col items-center">
   {#if withBackdrop}
     <div class="absolute -z-10 flex size-full place-content-center place-items-center">
       <img
@@ -26,20 +26,26 @@
     </div>
   {/if}
 
-  <Card color="secondary" class="m-2 w-full max-w-xl border">
-    {#if withHeader}
-      <CardHeader class="mt-6">
-        <VStack>
-          <Logo variant="icon" size="giant" />
-          <Heading size="large" class="font-semibold" color="primary" tag="h1">{title}</Heading>
-        </VStack>
-      </CardHeader>
-    {/if}
+  <!-- the form stays centered in the space that is left above the page footer -->
+  <div class="flex w-full grow items-center justify-center">
+    <Card color="secondary" class="m-2 w-full max-w-xl border">
+      {#if withHeader}
+        <CardHeader class="mt-6">
+          <VStack>
+            <Logo variant="icon" size="giant" />
+            <Heading size="large" class="font-semibold" color="primary" tag="h1">{title}</Heading>
+          </VStack>
+        </CardHeader>
+      {/if}
 
-    <CardBody class="p-8">
-      {@render children?.()}
-    </CardBody>
-  </Card>
+      <CardBody class="p-8">
+        {@render children?.()}
+      </CardBody>
+    </Card>
+  </div>
 
-  <FilingInfo />
+  <!-- ICP filing info belongs at the bottom of the page, not next to the login card -->
+  <footer class="flex w-full shrink-0 justify-center">
+    <FilingInfo />
+  </footer>
 </section>
