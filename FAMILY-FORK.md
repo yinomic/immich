@@ -1284,3 +1284,53 @@ state after the UI upload: {..., 'isTrashed': False}         # 已回到时间�
 | 尚未生效的实例 | 本机 `immich-wk` 容器（镜像 `553f3dfbb591`，16 小时前那版）没有动过；要让新代码跑起来需 `docker compose -f docker/docker-compose.yml up -d immich-server`（或推 registry 后 pull） |
 | 待确认 | `IMMICH_ORIGINAL_CACHE_MB` 是否按盘调小——默认 2 GiB 上限，落在 `/cache` 卷；拍 4K 视频多的家庭建议 4096 |
 
+---
+
+## Round 43 — app 大量备份时报 `SocketTimeoutException: timeout /api/assets`
+
+用户反馈：用 app 大量备份照片时，有一部分报
+`ClientException: java.net.SocketTimeoutException: timeout uri=https://yue-coming.cn/api/assets`，而且**频率偏高**。
+
+### 1. 这个错是谁发出来的
+
+不是桶、也不是服务器主动断的，是 **app 自己的超时**：
+
+- `NetworkRepository.init()` 给共享 OkHttp 客户端设的是 `connectTimeout 30s`、**`readTimeout 60s`、`writeTimeout 60s`**（`callTimeout` 未设）。read 60s = 响应 60 秒没动静；write 60s = 请求体 60 秒写不动。
+- 报错文案 `ClientException: ... uri=...` 是 `package:http` 的包装格式，`java.net.SocketTimeoutException` 则来自 Android 原生 OkHttp —— 所以命中的是走 `upload.repository.dart → NetworkRepository.client` 的**前台备份**路径（后台 isolate 走 `background_downloader`，它用 `HttpURLConnection`，只有 `connectTimeout`（默认 60s）、没有 read 超时，报错文案也不同）。
+
+### 2. 为什么会在上传时卡住 60 秒
+
+`POST /api/assets` 在服务端**同步把文件推进桶**（`stageUpload` → `putObjectFromFile`）：这个请求的时长 = 手机把字节交完 **+** 服务器再把它推给 TOS。备份是 3 个并发上传（`foreground_upload.service.dart` 的 `concurrentWorkers = 3`），三条连接各挂一个推桶。
+
+**放大环路**（「频率偏高」的来源）：`uploadFile` 一遇到 `ClientException` 就**原样重发一次**，后台备份任务本身还有 `retries: 3`。一慢 → 重发占带宽 → 更容易超时 → 更多重发。
+
+### 3. 本轮做的两件事
+
+**① 服务端耗时日志**（`663e3eff3`，镜像 `ee0a92c8ec5d`）：`file-upload.interceptor.ts` 记收包耗时、`asset-media.service.ts` 记推桶耗时与整请求耗时；单段 >10s 或整请求 >30s 打 `warn`（`grep "Slow upload"` 就能看出卡在哪一段）。**用来判定根因**。
+
+**② 客户端放宽上传超时**（`fa4be459f`，本轮 APK）：上传单独用一个客户端，`connectTimeout 30s`、**`readTimeout/writeTimeout 5 分钟`**；其余 API 仍 60s。只改 Android 一侧：iOS 的超时在原生 `URLSession`（`timeoutIntervalForRequest = 60`，且与视频播放共用一个 session），要单独放宽得再动 Swift。
+
+### 4. 产物（重新构建）
+
+```bash
+source ~/flutter-env.sh
+cd mobile
+flutter build apk --release --split-per-abi   # 196s（冷缓存）
+flutter build apk --release                  # 三合一
+```
+
+| 文件 | 体积 | 校验 |
+|---|---|---|
+| `apk-out/immich-family-arm64-v8a.apk` | 68.8 MB | `e60bbb2dc6f9…`；`apksigner verify` → Verifies，v2 true |
+| `apk-out/immich-family-armeabi-v7a.apk` | 63.4 MB | `5c140fd5e78e…` |
+| `apk-out/immich-family-x86_64.apk` | 71.5 MB | `f2e2b4759cdb…` |
+| `apk-out/immich-family-universal.apk` | 178.3 MB | `04aeb9276866…`；`aapt2` 显示三种 ABI |
+
+- 单测：mobile `flutter test` **1547 用例通过**（`concurrent_migration_test.dart` 在满负载并行跑时会偶发失败，单独跑与复跑均通过，属既有 flaky）；`flutter analyze` 与 `dart format` 干净。
+- 真机验证：`adb install -r apk-out/immich-family-arm64-v8a.apk`。
+
+### 5. 还没定的（等日志）
+
+服务端是否要把推桶**挪出请求**（落盘+建库后立刻 201，推桶进新 job，并由该 job 再排元数据/缩略图以保证顺序）。代价：上传完成到对象进桶有几秒窗口，这期间原图预签名会 404（缩略图走本地缓存不受影响）。等 `grep "Slow upload"` 的结果出来再决定——如果卡在推桶就做，如果卡在收包（手机→服务器）就跟桶无关。
+
+
