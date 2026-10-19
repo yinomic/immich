@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { readFile } from 'node:fs/promises';
 import sanitize from 'sanitize-filename';
 import type { UploadFile, UploadRequest } from 'src/types.js';
 import { StorageCore } from 'src/cores/storage.core.js';
@@ -141,7 +140,7 @@ export class AssetMediaService extends BaseService {
     const uploadFolder = this.getUploadFolder(asUploadRequest(request, file));
     const uploadPath = `${uploadFolder}/${uploadFilename}`;
 
-    if (this.objectStorageRepository.isRemote()) {
+    if (this.storageRepository.isRemote()) {
       await this.storageRepository.removeLocalFile(uploadPath);
       return;
     }
@@ -151,17 +150,23 @@ export class AssetMediaService extends BaseService {
 
   /**
    * With object storage the file interceptor writes to a local staging folder;
-   * move it into the bucket and hand back the object key.
+   * push it into the bucket, then hand back the object key.
+   *
+   * The staged file is seeded into the local originals cache instead of being
+   * deleted, so the jobs queued below (metadata extraction, thumbnail
+   * generation) read the bytes from disk rather than downloading back what we
+   * have only just uploaded.
    */
   private async stageUpload<T extends UploadFile>(upload: T): Promise<T> {
-    if (!this.objectStorageRepository.isRemote()) {
+    if (!this.storageRepository.isRemote()) {
       return upload;
     }
 
     const key = StorageCore.toObjectKey(upload.originalPath);
-    const data = await readFile(upload.originalPath);
-    await this.objectStorageRepository.put(key, data, mimeTypes.lookup(upload.originalPath));
-    await this.storageRepository.removeLocalFile(upload.originalPath);
+    await this.storageRepository.putFile(key, upload.originalPath, {
+      contentType: mimeTypes.lookup(upload.originalPath),
+    });
+    await this.storageRepository.seedLocalCopy(key, upload.originalPath);
 
     return { ...upload, originalPath: key };
   }

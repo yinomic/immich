@@ -14,6 +14,8 @@ export interface ObjectStorage {
   isRemote(): boolean;
 
   put(key: string, body: Buffer | Readable, contentType?: string): Promise<void>;
+  /** upload a local file as-is, without buffering it in memory */
+  putFile(key: string, filePath: string, options?: { contentType?: string }): Promise<void>;
   get(key: string): Promise<Buffer>;
   stream(key: string): Promise<Readable>;
   exists(key: string): Promise<boolean>;

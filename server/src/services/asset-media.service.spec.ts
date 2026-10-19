@@ -386,6 +386,37 @@ describe(AssetMediaService.name, () => {
       );
     });
 
+    it('should push a staged upload to the bucket and keep it for the follow-up jobs', async () => {
+      const file = {
+        uuid: 'random-uuid',
+        originalPath: 'fake_path/asset_1.jpeg',
+        mimeType: 'image/jpeg',
+        checksum: Buffer.from('file hash', 'utf8'),
+        originalName: 'asset_1.jpeg',
+        size: 42,
+      };
+
+      mocks.storage.isRemote.mockReturnValue(true);
+      mocks.asset.create.mockResolvedValue(assetEntity);
+
+      await expect(sut.uploadAsset(authStub.user1, createDto, file)).resolves.toEqual({
+        id: 'id_1',
+        status: AssetMediaStatus.CREATED,
+      });
+
+      // the object key replaces the local path ...
+      expect(mocks.storage.putFile).toHaveBeenCalledWith('fake_path/asset_1.jpeg', file.originalPath, {
+        contentType: 'image/jpeg',
+      });
+      // ... and the staged file is cached instead of deleted, so metadata
+      // extraction and thumbnail generation do not download it back
+      expect(mocks.storage.seedLocalCopy).toHaveBeenCalledWith('fake_path/asset_1.jpeg', file.originalPath);
+      expect(mocks.storage.removeLocalFile).not.toHaveBeenCalled();
+      expect(mocks.asset.create).toHaveBeenCalledWith(
+        expect.objectContaining({ originalPath: 'fake_path/asset_1.jpeg' }),
+      );
+    });
+
     it('should handle a duplicate', async () => {
       const file = {
         uuid: 'random-uuid',
@@ -647,6 +678,8 @@ describe(AssetMediaService.name, () => {
             ignoreMountCheckErrors: false,
             cacheLocation: '/tmp/immich-cache',
             thumbnails: 'off',
+            originalCacheMb: 2048,
+            originalCacheTtlSeconds: 900,
             backend: 'local',
             softDeleteOnly: true,
             disableVersionCheck: false,

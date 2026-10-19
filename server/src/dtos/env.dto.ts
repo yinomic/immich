@@ -76,6 +76,8 @@ export const EnvSchema = z
     TOS_PRESIGN_TTL: z.coerce.number().int().positive().optional(),
     TOS_REGION: z.string().optional(),
     IMMICH_MEDIA_LOCATION: absolutePath,
+    IMMICH_ORIGINAL_CACHE_MB: z.coerce.number().int().nonnegative().optional(),
+    IMMICH_ORIGINAL_CACHE_TTL: z.coerce.number().int().nonnegative().optional(),
     IMMICH_THUMBNAILS: ThumbnailModeSchema.optional(),
     IMMICH_MICROSERVICES_METRICS_PORT: z.coerce.number().int().optional(),
     IMMICH_ALLOW_EXTERNAL_PLUGINS: stringBool.optional(),

@@ -54,6 +54,8 @@ export const newStorageRepositoryMock = (): Mocked<RepositoryInterface<StorageRe
     withLocalCopy: vitest
       .fn()
       .mockImplementation((_key: string, callback: (path: string) => Promise<unknown>) => callback('/tmp/object')),
+    putFile: vitest.fn(),
+    seedLocalCopy: vitest.fn(),
     createZipStream: vitest.fn(),
     createPlainReadStream: vitest.fn(),
     createReadStream: vitest.fn(),

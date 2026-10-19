@@ -28,6 +28,12 @@ export class LocalObjectStorage implements ObjectStorage {
     await pipeline(body, createWriteStream(path));
   }
 
+  async putFile(key: string, filePath: string): Promise<void> {
+    const path = this.localPath(key);
+    await mkdir(dirname(path), { recursive: true });
+    await copyFile(filePath, path);
+  }
+
   get(key: string): Promise<Buffer> {
     return readFile(this.localPath(key));
   }

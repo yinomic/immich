@@ -59,6 +59,16 @@ export class TosObjectStorage implements ObjectStorage {
     });
   }
 
+  async putFile(key: string, filePath: string, options?: { contentType?: string }): Promise<void> {
+    // the SDK streams the file (and can retry), so a 4 GB video never lands in memory
+    await this.client.putObjectFromFile({
+      bucket: this.bucket,
+      key: this.objectKey(key),
+      filePath,
+      contentType: options?.contentType,
+    });
+  }
+
   async get(key: string): Promise<Buffer> {
     const { data } = await this.client.getObject({ bucket: this.bucket, key: this.objectKey(key) });
     return data;

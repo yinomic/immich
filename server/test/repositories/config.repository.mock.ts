@@ -87,6 +87,8 @@ export const envData: EnvData = {
     ignoreMountCheckErrors: false,
     cacheLocation: '/tmp/immich-cache',
     thumbnails: 'cache',
+    originalCacheMb: 2048,
+    originalCacheTtlSeconds: 900,
     backend: 'local',
     softDeleteOnly: false,
     disableVersionCheck: false,

@@ -116,6 +116,10 @@ export interface EnvData {
     cacheLocation: string;
     /** `off` serves originals instead of cached thumbnails */
     thumbnails: 'cache' | 'off';
+    /** how much room the local originals cache may use, in MiB (`0` disables it) */
+    originalCacheMb: number;
+    /** how long an unused cached original stays usable, in seconds */
+    originalCacheTtlSeconds: number;
     backend: 'local' | 'tos';
     /** never remove assets or objects: deletion only moves them to the trash */
     softDeleteOnly: boolean;
@@ -360,6 +364,8 @@ const getEnv = (): EnvData => {
       mediaLocation: dto.IMMICH_MEDIA_LOCATION,
       cacheLocation: dto.IMMICH_CACHE_LOCATION ?? join(tmpdir(), 'immich-cache'),
       thumbnails: dto.IMMICH_THUMBNAILS ?? 'cache',
+      originalCacheMb: dto.IMMICH_ORIGINAL_CACHE_MB ?? 2048,
+      originalCacheTtlSeconds: dto.IMMICH_ORIGINAL_CACHE_TTL ?? 900,
       backend: dto.IMMICH_STORAGE_BACKEND ?? 'local',
       softDeleteOnly: dto.IMMICH_SOFT_DELETE_ONLY ?? true,
       disableVersionCheck: dto.IMMICH_DISABLE_VERSION_CHECK ?? true,

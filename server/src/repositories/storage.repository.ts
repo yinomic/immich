@@ -118,6 +118,11 @@ export class StorageRepository {
     return fs.writeFile(filepath, buffer, { flag: 'w' });
   }
 
+  /** upload a local file as-is, without buffering it in memory */
+  putFile(key: string, filePath: string, options?: { contentType?: string }): Promise<void> {
+    return this.objectStorage.putFile(key, filePath, options);
+  }
+
   overwriteFile(filepath: string, buffer: Buffer) {
     return fs.writeFile(filepath, buffer, { flag: 'r+' });
   }
@@ -144,13 +149,22 @@ export class StorageRepository {
     await fs.rm(filepath, { force: true });
   }
 
-  /** run a callback against a real local file, downloading remote objects first */
+  /**
+   * Run a callback against a real local file, downloading remote objects first
+   * (through the local originals cache, so an upload is not downloaded again).
+   * The callback must treat the path as read-only unless `uploadBack` is set.
+   */
   withLocalCopy<T>(
     key: string,
     callback: (path: string) => Promise<T>,
     options?: { uploadBack?: boolean; contentType?: string },
   ): Promise<T> {
     return this.objectStorage.withLocalCopy(key, callback, options);
+  }
+
+  /** keep a just-uploaded local file around for the jobs the upload queued */
+  seedLocalCopy(key: string, localPath: string): Promise<void> {
+    return this.objectStorage.seedLocalCopy(key, localPath);
   }
 
   createZipStream(): ImmichZipStream {
@@ -196,23 +210,33 @@ export class StorageRepository {
   }
 
   async readFile(filepath: string, options?: ReadOptionsWithBuffer<Buffer>): Promise<Buffer> {
-    if (this.isRemote() && !options) {
-      return this.objectStorage.get(filepath);
+    if (this.isRemote()) {
+      if (!options) {
+        return this.objectStorage.get(filepath);
+      }
+
+      // NOTE (family fork): slicing a remote object used to fall through to
+      // `fs.open(objectKey)`, which can never work. Materialise it first — the
+      // originals cache usually holds it already, so this is not a second download.
+      return this.objectStorage.withLocalCopy(filepath, (local) => this.readSlice(local, options));
     }
 
-    // read a slice
     if (options) {
-      const file = await fs.open(filepath);
-      try {
-        const { buffer } = await file.read(options);
-        return buffer as Buffer;
-      } finally {
-        await file.close();
-      }
+      return this.readSlice(filepath, options);
     }
 
     // read everything
     return fs.readFile(filepath);
+  }
+
+  private async readSlice(filepath: string, options: ReadOptionsWithBuffer<Buffer>): Promise<Buffer> {
+    const file = await fs.open(filepath);
+    try {
+      const { buffer } = await file.read(options);
+      return buffer as Buffer;
+    } finally {
+      await file.close();
+    }
   }
 
   async readJsonFile<T>(filepath: string): Promise<T> {

@@ -6,6 +6,7 @@ import { automock } from 'test/utils.js';
 
 const mocks = vitest.hoisted(() => ({
   putObject: vitest.fn(),
+  putObjectFromFile: vitest.fn(),
   getObject: vitest.fn(),
   getObjectV2: vitest.fn(),
   headObject: vitest.fn(),
@@ -58,6 +59,18 @@ describe(TosObjectStorage.name, () => {
       body: expect.any(Buffer),
       contentType: 'image/jpeg',
     });
+  });
+
+  it('should upload a local file through the SDK, without buffering it', async () => {
+    await newSut({ prefix: 'immich' }).putFile('upload/a.jpg', '/tmp/staged/a.jpg', { contentType: 'image/jpeg' });
+
+    expect(mocks.putObjectFromFile).toHaveBeenCalledWith({
+      bucket: 'family-photos',
+      key: 'immich/upload/a.jpg',
+      filePath: '/tmp/staged/a.jpg',
+      contentType: 'image/jpeg',
+    });
+    expect(mocks.putObject).not.toHaveBeenCalled();
   });
 
   it('should read an object as a buffer', async () => {

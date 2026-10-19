@@ -1,22 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { LocalObjectStorage } from 'src/repositories/object-storage/local-object-storage.js';
 import { ObjectStorage } from 'src/repositories/object-storage/object-storage.js';
+import { OriginalCache } from 'src/repositories/object-storage/original-cache.js';
 import { TosObjectStorage } from 'src/repositories/object-storage/tos-object-storage.js';
+
+const DEFAULT_CACHE_MB = 2048;
+const DEFAULT_CACHE_TTL_SECONDS = 900;
 
 /**
  * The library backend: local filesystem (default) or a Volcengine TOS bucket.
  *
  * Selected with `IMMICH_STORAGE_BACKEND=tos` plus the `TOS_*` variables.
+ *
+ * Objects are never downloaded more often than necessary: `withLocalCopy` serves
+ * tooling (exiftool, sharp, ffmpeg) from a short-lived local cache, and an upload
+ * seeds that cache with the file it just sent — so the follow-up jobs for a new
+ * asset cost no egress at all.
  */
 @Injectable()
 export class ObjectStorageRepository implements ObjectStorage {
   private storage?: ObjectStorage;
+  private cache?: OriginalCache;
 
   constructor(
     private configRepository: ConfigRepository,
@@ -29,8 +41,14 @@ export class ObjectStorageRepository implements ObjectStorage {
     return this.getStorage().isRemote();
   }
 
-  put(key: string, body: Buffer | Readable, contentType?: string): Promise<void> {
-    return this.getStorage().put(key, body, contentType);
+  async put(key: string, body: Buffer | Readable, contentType?: string): Promise<void> {
+    await this.getStorage().put(key, body, contentType);
+    await this.invalidateCache(key);
+  }
+
+  async putFile(key: string, filePath: string, options?: { contentType?: string }): Promise<void> {
+    await this.getStorage().putFile(key, filePath, options);
+    await this.invalidateCache(key);
   }
 
   get(key: string): Promise<Buffer> {
@@ -57,7 +75,12 @@ export class ObjectStorageRepository implements ObjectStorage {
       return Promise.resolve();
     }
 
-    return this.getStorage().delete(keys);
+    return this.deleteObjects(keys);
+  }
+
+  private async deleteObjects(keys: string[]): Promise<void> {
+    await this.getStorage().delete(keys);
+    await Promise.all(keys.map((key) => this.invalidateCache(key)));
   }
 
   presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string> {
@@ -70,8 +93,12 @@ export class ObjectStorageRepository implements ObjectStorage {
 
   /**
    * Materialise a remote object as a local file so tools that need a real path
-   * (exiftool, sharp, ffmpeg) keep working. The temporary copy is removed again
-   * afterwards; `uploadBack` pushes changes back to the bucket.
+   * (exiftool, sharp, ffmpeg) keep working.
+   *
+   * The copy comes from the local originals cache when possible, so a burst of
+   * jobs for the same asset only costs one download. `uploadBack` forces a
+   * private copy: that callback modifies the file, and the result is pushed back
+   * to the bucket.
    */
   async withLocalCopy<T>(
     key: string,
@@ -83,14 +110,54 @@ export class ObjectStorageRepository implements ObjectStorage {
       return callback(key);
     }
 
+    const cache = this.getCache();
+    if (options?.uploadBack || !cache.enabled) {
+      return this.withTemporaryCopy(key, callback, options);
+    }
+
+    return cache.withEntry(key, (destination) => this.downloadToFile(key, destination), callback);
+  }
+
+  /**
+   * Keep a local file that was just uploaded, so the jobs queued by the upload
+   * (metadata, thumbnails) read from disk instead of downloading back the bytes
+   * we have only just sent. Removes the file when it cannot be cached.
+   */
+  async seedLocalCopy(key: string, localPath: string): Promise<void> {
+    const cache = this.getCache();
+    let cached = false;
+    if (cache.enabled) {
+      try {
+        cached = await cache.seed(key, localPath);
+      } catch (error) {
+        this.logger.warn(`Unable to cache the uploaded object ${key}: ${error}`);
+      }
+    }
+
+    if (!cached) {
+      await this.removeLocalFile(localPath);
+    }
+  }
+
+  /** remove a file that only exists locally (staged uploads, temp copies) */
+  async removeLocalFile(filepath: string): Promise<void> {
+    await rm(filepath, { force: true });
+  }
+
+  private async withTemporaryCopy<T>(
+    key: string,
+    callback: (path: string) => Promise<T>,
+    options?: { uploadBack?: boolean; contentType?: string },
+  ): Promise<T> {
     const folder = await mkdtemp(join(tmpdir(), 'immich-object-'));
     const path = join(folder, 'object');
     try {
-      await writeFile(path, await this.get(key));
+      await this.downloadToFile(key, path);
       const result = await callback(path);
 
       if (options?.uploadBack) {
-        await this.put(key, await this.readLocalFile(path), options.contentType);
+        await this.getStorage().putFile(key, path, { contentType: options.contentType });
+        await this.invalidateCache(key);
       }
 
       return result;
@@ -99,14 +166,34 @@ export class ObjectStorageRepository implements ObjectStorage {
     }
   }
 
-  private async readLocalFile(path: string): Promise<Buffer> {
-    const { readFile } = await import('node:fs/promises');
-    return readFile(path);
+  /** stream the object to disk: a 4 GB video must not go through a Buffer */
+  private async downloadToFile(key: string, destination: string): Promise<void> {
+    await mkdir(dirname(destination), { recursive: true });
+    const stream = await this.getStorage().stream(key);
+    try {
+      await pipeline(stream, createWriteStream(destination));
+    } catch (error) {
+      // do not leave a partial file behind for the next reader
+      await rm(destination, { force: true });
+      throw error;
+    }
   }
 
-  /** create the folder a local (temporary) write will go to */
-  async ensureLocalFolder(path: string): Promise<void> {
-    await mkdir(dirname(path), { recursive: true });
+  private invalidateCache(key: string): Promise<void> {
+    return this.cache?.invalidate(key) ?? Promise.resolve();
+  }
+
+  private getCache(): OriginalCache {
+    if (!this.cache) {
+      const { storage } = this.configRepository.getEnv();
+      this.cache = new OriginalCache({
+        folder: join(storage.cacheLocation, 'originals'),
+        maxBytes: (storage.originalCacheMb ?? DEFAULT_CACHE_MB) * 1024 * 1024,
+        ttlMs: (storage.originalCacheTtlSeconds ?? DEFAULT_CACHE_TTL_SECONDS) * 1000,
+      });
+    }
+
+    return this.cache;
   }
 
   private getStorage(): ObjectStorage {
