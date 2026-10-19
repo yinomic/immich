@@ -131,6 +131,14 @@ export class StorageRepository {
     return fs.rename(source, target);
   }
 
+  /**
+   * Move an object around inside the bucket (the local filesystem is not involved:
+   * object keys are not paths).
+   */
+  renameObject(source: string, target: string): Promise<void> {
+    return this.objectStorage.rename(source, target);
+  }
+
   utimes(filepath: string, atime: Date, mtime: Date) {
     if (this.isRemote()) {
       // object storage has no timestamps; the DB keeps the dates instead
@@ -287,6 +295,12 @@ export class StorageRepository {
   }
 
   async removeEmptyDirs(directory: string, self: boolean = false) {
+    // with object storage the library has no local folders at all, so a missing
+    // directory simply means there is nothing to clean up
+    if (!existsSync(directory)) {
+      return;
+    }
+
     // lstat does not follow symlinks (in contrast to stat)
     const stats = await fs.lstat(directory);
     if (!stats.isDirectory()) {

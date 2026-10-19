@@ -25,6 +25,7 @@ const newRemoteStorage = () => ({
   get: vitest.fn(),
   put: vitest.fn().mockResolvedValue(undefined),
   putFile: vitest.fn().mockResolvedValue(undefined),
+  rename: vitest.fn().mockResolvedValue(undefined),
 });
 
 const read = (path: string) => readFile(path, 'utf8');
@@ -169,6 +170,18 @@ describe(ObjectStorageRepository.name, () => {
       await sut.putFile('upload/a.jpg', path, { contentType: 'image/jpeg' });
 
       expect(storage.putFile).toHaveBeenCalledWith('upload/a.jpg', path, { contentType: 'image/jpeg' });
+    });
+
+    it('should move an object inside the bucket, keeping its cached copy', async () => {
+      const { sut, storage, read } = await setupRemote();
+
+      await sut.withLocalCopy('upload/a.jpg', read);
+      await sut.rename('upload/a.jpg', 'library/admin/2026/09/12/a.jpg');
+
+      expect(storage.rename).toHaveBeenCalledWith('upload/a.jpg', 'library/admin/2026/09/12/a.jpg');
+      // the cached copy moved along, so the follow-up job is not a download
+      await expect(sut.withLocalCopy('library/admin/2026/09/12/a.jpg', read)).resolves.toBe('photo');
+      expect(storage.stream).toHaveBeenCalledTimes(1);
     });
   });
 });

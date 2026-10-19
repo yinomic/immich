@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { ObjectStorage, ObjectStorageError, normalizeKey } from 'src/repositories/object-storage/object-storage.js';
@@ -64,6 +64,12 @@ export class LocalObjectStorage implements ObjectStorage {
 
   presign(key: string): Promise<string> {
     return Promise.resolve(this.localPath(key));
+  }
+
+  async rename(source: string, target: string): Promise<void> {
+    const target$ = this.localPath(target);
+    await mkdir(dirname(target$), { recursive: true });
+    await rename(this.localPath(source), target$);
   }
 
   localPath(key: string): string {

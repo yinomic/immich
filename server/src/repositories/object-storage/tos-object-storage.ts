@@ -2,6 +2,7 @@ import { TosClient, TosClientError, TosServerError } from '@volcengine/tos-sdk';
 import { Readable } from 'node:stream';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { ObjectStorage, ObjectStorageError, normalizeKey } from 'src/repositories/object-storage/object-storage.js';
+import { mimeTypes } from 'src/utils/mime-types.js';
 
 export interface TosObjectStorageOptions {
   /** e.g. tos-cn-beijing.volces.com (no scheme) */
@@ -111,6 +112,24 @@ export class TosObjectStorage implements ObjectStorage {
     }
 
     await this.client.deleteMultiObjects({ bucket: this.bucket, objects });
+  }
+
+  /**
+   * TOS's own `renameObject` answers 403 for a plain read/write key, but a
+   * server-side copy followed by a delete does the same job and, like the rename,
+   * never moves the bytes through this server.
+   */
+  async rename(source: string, target: string): Promise<void> {
+    const srcKey = this.objectKey(source);
+    const key = this.objectKey(target);
+    await this.client.copyObject({
+      bucket: this.bucket,
+      key,
+      srcBucket: this.bucket,
+      srcKey,
+      contentType: mimeTypes.lookup(target),
+    });
+    await this.client.deleteObject({ bucket: this.bucket, key: srcKey });
   }
 
   presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string> {

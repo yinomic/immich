@@ -112,6 +112,25 @@ export class OriginalCache {
     await rm(this.pathFor(key), { force: true });
   }
 
+  /**
+   * The object moved inside the bucket: move its local copy along, so the jobs
+   * that follow a storage template move still find it on disk.
+   */
+  async relocate(source: string, target: string): Promise<void> {
+    const from = this.pathFor(source);
+    const to = this.pathFor(target);
+    try {
+      await stat(from);
+    } catch {
+      // nothing cached for the old key, or it already expired
+      return;
+    }
+
+    await rm(to, { force: true });
+    await rename(from, to);
+    await this.prune();
+  }
+
   private retain(path: string) {
     this.inUse.set(path, (this.inUse.get(path) ?? 0) + 1);
   }

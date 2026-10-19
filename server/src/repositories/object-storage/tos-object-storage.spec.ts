@@ -11,6 +11,8 @@ const mocks = vitest.hoisted(() => ({
   getObjectV2: vitest.fn(),
   headObject: vitest.fn(),
   deleteMultiObjects: vitest.fn(),
+  deleteObject: vitest.fn(),
+  copyObject: vitest.fn(),
   getPreSignedUrl: vitest.fn(),
 }));
 
@@ -126,6 +128,19 @@ describe(TosObjectStorage.name, () => {
     await newSut().delete(['']);
 
     expect(mocks.deleteMultiObjects).not.toHaveBeenCalled();
+  });
+
+  it('should move an object with a server-side copy and a delete', async () => {
+    await newSut({ prefix: 'immich' }).rename('upload/a.jpg', 'library/admin/2026/09/12/IMG_1.jpg');
+
+    expect(mocks.copyObject).toHaveBeenCalledWith({
+      bucket: 'family-photos',
+      key: 'immich/library/admin/2026/09/12/IMG_1.jpg',
+      srcBucket: 'family-photos',
+      srcKey: 'immich/upload/a.jpg',
+      contentType: 'image/jpeg',
+    });
+    expect(mocks.deleteObject).toHaveBeenCalledWith({ bucket: 'family-photos', key: 'immich/upload/a.jpg' });
   });
 
   it('should presign a GET url with a content type and inline filename', async () => {

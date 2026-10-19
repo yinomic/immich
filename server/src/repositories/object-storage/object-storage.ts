@@ -21,6 +21,11 @@ export interface ObjectStorage {
   exists(key: string): Promise<boolean>;
   size(key: string): Promise<number | undefined>;
   delete(keys: string[]): Promise<void>;
+  /**
+   * Move an object inside the store, without its bytes travelling through us.
+   * `source` and `target` are object keys.
+   */
+  rename(source: string, target: string): Promise<void>;
   /** URL the client can fetch directly (remote) or the local absolute path */
   presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string>;
   /** local absolute path for a key (local backend only) */

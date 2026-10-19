@@ -67,12 +67,12 @@ export class ObjectStorageRepository implements ObjectStorage {
     return this.getStorage().size(key);
   }
 
-  delete(keys: string[]): Promise<void> {
+  async delete(keys: string[]): Promise<void> {
     // NOTE (family fork): the objects are the family's photos — with soft delete only
     // (the default) they are never removed from the bucket.
     if (this.configRepository.getEnv().storage.softDeleteOnly) {
       this.logger.log(`Soft delete only: keeping ${keys.length} object(s) in the bucket`);
-      return Promise.resolve();
+      return;
     }
 
     return this.deleteObjects(keys);
@@ -81,6 +81,18 @@ export class ObjectStorageRepository implements ObjectStorage {
   private async deleteObjects(keys: string[]): Promise<void> {
     await this.getStorage().delete(keys);
     await Promise.all(keys.map((key) => this.invalidateCache(key)));
+  }
+
+  /**
+   * Move an object inside the bucket (a storage template migration renames an
+   * original to its library path). The copy happens in the bucket, so no bytes
+   * travel through this server, and the local copy moves along with it.
+   */
+  async rename(source: string, target: string): Promise<void> {
+    await this.getStorage().rename(source, target);
+    if (this.cache) {
+      await this.cache.relocate(source, target);
+    }
   }
 
   presign(key: string, options?: { contentType?: string; fileName?: string; ttlSeconds?: number }): Promise<string> {

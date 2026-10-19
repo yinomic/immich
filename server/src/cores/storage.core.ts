@@ -218,7 +218,14 @@ export class StorageCore {
       return;
     }
 
-    this.ensureFolders(newPath);
+    // NOTE (family fork): an original (or sidecar) is an object in the bucket, not
+    // a path on disk, so there is no folder to create and the move has to happen
+    // inside the bucket. `fs.rename(objectKey, objectKey)` can only fail with
+    // ENOENT — which is what used to spam the log for every asset.
+    const isObject = this.isObjectPath(pathType);
+    if (!isObject) {
+      this.ensureFolders(newPath);
+    }
 
     let move = await this.moveRepository.getByEntity(entityId, pathType);
     if (move) {
@@ -258,9 +265,9 @@ export class StorageCore {
     if (move.oldPath !== newPath) {
       try {
         this.logger.debug(`Attempting to rename file: ${move.oldPath} => ${newPath}`);
-        await this.storageRepository.rename(move.oldPath, newPath);
+        await this.rename(move.oldPath, newPath, isObject);
       } catch (error: any) {
-        if (error.code !== 'EXDEV') {
+        if (isObject || error.code !== 'EXDEV') {
           this.logger.warn(
             `Unable to complete move. Error renaming file with code ${error.code} and message: ${error.message}`,
           );
@@ -290,6 +297,19 @@ export class StorageCore {
     await this.moveRepository.delete(move.id);
   }
 
+  /** originals and sidecars live in the bucket, derived files stay in the local cache */
+  private isObjectPath(pathType: PathType): boolean {
+    return (
+      this.storageRepository.isRemote() && (pathType === AssetPathType.Original || pathType === AssetFileType.Sidecar)
+    );
+  }
+
+  private rename(source: string, target: string, isObject: boolean): Promise<void> {
+    return isObject
+      ? this.storageRepository.renameObject(source, target)
+      : this.storageRepository.rename(source, target);
+  }
+
   private async verifyNewPathContentsMatchesExpected(
     oldPath: string,
     newPath: string,
@@ -311,6 +331,14 @@ export class StorageCore {
     };
     const config = await getConfig(repos, { withCache: true });
     if (assetInfo && config.storageTemplate.hashVerificationEnabled) {
+      if (this.storageRepository.isRemote()) {
+        // NOTE (family fork): hashing the new path would mean downloading the
+        // object back from the bucket. The size check above is the meaningful
+        // one, and the copy itself happened inside the bucket.
+        this.logger.debug(`Skipping checksum check for remote object ${newPath}`);
+        return true;
+      }
+
       const { checksum } = assetInfo;
       const newChecksum = await this.cryptoRepository.hashFile(newPath);
       if (!newChecksum.equals(checksum)) {
