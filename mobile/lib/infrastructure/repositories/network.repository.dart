@@ -9,7 +9,14 @@ import 'package:web_socket/web_socket.dart';
 
 class NetworkRepository {
   static http.Client? _client;
+  static http.Client? _uploadClient;
   static Pointer<Void>? _clientPointer;
+
+  /// The client uploads go through. It gets a much longer leash than the rest
+  /// of the API: a large video on a slow uplink legitimately takes minutes, and
+  /// the server holds the response until the file has reached its object bucket,
+  /// so a 60 second timeout kills uploads that would have finished.
+  static http.Client get uploadClient => _uploadClient ?? _client!;
 
   static Future<void> init() async {
     final clientPointer = Pointer<Void>.fromAddress(await networkApi.getClientPointer());
@@ -18,6 +25,7 @@ class NetworkRepository {
     }
     _clientPointer = clientPointer;
     _client?.close();
+    _uploadClient = null;
     if (Platform.isIOS) {
       final session = URLSession.fromRawPointer(clientPointer.cast());
       _client = CupertinoClient.fromSharedSession(session);
@@ -28,6 +36,14 @@ class NetworkRepository {
           connectTimeout: Duration(seconds: 30),
           readTimeout: Duration(seconds: 60),
           writeTimeout: Duration(seconds: 60),
+        ),
+      );
+      _uploadClient = OkHttpClient.fromJniGlobalRef(
+        clientPointer,
+        configuration: const OkHttpClientConfiguration(
+          connectTimeout: Duration(seconds: 30),
+          readTimeout: Duration(minutes: 5),
+          writeTimeout: Duration(minutes: 5),
         ),
       );
     }

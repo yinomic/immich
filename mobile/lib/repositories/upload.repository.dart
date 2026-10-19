@@ -81,7 +81,7 @@ class UploadRepository {
     }
 
     try {
-      final client = httpClient ?? NetworkRepository.client;
+      final client = httpClient ?? NetworkRepository.uploadClient;
       StreamedResponse response;
       try {
         response = await client.send(buildRequest());
