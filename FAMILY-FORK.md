@@ -1333,4 +1333,73 @@ flutter build apk --release                  # 三合一
 
 服务端是否要把推桶**挪出请求**（落盘+建库后立刻 201，推桶进新 job，并由该 job 再排元数据/缩略图以保证顺序）。代价：上传完成到对象进桶有几秒窗口，这期间原图预签名会 404（缩略图走本地缓存不受影响）。等 `grep "Slow upload"` 的结果出来再决定——如果卡在推桶就做，如果卡在收包（手机→服务器）就跟桶无关。
 
+---
+
+## Round 44 — 桶模式下存储模板迁移刷 `ENOENT ... rename 'upload/...' -> 'library/...'`
+
+用户日志里大量出现：
+
+```
+WARN [Microservices:StorageCore] Unable to complete move. Error renaming file
+with code ENOENT and message: ENOENT: no such file or directory,
+rename 'upload/3cf247be-.../cd/bb/cdbbb332-....jpg' -> 'library/admin/2026/09/12/IMG_20260912_080842.jpg'
+```
+
+### 1. 根因
+
+开了存储模板（storage template）后，每个资产迁移时 `StorageCore.moveFile` 会用 **`fs.rename`** 去移动原图：
+
+```ts
+rename(source, target) { return fs.rename(source, target); }   // storage.repository.ts
+```
+
+而桶模式下 `originalPath` 是**对象 key**（`upload/<userId>/<ab>/<cd>/<uuid>.jpg`），不是磁盘路径 —— `fs.rename('upload/…', 'library/…')` 必然 ENOENT。这正是本 fork 从本地库改到对象桶时漏掉的一处。
+
+后果（**没有数据丢失**）：
+1. 原图一直留在 `upload/...`（桶里对象还在，预签名照常可看），只是模板路径永远生效不了；
+2. 失败的 move 在 `move_history` 里留了行，于是每次重试都走「finish incomplete move」分支、**再刷一遍同样的 WARN**（用户看到的"大量"）；
+3. 每次还会在本地 `mkdir` 出一串空的 `library/<年>/<月>/<日>/` 目录（原图根本没往本地写）。
+
+### 2. 关键验证：TOS 有没有可用的 rename
+
+拿真桶 `hyc` 试了三种（用一个临时对象，测完已删干净）：
+
+| API | 结果 |
+|---|---|
+| `renameObject`（TOS 原生） | ❌ **403 Access Denied**（这个 AK 没这个权限） |
+| `copyObject` + `deleteObject` | ✅ 都可用；copy 是**服务端**操作，字节不经过服务器，**不产生外网流量** |
+| `putObject` / `deleteObject` | ✅（说明密钥有删除权限，`.env` 里"不需要删除权限"的注释可以更新） |
+
+所以改用 **服务端 copy + delete** 来实现对象移动。
+
+### 3. 修复
+
+| 改动 | 文件 |
+|---|---|
+| `ObjectStorage.rename(source, target)`：TOS 用 `copyObject({key, srcBucket, srcKey, contentType})` + `deleteObject({key: srcKey})`；本地后端用 `fs.rename` | `repositories/object-storage/{object-storage,tos-object-storage,local-object-storage}.ts` |
+| `StorageCore.moveFile` 按**路径类型**选移动方式：`Original`/`Sidecar` = 桶内对象移动；`FullSize`/`Preview`/`Thumbnail`/`EncodedVideo` = 本地缓存文件（派生文件本来就不进桶）；对象 key 不再 `mkdir`；远端路径跳过 checksum 校验（否则要把对象下载回来） | `cores/storage.core.ts` |
+| 对象改名时**本地缓存副本一起改名**，迁移后的 job 仍然命中缓存 | `repositories/object-storage/original-cache.ts`（`relocate`）+ `object-storage.repository.ts` |
+| `removeEmptyDirs` 容忍目录不存在（桶模式下本地根本没有 `library/` 目录） | `repositories/storage.repository.ts` |
+
+### 4. 验证
+
+**真桶端到端**：用编译后的 `dist` 起了一个探针，把真配置塞进 `StorageCore.create(...)`，调**真实的** `moveFile`：
+
+```
+before: from = 27 bytes, to = undefined
+asset.update {"id":"asset-1","originalPath":"zz-dsh-move/library/admin/2026/09/12/a.jpg"}
+after : from = undefined, to = 27 bytes      ← 桶内 copy+delete，全程无 WARN
+```
+
+再用 `headObject` 逐个确认探测对象都已清理（`zz-dsh-probe/*`、`zz-dsh-move/*` 全部 404）。
+
+**单测**：server **87 文件 / 1551 通过**（新增 4 例：`moveFile` 远端原图走对象移动且不 mkdir、远端派生文件仍走 `fs.rename`、本地后端走 `fs.rename`、`rename` 的 copy+delete 映射），`tsc` 与 `eslint --max-warnings 0` 绿。
+
+### 5. 交付与注意
+
+- 提交：`9093b654b`。**未重建镜像**（本轮只改了服务端代码，等你确认后一起重建）。
+- 迁移存量资产：改动生效后重跑一次「存储模板迁移」（管理页 Job 面板里的 `StorageTemplateMigrationQueueAll`），桶里的对象会一个个被搬到 `library/<用户>/<年>/<月>/<日>/<文件名>`，**不产生外网下载流量**（服务端 copy）。对象多的话会有相应次数的 PUT/DELETE 请求（这些是请求费用，不是流量费用）。
+- 若日志里仍出现 `ENOENT`，说明该资产的 key 已经不在桶里（例如密钥曾经没有删除权限时的历史残留），这属于另一类问题——`checkFileExists` 会因此判定"两边都不存在"，只会打 WARN 不再重试。
+
+
 
