@@ -202,9 +202,12 @@ export class MediaService extends BaseService {
         : this.generateImageThumbnails(localAsset, config);
     });
 
-    const editedGenerated = await this.withLocalOriginal(asset, (localAsset) =>
-      this.generateEditedThumbnails(localAsset, config),
-    );
+    // NOTE (family fork): decide *before* materialising the original. The edited
+    // pass returns immediately unless the asset has files or edits, and with
+    // object storage every call to withLocalOriginal downloads the whole file.
+    const editedGenerated = this.hasEditedThumbnails(asset)
+      ? await this.withLocalOriginal(asset, (localAsset) => this.generateEditedThumbnails(localAsset, config))
+      : undefined;
     if (editedGenerated) {
       generated.files.push(...editedGenerated.files);
     }
@@ -748,8 +751,13 @@ export class MediaService extends BaseService {
     }
   }
 
+  /** only images that have files or edits get an edited-thumbnail pass */
+  private hasEditedThumbnails(asset: ThumbnailAsset): boolean {
+    return asset.type === AssetType.Image && (asset.files.length > 0 || asset.edits.length > 0);
+  }
+
   private async generateEditedThumbnails(asset: ThumbnailAsset, config: SystemConfig) {
-    if (asset.type !== AssetType.Image || (asset.files.length === 0 && asset.edits.length === 0)) {
+    if (!this.hasEditedThumbnails(asset)) {
       return;
     }
 
