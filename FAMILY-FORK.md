@@ -1277,7 +1277,10 @@ state after the UI upload: {..., 'isTrashed': False}         # 已回到时间�
 
 | 项 | 状态 |
 |---|---|
-| 提交 | 见本轮 4 个 commit（fix/media、feat/storage-cache、fix/metadata、docs），**未推送**（等你确认） |
-| 镜像重建 | 未做（需要你确认后 `docker compose build`） |
-| 待确认 | 是否把 `IMMICH_ORIGINAL_CACHE_MB` 调小（容器 `/cache` 卷在小机器上）——默认 2 GiB 上限，可按盘调 |
+| 提交 | `dd542a547`（缩略图分支）、`384666b1a`（originals 缓存）、`8fd670932`（exiftool/ffprobe 合一）、`025956984`（本文档），已推到 `origin/family-album` |
+| 镜像重建 | ✅ `docker compose -f docker/docker-compose.prod.yml build immich-server` → `5296eb9f23f1`；已 tag 成 `ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest` 与 `immich-family:local` |
+| 镜像内自检 | ✅ `server/dist/repositories/object-storage/original-cache.js` 存在；`media.service.js` 命中 `hasEditedThumbnails`(3)；`metadata.repository.js`/`metadata.service.js` 命中 `readTagsWith`；`tos-object-storage.js` 命中 `putObjectFromFile`；`object-storage.repository.js` 命中 `pipeline`(2) 与 `seedLocalCopy`；旧的 `withLocalCopy(...getVideoTags...)` 直连下载 0 命中 |
+| 推送镜像 | ❌ 同 Round 41：`denied: requested access to the resource is denied`（本机没有 `~/.docker/config.json`，即没有 ccr 凭证）。需要你执行 `docker login ccr.ccs.tencentyun.com && docker push ccr.ccs.tencentyun.com/agile-cloud/immich-family:latest` |
+| 尚未生效的实例 | 本机 `immich-wk` 容器（镜像 `553f3dfbb591`，16 小时前那版）没有动过；要让新代码跑起来需 `docker compose -f docker/docker-compose.yml up -d immich-server`（或推 registry 后 pull） |
+| 待确认 | `IMMICH_ORIGINAL_CACHE_MB` 是否按盘调小——默认 2 GiB 上限，落在 `/cache` 卷；拍 4K 视频多的家庭建议 4096 |
 
