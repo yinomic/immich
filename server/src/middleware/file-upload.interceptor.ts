@@ -6,6 +6,7 @@ import { NextFunction, RequestHandler } from 'express';
 import multer from 'multer';
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { pipeline } from 'node:stream';
 import { Observable } from 'rxjs';
 import type { ImmichFile, UploadFile, UploadFiles } from 'src/types.js';
@@ -16,6 +17,11 @@ import { LoggingRepository } from 'src/repositories/logging.repository.js';
 import { StorageRepository } from 'src/repositories/storage.repository.js';
 import { AssetMediaService } from 'src/services/asset-media.service.js';
 import { asUploadRequest, mapToUploadFile } from 'src/utils/asset.util.js';
+
+/** a device that needs longer than this to hand over one file is worth a warning */
+const SLOW_RECEIVE_MS = 10_000;
+
+const toMib = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 
 export function getFile(files: UploadFiles, property: 'assetData' | 'sidecarData') {
   const file = files[property]?.[0];
@@ -118,6 +124,7 @@ export class FileUploadInterceptor implements NestInterceptor {
       const hash = file.fieldname === UploadFieldName.ASSET_DATA ? createHash('sha1') : null;
 
       let size = 0;
+      const startedAt = performance.now();
 
       file.stream.on('data', (chunk) => {
         hash?.update(chunk);
@@ -132,6 +139,18 @@ export class FileUploadInterceptor implements NestInterceptor {
         if (size === 0) {
           return callback(new BadRequestException('File is empty'));
         }
+
+        // NOTE (family fork): how long the device needed to hand us the bytes.
+        // With the bucket-push timing logged by AssetMediaService this tells a
+        // slow uplink apart from a slow bucket.
+        const receiveMs = Math.round(performance.now() - startedAt);
+        const message = `received ${toMib(size)} in ${receiveMs}ms`;
+        if (receiveMs > SLOW_RECEIVE_MS) {
+          this.logger.warn(`Slow upload: ${message}`);
+        } else {
+          this.logger.debug(`Upload: ${message}`);
+        }
+
         callback(null, {
           path,
           size,

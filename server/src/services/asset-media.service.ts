@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { performance } from 'node:perf_hooks';
 import sanitize from 'sanitize-filename';
 import type { UploadFile, UploadRequest } from 'src/types.js';
 import { StorageCore } from 'src/cores/storage.core.js';
@@ -41,6 +42,14 @@ import { fromChecksum } from 'src/utils/request.js';
 export interface AssetMediaRedirectResponse {
   targetSize: AssetMediaSize | 'original';
 }
+
+/** a single push into the bucket that takes longer than this is worth a warning */
+const SLOW_PUSH_MS = 10_000;
+
+/** a whole POST /api/assets that takes longer than this is worth a warning */
+const SLOW_UPLOAD_MS = 30_000;
+
+const toMib = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 
 @Injectable()
 export class AssetMediaService extends BaseService {
@@ -163,9 +172,22 @@ export class AssetMediaService extends BaseService {
     }
 
     const key = StorageCore.toObjectKey(upload.originalPath);
+    const started = performance.now();
     await this.storageRepository.putFile(key, upload.originalPath, {
       contentType: mimeTypes.lookup(upload.originalPath),
     });
+
+    // NOTE (family fork): this push happens inside the request, so a slow bucket
+    // shows up as a slow POST /api/assets — and, on the client, as a socket
+    // timeout. Log it so the next such report can be answered from the logs.
+    const pushMs = Math.round(performance.now() - started);
+    const message = `pushed ${key} (${toMib(upload.size)}) to the bucket in ${pushMs}ms`;
+    if (pushMs > SLOW_PUSH_MS) {
+      this.logger.warn(`Slow upload: ${message}`);
+    } else {
+      this.logger.debug(`Upload: ${message}`);
+    }
+
     await this.storageRepository.seedLocalCopy(key, upload.originalPath);
 
     return { ...upload, originalPath: key };
@@ -180,6 +202,7 @@ export class AssetMediaService extends BaseService {
     let asset: Asset | undefined;
     let file = upload;
     let sidecarFile = uploadSidecar;
+    const startedAt = performance.now();
     try {
       file = await this.stageUpload(upload);
       sidecarFile = uploadSidecar ? await this.stageUpload(uploadSidecar) : undefined;
@@ -240,6 +263,15 @@ export class AssetMediaService extends BaseService {
       await this.jobRepository.queue({ name: JobName.AssetExtractMetadata, data: { id: asset.id, source: 'upload' } });
 
       await this.eventRepository.emit('AssetCreate', { asset, file });
+
+      // NOTE (family fork): the client's socket timeout is 60s, so anything
+      // approaching that has to be visible in the log.
+      const totalMs = Math.round(performance.now() - startedAt);
+      if (totalMs > SLOW_UPLOAD_MS) {
+        this.logger.warn(`Slow upload: ${file.originalName} (${toMib(file.size)}) took ${totalMs}ms`);
+      } else {
+        this.logger.debug(`Upload: ${file.originalName} (${toMib(file.size)}) took ${totalMs}ms`);
+      }
 
       return { id: asset.id, status: AssetMediaStatus.CREATED };
     } catch (error: any) {
