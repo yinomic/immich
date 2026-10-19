@@ -135,21 +135,43 @@ export class MetadataRepository {
   }
 
   readTags(path: string): Promise<ImmichTags> {
-    const options: ReadTaskOptions | undefined = mimeTypes.isVideo(path) ? { readArgs: ['-ee'] } : undefined;
+    const options = this.readOptions(path);
 
-    return this.withLocal(path, (local) =>
-      this.exiftool
-        .read(local, options)
-        .catch((error) => {
-          this.logger.warn(`Error reading exif data (${path}): ${error}\n${error?.stack}`);
-          return {};
-        })
-        .then((tags) => tags as ImmichTags),
-    );
+    return this.withLocal(path, (local) => this.readTagsFrom(local, path, options));
+  }
+
+  /**
+   * Read the exiftool tags and run `probe` against the *same* local file, so an
+   * object-storage original is only materialised (downloaded) once.
+   *
+   * NOTE (family fork): ffprobe used to fetch its own copy of every video, in
+   * parallel with exiftool, which doubled the egress for videos.
+   */
+  readTagsWith<T>(path: string, probe: (localPath: string) => Promise<T>): Promise<[ImmichTags, T]> {
+    const options = this.readOptions(path);
+
+    return this.withLocal(path, async (local) => {
+      const [tags, probed] = await Promise.all([this.readTagsFrom(local, path, options), probe(local)]);
+      return [tags, probed];
+    });
   }
 
   extractBinaryTag(path: string, tagName: string): Promise<Buffer> {
     return this.withLocal(path, (local) => this.exiftool.extractBinaryTagToBuffer(tagName, local));
+  }
+
+  private readOptions(path: string): ReadTaskOptions | undefined {
+    return mimeTypes.isVideo(path) ? { readArgs: ['-ee'] } : undefined;
+  }
+
+  private readTagsFrom(local: string, path: string, options?: ReadTaskOptions): Promise<ImmichTags> {
+    return this.exiftool
+      .read(local, options)
+      .catch((error) => {
+        this.logger.warn(`Error reading exif data (${path}): ${error}\n${error?.stack}`);
+        return {};
+      })
+      .then((tags) => tags as ImmichTags);
   }
 
   async writeTags(path: string, tags: Partial<Tags>): Promise<void> {

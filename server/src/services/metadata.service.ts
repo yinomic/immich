@@ -561,19 +561,29 @@ export class MetadataService extends BaseService {
     return { width, height };
   }
 
+  private async readTagsWithProbe(originalPath: string) {
+    const [tags, probe] = await this.metadataRepository.readTagsWith(originalPath, (localPath) =>
+      this.getVideoTags(localPath),
+    );
+
+    return { tags, probe };
+  }
+
   private async getExifTags(asset: { originalPath: string; files: AssetFile[]; type: AssetType }) {
     const { sidecarFile } = getAssetFiles(asset.files);
     const shouldProbe = asset.type === AssetType.Video || asset.originalPath.toLowerCase().endsWith('.gif');
 
-    const [mediaTags, sidecarTags, videoResult] = await Promise.all([
-      this.metadataRepository.readTags(asset.originalPath),
-      sidecarFile ? this.metadataRepository.readTags(sidecarFile.path) : null,
-      // NOTE (family fork): ffprobe needs a real file, so object-storage originals are
-      // materialised first (without this, videos end up with no metadata at all)
-      shouldProbe
-        ? this.storageRepository.withLocalCopy(asset.originalPath, (localPath) => this.getVideoTags(localPath))
-        : null,
-    ]);
+    // the sidecar is a small object of its own, so it is read in parallel
+    const sidecarTagsPromise = sidecarFile ? this.metadataRepository.readTags(sidecarFile.path) : null;
+
+    // NOTE (family fork): exiftool and ffprobe share one materialised original.
+    // They used to run in parallel and each download their own copy, so every
+    // video was fetched twice from the bucket.
+    const { tags: mediaTags, probe: videoResult } = shouldProbe
+      ? await this.readTagsWithProbe(asset.originalPath)
+      : { tags: await this.metadataRepository.readTags(asset.originalPath), probe: null };
+
+    const sidecarTags = await sidecarTagsPromise;
 
     // prefer dates from sidecar tags
     if (sidecarTags) {
