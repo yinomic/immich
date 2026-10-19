@@ -1209,3 +1209,75 @@ state after the UI upload: {..., 'isTrashed': False}         # 已回到时间�
 
 - 现在的完整语义是：**只要同一份文件的内容已经在这个库里（不论它在时间线、回收站，还是回收站已被清空），再上传一次都会把它恢复成可见状态**，并且给用户明确提示；库里不会多出重复行，也不会重复占用存储（软删除模式下文件从头到尾只存一份）。
 - 「清空回收站」在本 fork 里 = 隐藏 + 标记 `deleted`（文件仍在桶里，因为 `IMMICH_SOFT_DELETE_ONLY` 默认开启）。如果哪天关掉软删除开关，清空回收站才是真删：那种情况下重复上传会正常创建一条**全新**资源，本轮的恢复逻辑不受影响（`restoreAll` 找不到行就是 no-op）。
+
+---
+
+## Round 42 — 桶外网下载流量异常：上传后被回读 3 次
+
+### 1. 现象
+
+用户监测 TOS 桶用量，发现**当日外网下载 1.43 GB**，而桶里只有 **66 个对象 / 465.35 MiB**，内网下载 0、CDN 回源 0、请求 318 次。怀疑「手机 app 备份上传完文件后又把文件从桶里读回来」。
+
+对一下账就很清楚了：
+
+| 量 | 值 | 说明 |
+|---|---|---|
+| 桶内数据 | 465.35 MiB | 66 个对象 |
+| 当日外网下载 | 1.43 GB | **≈ 3.15 × 桶内容量** |
+| 当日请求 | 318 次 | 66 次 PUT + 66×3 = 198 次 GET + 若干 HEAD，正好 |
+
+**结论：不是客户端回读，是服务端后处理 job 把每个对象从桶里下载了 3 遍。**
+
+### 2. 根因（三处 GET）
+
+1. `MetadataService.getExifTags()` → `MetadataRepository.readTags()` → `withLocalCopy()`：exiftool 要真实文件，整个对象下载进内存（`getObject` → Buffer）。**第 1 遍**
+2. `MediaService.handleGenerateThumbnails()` → `withLocalOriginal()`（`media.service.ts:198`）生成缩略图。**第 2 遍**
+3. 同一 handler 里**第二个** `withLocalOriginal()`（`media.service.ts:205`）跑「编辑后缩略图」——而 `generateEditedThumbnails()` 在没有 edits 时立刻 return，**下载却发生在回调之前**，这一遍纯属白下。**第 3 遍**
+
+视频更差：`getExifTags` 里 `shouldProbe` 又单独 `withLocalCopy` 跑 ffprobe，且和 `readTags` 在 `Promise.all` 里并行——**同一个视频同时下两遍**，单个视频合计 4 遍。
+
+放大器是 `AssetMediaService.stageUpload()`：文件 `put` 进桶之后**立刻 `removeLocalFile`**，本地明明刚有那份文件，紧接着排队的 job 只能再去桶里下回来。web 端与手机端完全同一条路径（读回全在服务端 job 里，与上传来源无关）。
+
+### 3. 修复
+
+| # | 改动 | 文件 |
+|---|---|---|
+| 1 | 「编辑后缩略图」的下载提前到判定之后：新增 `hasEditedThumbnails()`，没有 files/edits 就根本不去 materialise 原图 | `services/media.service.ts` |
+| 2 | **新增本地原图缓存** `OriginalCache`（TTL + LRU + single-flight + 容量硬上限），上传时把暂存文件 `seed` 进缓存而不是删掉 → 上传后的整条流水线 **0 次回读** | `repositories/object-storage/original-cache.ts`（新）、`repositories/object-storage.repository.ts`、`services/asset-media.service.ts` |
+| 3 | exiftool 与 ffprobe 共用**同一份**本地副本：`readTagsWith(path, probe)`，视频从 2 次下载降到 1 次 | `repositories/metadata.repository.ts`、`services/metadata.service.ts` |
+| 4 | 下载改为**流式落盘**（`stream()` + `pipeline`），不再整对象进 Buffer；上传用 SDK 的 `putObjectFromFile` 直接流文件 | `repositories/object-storage.repository.ts`、`repositories/object-storage/tos-object-storage.ts` |
+
+顺带修掉一个真 bug：`StorageRepository.readFile(path, {buffer, position, length})` 在远端模式下直接 `fs.open(objectKey)`——**永远打不开**，所以 Pixel 那类「默认切片」的 motion photo 在 TOS 模式下拿不到内嵌视频。现在先 materialise（命中缓存即零下载）再切片。
+
+**缓存语义**（`IMMICH_ORIGINAL_CACHE_MB` 默认 2048、`IMMICH_ORIGINAL_CACHE_TTL` 默认 900 秒，设 0 关掉）：
+- 目录 `IMMICH_CACHE_LOCATION/originals`，里面**只有桶里已经有的东西**，可随时删；
+- `mtime` 既是「多久没用」的过期计时，也是 LRU 顺序；容量是**硬上限**（每次插入前先腾地方，正在被读的条目用引用计数保护，不会被删）；
+- 任何写入（`put`/`putFile`/上传回写/删除）都会让对应 key 的缓存失效，改过的文件不会被读成旧内容；
+- `withLocalCopy(..., { uploadBack: true })`（exiftool 回写）走私有临时副本，不进缓存。
+
+### 4. 验证
+
+**单测**（`pnpm test`，87 文件 / **1547 通过**，`tsc`、`eslint --max-warnings 0`、`prettier` 全绿）新增 15 例：
+
+- `original-cache.spec.ts`（新文件，10 例）：同一对象三次 `withEntry` 只下载 **1** 次；并发调用共享一次下载；seed 后立即可读且暂存文件被移走；超过容量上限时不缓存；闲置过期删除；LRU 淘汰最久未用；**正在被读的副本绝不会被淘汰**；下载失败清理 `.part`。
+- `object-storage.repository.spec.ts`：连跑三次 `withLocalCopy` → `stream()` 只调 **1** 次、`get()` 不被调用（证明不再整对象进内存）；`seedLocalCopy` 之后 **0** 次下载；`cacheMb: 0` 时退回下载并删掉暂存文件；`put`/`uploadBack` 之后缓存失效会重新下载。
+- `asset-media.service.spec.ts`：上传后用 `putFile` 推对象（不再是 `read` 整文件进内存）+ `seedLocalCopy`，且**不再** `removeLocalFile`；写回 `asset.originalPath` 的 key 与 seed 的 key 一致（这正是后续 job 命中的依据）。
+- `tos-object-storage.spec.ts`：`putFile` 调 `putObjectFromFile` 且不调 `putObject`。
+
+**没做的验证**：本轮**没有**跑真实桶（不烧用户带宽）。要落地确认，最省事的办法是传一张固定大小的图，看桶的「外网下载」增量：
+
+| | 修复前 | 修复后 |
+|---|---|---|
+| 上传 1 张 10 MB 照片 | 外网下载 +≈30 MB | +0 MB（首次元数据/缩略图走本地缓存） |
+| 上传 1 段 100 MB 视频 | +≈400 MB | +0 MB |
+
+冷缓存（重启容器后、或 TTL 过期后、或容量淘汰后）第一次处理某个对象仍会下载 1 次，这是预期行为。
+
+### 5. 交付（Round 42）
+
+| 项 | 状态 |
+|---|---|
+| 提交 | 见本轮 4 个 commit（fix/media、feat/storage-cache、fix/metadata、docs），**未推送**（等你确认） |
+| 镜像重建 | 未做（需要你确认后 `docker compose build`） |
+| 待确认 | 是否把 `IMMICH_ORIGINAL_CACHE_MB` 调小（容器 `/cache` 卷在小机器上）——默认 2 GiB 上限，可按盘调 |
+
