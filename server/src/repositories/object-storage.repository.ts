@@ -7,6 +7,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { ConfigRepository } from 'src/repositories/config.repository.js';
 import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { CosObjectStorage } from 'src/repositories/object-storage/cos-object-storage.js';
 import { LocalObjectStorage } from 'src/repositories/object-storage/local-object-storage.js';
 import { ObjectStorage } from 'src/repositories/object-storage/object-storage.js';
 import { OriginalCache } from 'src/repositories/object-storage/original-cache.js';
@@ -16,9 +17,11 @@ const DEFAULT_CACHE_MB = 2048;
 const DEFAULT_CACHE_TTL_SECONDS = 900;
 
 /**
- * The library backend: local filesystem (default) or a Volcengine TOS bucket.
+ * The library backend: local filesystem (default), a Volcengine TOS bucket or a
+ * Tencent COS bucket.
  *
- * Selected with `IMMICH_STORAGE_BACKEND=tos` plus the `TOS_*` variables.
+ * Selected with `IMMICH_STORAGE_BACKEND=tos|cos` plus the matching `TOS_*` /
+ * `COS_*` variables.
  *
  * Objects are never downloaded more often than necessary: `withLocalCopy` serves
  * tooling (exiftool, sharp, ffmpeg) from a short-lived local cache, and an upload
@@ -214,6 +217,25 @@ export class ObjectStorageRepository implements ObjectStorage {
     }
 
     const { storage } = this.configRepository.getEnv();
+    if (storage.backend === 'cos') {
+      const cos = storage.cos;
+      this.storage = new CosObjectStorage(
+        {
+          bucket: cos.bucket,
+          region: cos.region,
+          secretId: cos.secretId,
+          secretKey: cos.secretKey,
+          domain: cos.domain,
+          prefix: cos.prefix,
+          presignTtlSeconds: cos.presignTtlSeconds,
+          chunkSizeMb: cos.chunkSizeMb,
+          concurrency: cos.concurrency,
+        },
+        this.logger,
+      );
+      return this.storage;
+    }
+
     if (storage.backend === 'tos') {
       const tos = storage.tos;
       this.storage = new TosObjectStorage(

@@ -691,6 +691,12 @@ describe(AssetMediaService.name, () => {
               accessKeyId: 'key',
               accessKeySecret: 'secret',
             },
+            cos: {
+              bucket: 'immich-1250000000',
+              region: 'ap-guangzhou',
+              secretId: 'id',
+              secretKey: 'secret',
+            },
           },
         }),
       );

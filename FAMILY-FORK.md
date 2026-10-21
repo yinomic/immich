@@ -1403,3 +1403,76 @@ after : from = undefined, to = 27 bytes      ← 桶内 copy+delete，全程无 
 
 
 
+---
+
+## Round 45 — 视频上传超时：不是桶慢，是「一条 TCP 流推 200 MiB」+ 新增腾讯 COS 后端
+
+用户反馈：照片上传正常，视频总是超时。上一轮（Round 43）埋的两段耗时日志直接给出了答案。
+
+### 1. 日志里的数字
+
+| 视频 | 推桶耗时 | 吞吐 |
+|---|---|---|
+| 181.6 MiB | 2372 s | **80 KB/s** |
+| 217.8 MiB | 2678 s | **85 KB/s** |
+| 186.0 MiB | 2022 s | **96 KB/s** |
+| 217.8 MiB | 2448 s | **93 KB/s** |
+
+即 0.7~0.8 Mbps，一条 200 MiB 视频要推 **35~45 分钟**——客户端超时设 5 分钟还是 10 分钟都没用。同一批日志里**没有任何 `received ... in ...ms` 的 warn**（该 warn 超过 10 s 才打），说明手机→服务器这段是快的，慢的全部在「服务器→桶」。
+
+### 2. 两个方向的实测
+
+| 测量 | 结果 | 结论 |
+|---|---|---|
+| 开发机 → 同一个 TOS 桶（16 MiB） | 单流 3.04 MiB/s；分片 2.93 MiB/s | **桶本身没问题**，是开发机 24 Mbps 上行打满了 |
+| 生产机 → 开发机（下载网页资源） | 单流 583 KB/s；6 路并发合计 620 KB/s | 生产机出带宽约 **5 Mbps**，且单流就能吃满 |
+
+于是问题定位为：**腾讯云广州的机器 → 火山 TOS 北京**，跨云跨地域公网，单流只有 0.7 Mbps；而生产机自己还有约 5 Mbps 的余量没吃到。原因就是 `tos-object-storage.ts` 用的 `putObjectFromFile`，SDK 内部是**一次整文件 PUT、一条连接、不分片、不并发、不能续传**。
+
+### 3. 本轮改动：新增腾讯 COS 后端（分片并发）
+
+| 文件 | 改动 |
+|---|---|
+| `server/src/repositories/object-storage/cos-object-storage.ts` | 新增 `CosObjectStorage`：`putFile` 走 SDK 的 `uploadFile`（超过 `chunkSizeMb` 自动分片，`ChunkParallelLimit` 片并发）；`put` 只接受 Buffer（COS 的 PutObject 要长度，流的错误提前报清楚）；`rename` 用 `putObjectCopy` + delete（>5 GiB 明确报错，不做半吊子）；`presign` 用 `getObjectUrl({Sign:true})` + `response-content-type/-disposition` 覆盖 |
+| `server/src/dtos/env.dto.ts` | `StorageBackendSchema` 加 `cos`；新增 `COS_SECRET_ID / COS_SECRET_KEY / COS_BUCKET / COS_REGION / COS_DOMAIN / COS_PREFIX / COS_PRESIGN_TTL / COS_CHUNK_SIZE_MB / COS_CONCURRENCY` |
+| `server/src/repositories/config.repository.ts` | `storage.backend` 加 `'cos'`；新增 `storage.cos` 默认值（`ap-guangzhou`、8 MiB 分片、4 并发） |
+| `server/src/repositories/object-storage.repository.ts` | 按 `backend` 选适配器 |
+| `server/src/services/storage.service.ts` | `remote = backend !== 'local'`（不再写死 `=== 'tos'`）；启动日志区分 TOS / COS |
+| `server/scripts/bench-object-storage.mjs` | 单流 vs 分片测速，TOS/COS 都支持（`IMMICH_STORAGE_BACKEND` 或 `COS_BUCKET` 自动选） |
+| `server/scripts/verify-object-storage.mjs` | 预检脚本支持 COS：PUT / HEAD / GET / 预签名 GET / DELETE 五步 |
+| `server/scripts/migrate-between-buckets.mjs` | 新增 TOS→COS 搬运：key 从 Postgres 取（家庭密钥没有 ListObjects 权限），流式落临时文件再分片上传，同尺寸跳过、可 `--dry-run`/`--limit`/`--keys` |
+| `docker/example.env`、`docker/.env` | 补 `COS_*` 说明与切换步骤 |
+
+**为什么 key 从数据库取**：实测 `listObjects` 返回 `403`（`0002-00000024`），那个子账号只有桶内对象读写权限。数据库里存的就是对象 key（前缀是请求时拼的），所以「按 DB 里的 key 逐个搬」既不需要额外授权，也保证搬完之后 `IMMICH_STORAGE_BACKEND=cos` 一改即可用，**不用改库**。
+
+### 4. 验证
+
+| 项 | 结果 |
+|---|---|
+| server 单测 | **88 文件 / 1571 通过**（新增 `cos-object-storage.spec.ts` 16 例 + 仓库按配置选后端 1 例 + `storage.service` 远端跳过挂载检查 2 例） |
+| `tsc --noEmit` / `eslint --max-warnings 0` | 绿 |
+| 真桶 TOS（`verify-object-storage.mjs`） | **5/5 通过**（PUT/HEAD/GET/预签名 GET/DELETE） |
+| 真桶 TOS 测速（8 MiB） | 单流 2.75 MiB/s，分片 3.18 MiB/s（开发机上行封顶，看不出桶的上限） |
+| 迁移脚本 | `--dry-run` 正常列出；真实下载 3 MiB 探测对象并比对尺寸后再推 COS（用假桶名验证，正确报 `The specified bucket does not exist`）；探测对象已删除，桶内干净 |
+| **真实 COS 桶** | **未验证**——没有腾讯云 COS 凭证。拿到 AK/SK + 桶名后先跑 `verify-object-storage.mjs`，再跑 `bench-object-storage.mjs` 对比两地速度 |
+
+### 5. 切换步骤（等你操作）
+
+```bash
+# 1) 建桶：与服务器同地域（广州 → ap-guangzhou），同云可走内网
+# 2) 预检
+set -a; . docker/.env; set +a
+IMMICH_STORAGE_BACKEND=cos COS_BUCKET=xxx-1250000000 COS_REGION=ap-guangzhou \
+COS_SECRET_ID=... COS_SECRET_KEY=... node server/scripts/verify-object-storage.mjs
+# 3) 先测速（这台机器到 COS 应该是几十 MiB/s，否则先别切）
+node server/scripts/bench-object-storage.mjs
+# 4) 搬对象（可先 --dry-run）
+DB_URL=... node server/scripts/migrate-between-buckets.mjs --dry-run
+# 5) .env 改 IMMICH_STORAGE_BACKEND=cos + COS_*，重启
+```
+
+### 6. 还没做
+
+- **把推桶挪出请求**（Round 43 就提过的方案）：落盘+建库立刻 201，推桶进 job 并重试。视频「逻辑上再也不会超时」，与带宽无关，仍值得做。
+- TOS 适配器也改成分片（`uploadFile`）——如果哪天还要用 TOS，两行的事，但换桶后用途不大。
+- iOS 的上传超时仍是原生 `URLSession` 的 60 s（第 42/43 轮遗留）。

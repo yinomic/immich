@@ -120,7 +120,7 @@ export interface EnvData {
     originalCacheMb: number;
     /** how long an unused cached original stays usable, in seconds */
     originalCacheTtlSeconds: number;
-    backend: 'local' | 'tos';
+    backend: 'local' | 'tos' | 'cos';
     /** never remove assets or objects: deletion only moves them to the trash */
     softDeleteOnly: boolean;
     /** do not contact GitHub to look for new releases */
@@ -135,6 +135,18 @@ export interface EnvData {
       accessKeySecret: string;
       prefix?: string;
       presignTtlSeconds?: number;
+    };
+    cos: {
+      /** `name-appid`, e.g. `family-1250000000` */
+      bucket: string;
+      region: string;
+      secretId: string;
+      secretKey: string;
+      domain?: string;
+      prefix?: string;
+      presignTtlSeconds?: number;
+      chunkSizeMb?: number;
+      concurrency?: number;
     };
   };
 
@@ -381,6 +393,17 @@ const getEnv = (): EnvData => {
         accessKeySecret: dto.TOS_ACCESS_KEY_SECRET ?? '',
         prefix: dto.TOS_PREFIX,
         presignTtlSeconds: dto.TOS_PRESIGN_TTL,
+      },
+      cos: {
+        bucket: dto.COS_BUCKET ?? '',
+        region: dto.COS_REGION ?? 'ap-guangzhou',
+        secretId: dto.COS_SECRET_ID ?? '',
+        secretKey: dto.COS_SECRET_KEY ?? '',
+        domain: dto.COS_DOMAIN,
+        prefix: dto.COS_PREFIX,
+        presignTtlSeconds: dto.COS_PRESIGN_TTL,
+        chunkSizeMb: dto.COS_CHUNK_SIZE_MB,
+        concurrency: dto.COS_CONCURRENCY,
       },
     },
 

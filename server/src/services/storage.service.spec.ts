@@ -39,6 +39,12 @@ describe(StorageService.name, () => {
               accessKeyId: 'key',
               accessKeySecret: 'secret',
             },
+            cos: {
+              bucket: 'immich-1250000000',
+              region: 'ap-guangzhou',
+              secretId: 'id',
+              secretKey: 'secret',
+            },
             mediaLocation: '/data',
           },
         }),
@@ -118,6 +124,12 @@ describe(StorageService.name, () => {
               bucket: 'immich',
               accessKeyId: 'key',
               accessKeySecret: 'secret',
+            },
+            cos: {
+              bucket: 'immich-1250000000',
+              region: 'ap-guangzhou',
+              secretId: 'id',
+              secretKey: 'secret',
             },
             mediaLocation: '/data',
           },
@@ -212,6 +224,12 @@ describe(StorageService.name, () => {
               accessKeyId: 'key',
               accessKeySecret: 'secret',
             },
+            cos: {
+              bucket: 'immich-1250000000',
+              region: 'ap-guangzhou',
+              secretId: 'id',
+              secretKey: 'secret',
+            },
           },
         }),
       );
@@ -223,6 +241,47 @@ describe(StorageService.name, () => {
       await expect(sut.onBootstrap()).resolves.toBeUndefined();
 
       expect(mocks.systemMetadata.set).not.toHaveBeenCalledWith(SystemMetadataKey.SystemFlags, expect.anything());
+    });
+
+    it('should skip the mount checks when the library lives in a COS bucket', async () => {
+      mocks.config.getEnv.mockReturnValue(
+        mockEnvData({
+          storage: {
+            ...mockEnvData({}).storage,
+            backend: 'cos',
+            cos: {
+              bucket: 'family-1250000000',
+              region: 'ap-guangzhou',
+              secretId: 'id',
+              secretKey: 'secret',
+            },
+          },
+        }),
+      );
+
+      await expect(sut.onBootstrap()).resolves.toBeUndefined();
+
+      expect(mocks.logger.log).toHaveBeenCalledWith('Using Tencent COS bucket "family-1250000000" in ap-guangzhou');
+      expect(mocks.storage.mkdirSync).not.toHaveBeenCalled();
+      expect(mocks.systemMetadata.set).not.toHaveBeenCalled();
+    });
+
+    it('should skip the mount checks when the library lives in a TOS bucket', async () => {
+      mocks.config.getEnv.mockReturnValue(
+        mockEnvData({
+          storage: {
+            ...mockEnvData({}).storage,
+            backend: 'tos',
+          },
+        }),
+      );
+
+      await expect(sut.onBootstrap()).resolves.toBeUndefined();
+
+      expect(mocks.logger.log).toHaveBeenCalledWith(
+        'Using Volcengine TOS bucket "immich" at tos-cn-beijing.volces.com',
+      );
+      expect(mocks.storage.mkdirSync).not.toHaveBeenCalled();
     });
   });
 

@@ -19,7 +19,7 @@ const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mod
  */
 
 /** Where the library is stored. */
-const StorageBackendSchema = z.enum(['local', 'tos']).describe('Storage backend');
+const StorageBackendSchema = z.enum(['local', 'tos', 'cos']).describe('Storage backend');
 
 /** Whether derived images (thumbnails, previews) are cached locally at all. */
 const ThumbnailModeSchema = z.enum(['cache', 'off']).describe('Thumbnail handling');
@@ -75,6 +75,15 @@ export const EnvSchema = z
     TOS_PREFIX: z.string().optional(),
     TOS_PRESIGN_TTL: z.coerce.number().int().positive().optional(),
     TOS_REGION: z.string().optional(),
+    COS_SECRET_ID: z.string().optional(),
+    COS_SECRET_KEY: z.string().optional(),
+    COS_BUCKET: z.string().optional(),
+    COS_REGION: z.string().optional(),
+    COS_DOMAIN: z.string().optional(),
+    COS_PREFIX: z.string().optional(),
+    COS_PRESIGN_TTL: z.coerce.number().int().positive().optional(),
+    COS_CHUNK_SIZE_MB: z.coerce.number().int().positive().optional(),
+    COS_CONCURRENCY: z.coerce.number().int().positive().optional(),
     IMMICH_MEDIA_LOCATION: absolutePath,
     IMMICH_ORIGINAL_CACHE_MB: z.coerce.number().int().nonnegative().optional(),
     IMMICH_ORIGINAL_CACHE_TTL: z.coerce.number().int().nonnegative().optional(),

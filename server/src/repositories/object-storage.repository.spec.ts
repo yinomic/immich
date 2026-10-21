@@ -31,6 +31,16 @@ const newRemoteStorage = () => ({
 const read = (path: string) => readFile(path, 'utf8');
 
 describe(ObjectStorageRepository.name, () => {
+  it('should pick the COS backend from the config', () => {
+    const config = { getEnv: () => mockEnvData({ storage: { ...mockEnvData({}).storage, backend: 'cos' } }) };
+    const logger = automock(LoggingRepository, { strict: false });
+    const sut = new ObjectStorageRepository(config as never, logger);
+
+    expect(sut.isRemote()).toBe(true);
+    expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('Tencent COS'));
+    expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('immich-1250000000'));
+  });
+
   it('should keep the objects when soft delete only is on', async () => {
     const { sut, logger } = setup(true);
     const storage = sut as unknown as { storage?: LocalObjectStorage };
