@@ -1454,6 +1454,8 @@ after : from = undefined, to = 27 bytes      ← 桶内 copy+delete，全程无 
 | 真桶 TOS（`verify-object-storage.mjs`） | **5/5 通过**（PUT/HEAD/GET/预签名 GET/DELETE） |
 | 真桶 TOS 测速（8 MiB） | 单流 2.75 MiB/s，分片 3.18 MiB/s（开发机上行封顶，看不出桶的上限） |
 | 迁移脚本 | `--dry-run` 正常列出；真实下载 3 MiB 探测对象并比对尺寸后再推 COS（用假桶名验证，正确报 `The specified bucket does not exist`）；探测对象已删除，桶内干净 |
+| 镜像构建 | `docker build -f server/Dockerfile` → **`27d8112a58d7`**，tag `ccr.ccs.tencentyun.com/agile-cloud/immich-family:cos-test` |
+| 镜像内冒烟（`IMMICH_STORAGE_BACKEND=cos` + 假凭证） | 启动日志 `Using Tencent COS bucket "fake-1250000000" in ap-guangzhou`，`/api/server/ping` 200；镜像内 `cos-nodejs-sdk-v5` 可加载，签出的 URL 是 COS v5（`q-sign-algorithm`） |
 | **真实 COS 桶** | **未验证**——没有腾讯云 COS 凭证。拿到 AK/SK + 桶名后先跑 `verify-object-storage.mjs`，再跑 `bench-object-storage.mjs` 对比两地速度 |
 
 ### 5. 切换步骤（等你操作）
@@ -1473,6 +1475,7 @@ DB_URL=... node server/scripts/migrate-between-buckets.mjs --dry-run
 
 ### 6. 还没做
 
+- 镜像推 registry：本机仍没有 `ccr.ccs.tencentyun.com` 凭证（`docker push` 会 denied），需要你 `docker login` 后推，或在生产机上 `git pull` + `docker build`。
 - **把推桶挪出请求**（Round 43 就提过的方案）：落盘+建库立刻 201，推桶进 job 并重试。视频「逻辑上再也不会超时」，与带宽无关，仍值得做。
 - TOS 适配器也改成分片（`uploadFile`）——如果哪天还要用 TOS，两行的事，但换桶后用途不大。
 - iOS 的上传超时仍是原生 `URLSession` 的 60 s（第 42/43 轮遗留）。
